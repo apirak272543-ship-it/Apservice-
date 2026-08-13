@@ -138,7 +138,7 @@
           total:Number(row.total||0),payable:Number(row.payable||0),deliveryFee:Number(row.delivery_fee||0),status:row.status,time:row.ordered_at,orderedAt:row.ordered_at,
           pickupAddress:row.pickup_address,pickupLocation:row.pickup_location,deliveryAddress:row.delivery_address,deliveryLocation:row.delivery_location,
           acceptedAt:row.accepted_at,arrivedAtStore:row.arrived_at_store,itemsCollected:row.items_collected,deliveryStartedAt:row.delivery_started_at,completedAt:row.completed_at,
-          note:row.note||'',paymentMethod:row.payment_method||'เงินสดปลายทาง (COD)',proofImage:row.proof_image||null
+          note:row.note||'',paymentMethod:row.payment_method||'เงินสดปลายทาง (COD)',paymentReceived:Number(row.payment_received||0),paymentChange:Number(row.payment_change||0),paymentConfirmedAt:row.payment_confirmed_at||null,proofImage:row.proof_image||null
         }));
         write('apcx_orders',State.orders);
       },
@@ -155,7 +155,7 @@
           status:order.status,rider_id:order.riderId,rider_name:order.riderName,
           accepted_at:order.acceptedAt||null,arrived_at_store:order.arrivedAtStore||null,items_collected:order.itemsCollected||null,
           delivery_started_at:order.deliveryStartedAt||null,completed_at:order.completedAt||null,
-          payment_method:order.paymentMethod||null,proof_image:order.proofImage||null,updated_at:new Date().toISOString()
+          payment_method:order.paymentMethod||'เงินสดปลายทาง (COD)',payment_received:Number(order.paymentReceived||0),payment_change:Number(order.paymentChange||0),payment_confirmed_at:order.paymentConfirmedAt||null,proof_image:order.proofImage||null,updated_at:new Date().toISOString()
         };
         await this.request('delivery_orders?id=eq.'+encodeURIComponent(order.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)});
       },
@@ -433,6 +433,9 @@
         if(!confirm('คำเตือน: ตำแหน่ง GPS ของคุณอยู่ห่างจากจุดส่งเกิน 50 เมตร คุณต้องการบังคับยืนยันส่งสำเร็จหรือไม่?'))return;
       }
       const paymentMethod=$('#completionPaymentMethod')?.value||'เงินสดปลายทาง (COD)';
+      const paymentDue=Number(order.payable||order.total||0);
+      const paymentReceived=paymentMethod==='เงินสดปลายทาง (COD)'?Math.max(0,Number($('#cashReceivedInput')?.value)||0):paymentDue;
+      const paymentChange=paymentMethod==='เงินสดปลายทาง (COD)'?Math.max(0,paymentReceived-paymentDue):0;
       const proofImage=window._capturedProofImage||null;
       
       if(!confirm(`ยืนยันปิดงานส่งสำเร็จ\nออร์เดอร์: ${order.id}\nลูกค้า: ${order.name||'-'}\nวิธีชำระ: ${paymentMethod}\nรายได้สุทธิที่จะได้รับ: ${money(Number(order.deliveryFee||0)*.8)}`))return;
@@ -440,6 +443,9 @@
       order.status='สำเร็จแล้ว';
       order.completedAt=new Date().toISOString();
       order.paymentMethod=paymentMethod;
+      order.paymentReceived=paymentReceived;
+      order.paymentChange=paymentChange;
+      order.paymentConfirmedAt=order.completedAt;
       order.proofImage=proofImage;
       rider.status='พร้อมรับงาน';
       statusHistory(order,'สำเร็จแล้ว');
