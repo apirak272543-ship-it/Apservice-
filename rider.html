@@ -123,8 +123,11 @@
       key:'sb_publishable_TyJWnKkbS8vKcQKKAzoqSg_BOguwKRv',
       session:()=>read('apcx_supabase_session',null),
       setSession(session){write('apcx_supabase_session',session)},
-      headers(){const session=this.session(),headers={apikey:this.key,'Content-Type':'application/json'};if(session?.access_token)headers.Authorization='Bearer '+session.access_token;return headers},
-      async request(path,options={}){if(!this.session()?.access_token)return null;const response=await fetch(this.url+'/rest/v1/'+path,{...options,headers:{...this.headers(),...(options.headers||{})}});const text=await response.text();let data=null;try{data=text?JSON.parse(text):null}catch{data=text}if(!response.ok)throw new Error(data?.message||'Supabase HTTP '+response.status);return data},
+      clearSession(){localStorage.removeItem('apcx_supabase_session')},
+      headers(session=this.session()){const headers={apikey:this.key,'Content-Type':'application/json'};if(session?.access_token)headers.Authorization='Bearer '+session.access_token;return headers},
+      async refreshSession(){const current=this.session();if(!current?.refresh_token)throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');const response=await fetch(this.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:this.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:current.refresh_token})});const data=await response.json().catch(()=>null);if(!response.ok||!data?.access_token){this.clearSession();throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่')}this.setSession(data);return data},
+      async validSession(){let session=this.session();if(!session?.access_token)throw new Error('กรุณาเข้าสู่ระบบ Rider ใหม่');const expiresAt=Number(session.expires_at||0);if(expiresAt&&expiresAt<=Math.floor(Date.now()/1000)+60)session=await this.refreshSession();return session},
+      async request(path,options={}){let session=await this.validSession();const send=()=>fetch(this.url+'/rest/v1/'+path,{...options,headers:{...this.headers(session),...(options.headers||{})}});let response=await send();let text=await response.text();let data=null;try{data=text?JSON.parse(text):null}catch{data=text}if(response.status===401){session=await this.refreshSession();response=await send();text=await response.text();try{data=text?JSON.parse(text):null}catch{data=text}}if(!response.ok){if(response.status===403)throw new Error('บัญชีนี้ไม่มีสิทธิ์อัปเดตข้อมูลดังกล่าว กรุณาออกและเข้าสู่ระบบใหม่');throw new Error(data?.message||data?.error_description||data?.hint||'Supabase HTTP '+response.status)}return data},
       async login(identifier,password){const response=await fetch(this.url+'/functions/v1/role-access',{method:'POST',headers:{apikey:this.key,'Content-Type':'application/json'},body:JSON.stringify({action:'login',role:'rider',identifier,password})});const data=await response.json();if(!response.ok)throw new Error(data?.error||'เข้าสู่ระบบไม่สำเร็จ');this.setSession(data.session);const rows=await this.request('riders?select=*&user_id=eq.'+encodeURIComponent(data.user.id)+'&limit=1');const remote=rows?.[0];if(!remote)throw new Error('ไม่พบโปรไฟล์ไรเดอร์ของบัญชีนี้');const rider={id:remote.id,name:remote.name,emoji:remote.emoji||'🛵',phone:remote.phone||'',vehicle:remote.vehicle||'มอเตอร์ไซค์',status:remote.status||'พร้อมรับงาน',lastLocation:remote.last_location||null};State.riders=[rider];State.session={riderId:rider.id,userId:data.user.id,loginAt:new Date().toISOString()};write('apcx_riders',State.riders);write('apcx_rider_session',State.session);return rider},
       async pullOrders(){
         if(State.isSyncing)return;
@@ -155,14 +158,6 @@
           payment_method:order.paymentMethod||null,proof_image:order.proofImage||null,updated_at:new Date().toISOString()
         };
         await this.request('delivery_orders?id=eq.'+encodeURIComponent(order.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)});
-      },
-      async recordEarning(order,riderId){
-        const deliveryFee=Number(order.deliveryFee||0);
-        const riderShare=Math.round(deliveryFee*.8*100)/100;
-        const platformShare=Math.round(deliveryFee*.2*100)/100;
-        await this.request('rider_earnings',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
-          order_id:order.id,rider_id:riderId,delivery_fee:deliveryFee,rider_share:riderShare,platform_share:platformShare,settlement_status:'settled',completed_at:order.completedAt||new Date().toISOString()
-        })});
       },
       async saveRider(rider){await this.request('riders?id=eq.'+encodeURIComponent(rider.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:rider.status,last_location:rider.lastLocation,updated_at:new Date().toISOString()})})},
       async syncConfig(){try{const rows=await this.request('platform_configs?select=key,value');if(Array.isArray(rows)){const payment=rows.find(r=>r.key==='payment')?.value;if(payment){State.config.payment=payment;write('apcx_config',State.config)}}}catch(e){}}
@@ -463,7 +458,6 @@
       try{
         State.isSyncing=true;
         await Cloud.saveOrder(order);
-        await Cloud.recordEarning(order,rider.id);
         await Cloud.pullOrders();
         await Cloud.pullEarnings(rider.id);
         toast('ปิดงานส่งสำเร็จและบันทึกรายได้เรียบร้อยแล้ว!');
