@@ -306,11 +306,13 @@
       }
     };
     const showView = UI.showView;
+    window.showView = UI.showView;
 
     function requireLoginThen(target){
       if(!AppState.user?.email){AppState.afterLogin=target;return showView('login')}
       showView(target);
     }
+    window.requireLoginThen = requireLoginThen;
 
     // BUSINESS OPERATIONS: customers, wallet credit, cash ledger, and immutable-style audit entries.
     const nowLabel=()=>new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
@@ -424,7 +426,32 @@
     function draftFoodOrder(){if(!AppState.cart.length){UI.toast('ตะกร้าของคุณยังว่างอยู่');return null}const deliveryLocation=foodDeliveryLocation();if(!deliveryLocation){UI.toast('กรุณาดึง GPS หรือเลือกหมุดจุดส่งบนแผนที่ก่อนยืนยันออร์เดอร์');return null}if(locationModes.foodDelivery==='other'&&!$('#foodDeliveryRecipientName').value.trim()){UI.toast('กรุณาระบุชื่อผู้รับก่อนยืนยันออร์เดอร์');return null}const store=AppState.stores.find(s=>s.id===AppState.cart[0].storeId);if(!store?.location){UI.toast('ร้านค้านี้ยังไม่ได้ตั้งตำแหน่ง GPS กรุณาให้ผู้ดูแลร้านบันทึกพิกัดก่อนเปิดรับออร์เดอร์');return null}const subtotal=AppState.cart.reduce((sum,x)=>sum+x.price*x.qty,0),minOrder=Number(deliveryRules().minOrder)||0;if(subtotal<minOrder){UI.toast(`ยอดสั่งซื้อขั้นต่ำ ${money(minOrder)}`);return null}const unavailable=AppState.cart.find(item=>{const food=AppState.stores.find(s=>s.id===item.storeId)?.foods.find(f=>f.id===item.foodId);return food?.available===false||Number(food?.stock)<item.qty});if(unavailable){UI.toast(`สินค้า “${unavailable.name}” หมดชั่วคราวหรือสต็อกไม่เพียงพอ`);return null}const deliveryQuote=foodDeliveryQuote(store,deliveryLocation),deliveryFee=deliveryQuote.total,total=subtotal+deliveryFee,customer=ensureCustomer(),creditUsed=$('#checkoutUseCredit')?.checked?Math.min(total,Number(customer?.credit||0)):0,orderedAt=nowLabel(),recipientOther=locationModes.foodDelivery==='other',deliveryAddress=foodDeliveryAddress(),status=creditUsed>0?'รอตรวจสอบเครดิต':'ร้านค้ารับออร์เดอร์';return {id:'AP-'+Date.now().toString().slice(-8),serviceType:'food',storeId:store.id,storeName:store.name,name:AppState.user?.name||'ลูกค้า',customerEmail:AppState.user?.email||'',items:AppState.cart.map(item=>({...item})),subtotal,deliveryFee,total,couponDiscount:0,creditUsed,payable:total-creditUsed,paymentMethod:creditUsed>0?'เครดิตในกระเป๋าเงิน':'เงินสดปลายทาง (COD)',status,statusHistory:[{status,time:orderedAt,by:AppState.user?.email||'ระบบ'}],time:orderedAt,orderedAt,address:deliveryAddress,deliveryAddress,deliveryLocation:{...deliveryLocation},deliveryMode:locationModes.foodDelivery,recipientName:recipientOther?$('#foodDeliveryRecipientName').value.trim():(AppState.user?.name||''),recipientPhone:recipientOther?$('#foodDeliveryRecipientPhone').value.trim():(AppState.user?.phone||''),pickupAddress:store.location.address||store.name||'ร้านค้า',pickupLocation:{...store.location},distanceKm:deliveryQuote.km}}
     function checkout(){const order=draftFoodOrder();if(!order)return;openActionConfirmation({title:'ตรวจสอบใบสรุปคำสั่งซื้อ',message:'โปรดตรวจรายการ สถานที่จัดส่ง และยอดชำระก่อนส่งออร์เดอร์',body:billRows(order),confirmText:'ยืนยันสั่งซื้อ',onConfirm:()=>finalizeFoodOrder(order)})}
     async function requireOrderCloudSession(){if(AppState.config.mode==='local')return true;if(SupabaseSync.session()?.user?.id)return true;AppState.afterLogin='home';showView('login');UI.toast('กรุณาเข้าสู่ระบบด้วยอีเมลและรหัสผ่านก่อนสั่งงาน เพื่อส่งข้อมูลไปยัง Rider และ Admin แบบเรียลไทม์');return false}
-    async function finalizeFoodOrder(order){if(!await requireOrderCloudSession())return;const customer=ensureCustomer();if(order.creditUsed>0){customer.credit-=order.creditUsed;addTransaction({customer,amount:-order.creditUsed,type:'ใช้เครดิต',reason:'ชำระค่าออร์เดอร์',method:'wallet'})}order.items.forEach(item=>{const food=AppState.stores.find(s=>s.id===item.storeId)?.foods.find(f=>f.id===item.foodId);if(food)food.stock=Math.max(0,Number(food.stock||0)-item.qty)};try{await SupabaseSync.pushOrder(order);order.cloudSyncedAt=new Date().toISOString()}catch(error){console.warn('Supabase order sync failed',error);UI.toast(`ส่งออร์เดอร์ไปฐานกลางไม่สำเร็จ: ${error.message}`);return}AppState.orders.unshift(order);AppState.cart=[];Storage.save();dispatchExternal(order);showView('orders');UI.toast('ยืนยันออร์เดอร์และส่งงานเข้าสู่ระบบกลางแล้ว')}
+    async function finalizeFoodOrder(order){
+      if(!(await requireOrderCloudSession())) return;
+      const customer=ensureCustomer();
+      if(order.creditUsed>0){
+        customer.credit-=order.creditUsed;
+        addTransaction({customer,amount:-order.creditUsed,type:'ใช้เครดิต',reason:'ชำระค่าออร์เดอร์',method:'wallet'});
+      }
+      order.items.forEach(item=>{
+        const food=AppState.stores.find(store=>store.id===item.storeId)?.foods.find(food=>food.id===item.foodId);
+        if(food) food.stock=Math.max(0,Number(food.stock||0)-item.qty);
+      });
+      try{
+        await SupabaseSync.pushOrder(order);
+        order.cloudSyncedAt=new Date().toISOString();
+      }catch(error){
+        console.warn('Supabase order sync failed',error);
+        UI.toast(`ส่งออร์เดอร์ไปฐานกลางไม่สำเร็จ: ${error.message}`);
+        return;
+      }
+      AppState.orders.unshift(order);
+      AppState.cart=[];
+      Storage.save();
+      dispatchExternal(order);
+      showView('orders');
+      UI.toast('ยืนยันออร์เดอร์และส่งงานเข้าสู่ระบบกลางแล้ว');
+    }
     async function dispatchExternal(order){if(AppState.config.mode==='local')return;const cfg=AppState.config;if(cfg.webhookUrl){try{await fetch(cfg.webhookUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(applyMappings({order,profile:AppState.user}))})}catch(e){console.warn('Webhook could not be reached',e)}}}
     function orderMapLink(location,label){const url=mapUrl(location);return url?`<a class="map-link" href="${url}" target="_blank" rel="noopener">${label}</a>`:`<span class="location-chip">ยังไม่มีพิกัด</span>`}
     function renderOrders(){const own=AppState.orders.filter(order=>!AppState.user?.email||order.customerEmail===AppState.user.email||order.name===AppState.user.name);$('#ordersList').innerHTML=own.length?own.map(o=>`<article class="order"><div class="order-top"><div><strong>${escapeHtml(o.id)} · ${money(o.total)}</strong><small>🏪 ${escapeHtml(o.storeName)} · สั่งเมื่อ ${escapeHtml(o.orderedAt||o.time)}${o.creditUsed?` · ใช้เครดิต ${money(o.creditUsed)}`:''}</small><small>ล่าสุด: ${escapeHtml(o.statusHistory?.at(-1)?.status||o.status)}</small></div><span class="status">${escapeHtml(o.status)}</span></div><div class="order-locations"><div class="order-location"><b>📍 จุดรับ</b>${escapeHtml(o.pickupAddress||o.storeName||'ยังไม่ระบุ')}<div class="location-actions">${orderMapLink(o.pickupLocation,'เปิดจุดรับ')}</div></div><div class="order-location"><b>🏁 จุดส่ง</b>${escapeHtml(o.deliveryAddress||o.address||'ยังไม่ระบุ')}<div class="location-actions">${orderMapLink(o.deliveryLocation,'เปิดจุดส่ง')}</div></div></div></article>`).join(''):'<div class="panel" style="text-align:center;color:var(--muted)">ยังไม่มีออร์เดอร์ เริ่มสั่งอาหารได้เลย</div>'}
@@ -451,7 +478,29 @@
     }
     function draftErrandOrder(){const pickup=AppState.draftLocations?.pickup,delivery=AppState.draftLocations?.delivery;if(!pickup||!delivery){UI.toast('กรุณาดึง GPS หรือเลือกหมุดบนแผนที่ทั้งจุดรับและจุดส่งก่อนเรียกไรเดอร์');return null}if(locationModes.delivery==='other'&&!$('#errandRecipientName').value.trim()){UI.toast('กรุณาระบุชื่อผู้รับปลายทาง');return null}const quote=errandQuote(),customer=ensureCustomer(),creditUsed=$('#checkoutUseCredit')?.checked?Math.min(quote.total,Number(customer?.credit||0)):0,orderedAt=nowLabel(),status=creditUsed?'รอตรวจสอบเครดิต':'กำลังดำเนินการ',pickupAddress=$('#errandFrom').value.trim()||'จุดรับตามพิกัด GPS',deliveryAddress=$('#errandTo').value.trim()||AppState.user?.address||'จุดส่งตามพิกัด GPS',service=$('#errandType').value;return {id:'EX-'+Date.now().toString().slice(-8),serviceType:'errand',storeName:service,name:AppState.user?.name||'ลูกค้า',customerEmail:AppState.user?.email||'',items:[{name:$('#errandNote').value||service,qty:1,price:0}],subtotal:0,deliveryFee:quote.total,total:quote.total,couponDiscount:0,creditUsed,payable:quote.total-creditUsed,paymentMethod:creditUsed>0?'เครดิตในกระเป๋าเงิน':'เงินสดปลายทาง (COD)',status,statusHistory:[{status,time:orderedAt,by:AppState.user?.email||'ระบบ'}],time:orderedAt,orderedAt,address:deliveryAddress,deliveryAddress,deliveryLocation:{...delivery},deliveryMode:locationModes.delivery,recipientName:locationModes.delivery==='other'?$('#errandRecipientName').value.trim():(AppState.user?.name||''),recipientPhone:locationModes.delivery==='other'?$('#errandRecipientPhone').value.trim():(AppState.user?.phone||''),pickupAddress,pickupLocation:{...pickup},pickupMode:locationModes.pickup,pickupContact:locationModes.pickup==='other'?$('#errandPickupContact').value.trim():(AppState.user?.name||''),pickupPhone:locationModes.pickup==='other'?$('#errandPickupPhone').value.trim():(AppState.user?.phone||''),distanceKm:quote.km,budget:Number($('#errandBudget').value)||0,note:$('#errandNote').value.trim()}}
     function submitErrand(){const order=draftErrandOrder();if(!order)return;openActionConfirmation({title:'ตรวจสอบใบสรุปเรียกไรเดอร์',message:'โปรดตรวจจุดรับ จุดส่ง รายละเอียดงาน และยอดชำระก่อนส่งคำขอ',body:billRows(order)+`<div style="margin-top:10px"><b>งบประมาณฝากซื้อ:</b> ${money(order.budget||0)}<br><b>หมายเหตุถึงไรเดอร์:</b> ${escapeHtml(order.note||'-')}</div>`,confirmText:'ยืนยันเรียกไรเดอร์',onConfirm:()=>finalizeErrandOrder(order)})}
-    async function finalizeErrandOrder(order){if(!await requireOrderCloudSession())return;const customer=ensureCustomer();if(order.creditUsed>0){customer.credit-=order.creditUsed;addTransaction({customer,amount:-order.creditUsed,type:'ใช้เครดิต',reason:'ชำระบริการจัดส่ง',method:'wallet'})}try{await SupabaseSync.pushOrder(order);order.cloudSyncedAt=new Date().toISOString()}catch(error){console.warn('Supabase errand sync failed',error);UI.toast(`ส่งงานไปฐานกลางไม่สำเร็จ: ${error.message}`);return}AppState.orders.unshift(order);AppState.draftLocations.pickup=null;AppState.draftLocations.delivery=null;Storage.save();dispatchExternal(order);showView('orders');UI.toast('เรียก Rider และส่งงานเข้าสู่ระบบกลางแล้ว')}
+    async function finalizeErrandOrder(order){
+      if(!(await requireOrderCloudSession())) return;
+      const customer=ensureCustomer();
+      if(order.creditUsed>0){
+        customer.credit-=order.creditUsed;
+        addTransaction({customer,amount:-order.creditUsed,type:'ใช้เครดิต',reason:'ชำระบริการจัดส่ง',method:'wallet'});
+      }
+      try{
+        await SupabaseSync.pushOrder(order);
+        order.cloudSyncedAt=new Date().toISOString();
+      }catch(error){
+        console.warn('Supabase errand sync failed',error);
+        UI.toast(`ส่งงานไปฐานกลางไม่สำเร็จ: ${error.message}`);
+        return;
+      }
+      AppState.orders.unshift(order);
+      AppState.draftLocations.pickup=null;
+      AppState.draftLocations.delivery=null;
+      Storage.save();
+      dispatchExternal(order);
+      showView('orders');
+      UI.toast('เรียก Rider และส่งงานเข้าสู่ระบบกลางแล้ว');
+    }
 
     function renderAdmin(){
       if(!Storage.isAdmin())return showView('home');
@@ -669,7 +718,31 @@
     updateErrandLocationUI();
     SupabaseSync.consumeOAuthCallback().then(session=>{if(!session)return;AppState.afterLogin=sessionStorage.getItem('apcx_oauth_after')||'home';sessionStorage.removeItem('apcx_oauth_after');return finishLogin(session.user?.email||'',session)}).catch(error=>{showView('login');UI.toast(`เข้าสู่ระบบไม่สำเร็จ: ${error.message}`)});
     SupabaseAdminSync.migrateLocalOrders=async()=>{await SupabaseAdminSync.ensureAdminSession();const orders=AppState.orders.slice(0,100);if(!orders.length)return {imported:0};const cfg=SupabaseSync.config(),response=await fetch(cfg.url+'/functions/v1/role-access',{method:'POST',headers:SupabaseSync.headers(),body:JSON.stringify({action:'migrate_orders',orders})}),data=await response.json();if(!response.ok)throw new Error(data?.error||'ไม่สามารถย้ายออร์เดอร์เข้าสู่ฐานกลาง');return data};
-    window.syncLocalOrdersToCloud=()=>{if(!requireAdminAction())return;const count=AppState.orders.length;if(!count)return UI.toast('ไม่มีออร์เดอร์ในอุปกรณ์นี้ให้ซิงก์');openActionConfirmation({title:'ยืนยันซิงก์ออร์เดอร์ไปฐานกลาง',message:'เฉพาะออร์เดอร์ในเบราว์เซอร์เครื่องนี้จะถูกย้ายเข้า Supabase เพื่อให้ Rider เห็นงานข้ามอุปกรณ์',body:`<b>จำนวนออร์เดอร์:</b> ${count} รายการ<br><b>ผลลัพธ์:</b> Rider ที่เข้าสู่ระบบจะเห็นงานหลังรีเฟรชอัตโนมัติ`,confirmText:'ยืนยันซิงก์ออร์เดอร์',onConfirm:async()=>{try{const result=await SupabaseAdminSync.migrateLocalOrders();UI.toast(`ซิงก์ออร์เดอร์สำเร็จ ${Number(result.imported||0)} รายการ`)}catch(error){UI.toast(`ซิงก์ออร์เดอร์ไม่สำเร็จ: ${error.message}`)}})};
+    window.syncLocalOrdersToCloud=()=>{
+      if(!requireAdminAction()) return;
+      const count=AppState.orders.length;
+      if(!count) return UI.toast('ไม่มีออร์เดอร์ในอุปกรณ์นี้ให้ซิงก์');
+      openActionConfirmation({
+        title:'ยืนยันซิงก์ออร์เดอร์ไปฐานกลาง',
+        message:'เฉพาะออร์เดอร์ในเบราว์เซอร์เครื่องนี้จะถูกย้ายเข้า Supabase เพื่อให้ Rider เห็นงานข้ามอุปกรณ์',
+        body:`<b>จำนวนออร์เดอร์:</b> ${count} รายการ<br><b>ผลลัพธ์:</b> Rider ที่เข้าสู่ระบบจะเห็นงานหลังรีเฟรชอัตโนมัติ`,
+        confirmText:'ยืนยันซิงก์ออร์เดอร์',
+        onConfirm:async()=>{
+          try{
+            const result=await SupabaseAdminSync.migrateLocalOrders();
+            UI.toast(`ซิงก์ออร์เดอร์สำเร็จ ${Number(result.imported||0)} รายการ`);
+          }catch(error){
+            UI.toast(`ซิงก์ออร์เดอร์ไม่สำเร็จ: ${error.message}`);
+          }
+        }
+      });
+    };
+    window.requireLoginThen=requireLoginThen;
+    window.showView=showView;
+    window.checkout=checkout;
+    window.submitErrand=submitErrand;
+    window.saveProfile=saveProfile;
+    window.logout=logout;
   </script>
 </body>
 </html>
