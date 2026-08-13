@@ -153,7 +153,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
     /* SINGLE-FILE MODULAR ARCHITECTURE: State, Storage, Views, UI */
-    const MASTER_ADMIN = 'apirak27254@gmail.com';
+    const MASTER_ADMINS = ['apirak272543@gmail.com','apirak27254@gmail.com'];
+    const MASTER_ADMIN = MASTER_ADMINS[0];
     const $ = selector => document.querySelector(selector);
     const $$ = selector => [...document.querySelectorAll(selector)];
     const money = value => '฿' + Number(value || 0).toLocaleString('th-TH');
@@ -181,7 +182,7 @@
         features:{food:true,parcel:true,errand:true,multiVendor:true,riders:true,coupons:false}
       },
       storageTarget:{collection:'orders',folder:''},
-      admins:[MASTER_ADMIN],
+      admins:[...MASTER_ADMINS],
       riders:[
         {id:'rider-1',name:'ธนา พรหมมา',emoji:'🛵',phone:'081-555-1001',vehicle:'มอเตอร์ไซค์',status:'พร้อมรับงาน'},
         {id:'rider-2',name:'กานต์ชนา วงศ์ดี',emoji:'🛵',phone:'089-555-1002',vehicle:'มอเตอร์ไซค์',status:'กำลังส่งงาน'}
@@ -215,7 +216,7 @@
       cashLedger: JSON.parse(localStorage.getItem('apcx_cash_ledger') || 'null') || defaults.cashLedger,
       draftLocations: JSON.parse(localStorage.getItem('apcx_draft_locations') || 'null') || defaults.draftLocations
     };
-    AppState.admins=[...new Set([...AppState.admins.map(email=>String(email).toLowerCase()),MASTER_ADMIN])];
+    AppState.admins=[...new Set([...AppState.admins.map(email=>String(email).toLowerCase()),...MASTER_ADMINS])];
     AppState.config={...defaults.config,...AppState.config,brand:{...defaults.config.brand,...(AppState.config.brand||{})},delivery:{...defaults.config.delivery,...(AppState.config.delivery||{})},payment:{...defaults.config.payment,...(AppState.config.payment||{})},notifications:{...defaults.config.notifications,...(AppState.config.notifications||{})},maps:{...defaults.config.maps,...(AppState.config.maps||{})},integrations:{...defaults.config.integrations,...(AppState.config.integrations||{})},features:{...defaults.config.features,...(AppState.config.features||{})},content:{...defaults.config.content,...(AppState.config.content||{}),hero:{...defaults.config.content.hero,...(AppState.config.content?.hero||{})},services:{food:{...defaults.config.content.services.food,...(AppState.config.content?.services?.food||{})},parcel:{...defaults.config.content.services.parcel,...(AppState.config.content?.services?.parcel||{})},orders:{...defaults.config.content.services.orders,...(AppState.config.content?.services?.orders||{})}}}};
     const promotionDefaults=[
       {id:'promo-food',active:true,badge:'ดีลประจำวัน',title:'อิ่มคุ้ม ส่งไวถึงบ้าน',description:'เลือกร้านโปรดและสั่งอาหารได้ในไม่กี่ขั้นตอน',buttonText:'ดูร้านอาหาร',action:'stores',linkUrl:'',imageUrl:'',icon:'🍜',color:'#0B8C7C'},
@@ -530,7 +531,7 @@
     // MULTI-ADMIN MANAGEMENT: ONLY AN ALREADY AUTHORIZED ADMIN CAN CHANGE THIS LIST.
     function renderAdminUsers(){
       $('#adminUsersTable').innerHTML=AppState.admins.map(email=>{
-        const isMaster=email===MASTER_ADMIN;const isCurrent=email===AppState.user?.email?.toLowerCase();
+        const isMaster=MASTER_ADMINS.includes(email);const isCurrent=email===AppState.user?.email?.toLowerCase();
         return `<tr><td><strong>${escapeHtml(email)}</strong>${isCurrent?'<br><small>บัญชีที่กำลังใช้งาน</small>':''}</td><td><span class="role-badge">${isMaster?'Master Admin':'Admin'}</span></td><td><span class="status">อนุญาตแล้ว</span></td><td>${isMaster?'<small style="color:var(--muted)">บัญชีหลัก</small>':`<button class="btn btn-danger btn-small" onclick="removeAdmin('${escapeHtml(email)}')">ลบสิทธิ์</button>`}</td></tr>`
       }).join('')
     }
@@ -545,12 +546,14 @@
     window.removeAdmin=email=>{
       if(!requireAdminAction())return;
       email=String(email).toLowerCase();
-      if(email===MASTER_ADMIN)return UI.toast('ไม่สามารถลบ Master Admin ได้');
+      if(MASTER_ADMINS.includes(email))return UI.toast('ไม่สามารถลบ Master Admin ได้');
       if(!confirm(`ต้องการยกเลิกสิทธิ์แอดมินของ ${email} ใช่หรือไม่?`))return;
       AppState.admins=AppState.admins.filter(item=>item!==email);Storage.save();renderAdminUsers();
       if(AppState.user?.email?.toLowerCase()===email)return logout();
       UI.toast('ลบสิทธิ์แอดมินแล้ว');
     }
+
+    SupabaseAdminSync.provisionRole=async(role,entityId,account)=>{const entity=role==='rider'?AppState.riders.find(item=>item.id===entityId):AppState.stores.find(item=>item.id===entityId);if(!entity)throw new Error('ไม่พบข้อมูล Rider หรือ Store ที่ต้องการออกบัญชี');await SupabaseAdminSync.ensureAdminSession();const cfg=SupabaseSync.config(),body=JSON.stringify({action:'provision',role,entity_id:entityId,email:account.email,login_id:account.loginId,display_name:account.displayName,password:account.password,entity}),send=()=>fetch(cfg.url+'/functions/v1/role-access',{method:'POST',headers:SupabaseSync.headers(),body});let response=await send();if(response.status===401){await SupabaseSync.refreshSession(true);response=await send()}const data=await response.json();if(!response.ok)throw new Error(data?.error||'ไม่สามารถออกบัญชีได้');return data};
 
     // RIDER MANAGEMENT: READY FOR FUTURE RIDER APPLICATION / REAL-TIME LOCATION INTEGRATION.
     function riderStatusClass(status){return status==='พร้อมรับงาน'?'':status==='กำลังส่งงาน'?'busy':'offline'}
