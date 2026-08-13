@@ -1,53 +1,526 @@
-<!doctype html>
 <html lang="th">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="theme-color" content="#102b49" />
-  <title>AP Rider Console</title>
+  <title>AP Rider Console & Delivery Workspace</title>
   <style>
     :root{--navy:#102b49;--navy-2:#193b60;--sky:#3e90c8;--sky-soft:#eaf6ff;--ink:#17212b;--muted:#6c7a87;--line:#dce7ef;--paper:#fff;--canvas:#f2f7fa;--ok:#16805b;--warn:#b77615;--danger:#c04d5a;--shadow:0 16px 38px rgba(16,43,73,.10)}
-    *{box-sizing:border-box}body{margin:0;background:var(--canvas);color:var(--ink);font-family:Inter,"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select{font:inherit}button{border:0;cursor:pointer}.hidden{display:none!important}
-    .top{position:sticky;top:0;z-index:10;min-height:72px;padding:12px max(18px,calc((100vw - 1150px)/2));background:rgba(255,255,255,.93);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px}.brand{display:flex;align-items:center;gap:10px}.mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#173b61,#3e90c8);font-size:20px;box-shadow:0 9px 18px rgba(25,59,96,.22)}.brand b{display:block;font-size:15px}.brand small{display:block;margin-top:2px;color:var(--muted);font-size:10px}.top-actions{display:flex;gap:8px;align-items:center}.shell{max-width:1150px;margin:auto;padding:24px 18px 56px}.hero{padding:29px;border-radius:25px;background:radial-gradient(circle at 85% 15%,rgba(94,189,255,.34),transparent 23%),linear-gradient(128deg,#102b49,#1d5f93);color:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:20px}.hero h1{font-size:clamp(27px,4vw,42px);letter-spacing:-1.4px;margin:7px 0}.hero p{margin:0;max-width:580px;color:#d9efff;font-size:12px;line-height:1.65}.hero-art{font-size:76px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.19))}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.14em;color:#bce5ff}.card{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:19px;box-shadow:0 6px 16px rgba(35,77,111,.035)}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.stat small{color:var(--muted);font-size:10px}.stat b{font-size:24px;display:block;margin:7px 0 1px}.section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:23px 0 12px}.section-head h2{font-size:18px;margin:0}.section-head p{font-size:11px;margin:4px 0 0;color:var(--muted)}.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:11px;padding:10px 12px;font-size:11px;font-weight:900;transition:.16s}.btn:active{transform:scale(.97)}.btn-main{background:var(--navy);color:#fff}.btn-sky{background:var(--sky);color:#fff}.btn-plain{background:#fff;border:1px solid var(--line);color:var(--ink)}.btn-danger{background:var(--danger);color:#fff}.btn-sm{padding:7px 9px;border-radius:9px;font-size:10px}.field{display:grid;gap:6px}.field label{font-size:10px;font-weight:850;color:var(--muted)}.field input,.field select{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fff;color:var(--ink)}.form{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:end}.status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;background:#e6f7ef;color:var(--ok);font-size:9px;font-weight:900;white-space:nowrap}.status.wait{background:#fff4df;color:var(--warn)}.status.done{background:#e9eef2;color:#566a79}.job{border:1px solid var(--line);background:#fff;border-radius:17px;padding:15px;margin-bottom:11px}.job-top{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}.job b{font-size:12px}.job small{display:block;margin-top:4px;color:var(--muted);font-size:10px}.route{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.point{padding:10px;border-radius:12px;background:#f4f9fc;font-size:10px;line-height:1.5}.point strong{display:block;color:var(--navy);font-size:10px}.map{display:inline-flex;text-decoration:none;align-items:center;justify-content:center;padding:7px 8px;margin-top:7px;border-radius:8px;background:#fff;border:1px solid var(--line);color:var(--navy);font-size:9px;font-weight:900}.map.off{color:var(--muted);pointer-events:none}.job-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.notice{border-radius:13px;padding:12px;background:#fff8e5;color:#805f1a;font-size:10px;line-height:1.6}.location{border-radius:14px;padding:13px;background:var(--sky-soft);border:1px solid #c9e7f9;font-size:10px;line-height:1.55;color:#285877}.location strong{display:block;color:var(--navy);font-size:11px}.location-actions{margin-top:9px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.empty{padding:24px;text-align:center;color:var(--muted);font-size:11px;border:1px dashed #c9dbe6;border-radius:14px}.login{max-width:510px;margin:74px auto}.login .card{padding:27px}.login h1{font-size:25px;margin:13px 0 7px}.login p{margin:0 0 18px;color:var(--muted);font-size:11px;line-height:1.6}.toast{position:fixed;z-index:20;right:18px;bottom:19px;background:#112d4a;color:#fff;padding:11px 13px;border-radius:11px;font-size:11px;font-weight:800;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:none}
+    *{box-sizing:border-box}body{margin:0;background:var(--canvas);color:var(--ink);font-family:Inter,"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{border:0;cursor:pointer}.hidden{display:none!important}
+    .top{position:sticky;top:0;z-index:10;min-height:72px;padding:12px max(18px,calc((100vw - 1150px)/2));background:rgba(255,255,255,.93);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px}.brand{display:flex;align-items:center;gap:10px}.mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#173b61,#3e90c8);font-size:20px;box-shadow:0 9px 18px rgba(25,59,96,.22)}.brand b{display:block;font-size:15px}.brand small{display:block;margin-top:2px;color:var(--muted);font-size:10px}.top-actions{display:flex;gap:8px;align-items:center}.shell{max-width:1150px;margin:auto;padding:24px 18px 56px}
+    .hero{padding:29px;border-radius:25px;background:radial-gradient(circle at 85% 15%,rgba(94,189,255,.34),transparent 23%),linear-gradient(128deg,#102b49,#1d5f93);color:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:20px}.hero h1{font-size:clamp(27px,4vw,42px);letter-spacing:-1.4px;margin:7px 0}.hero p{margin:0;max-width:580px;color:#d9efff;font-size:12px;line-height:1.65}.hero-art{font-size:76px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.19))}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.14em;color:#bce5ff}
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:19px;box-shadow:0 6px 16px rgba(35,77,111,.035)}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.stat small{color:var(--muted);font-size:10px}.stat b{font-size:24px;display:block;margin:7px 0 1px}
+    .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:23px 0 12px}.section-head h2{font-size:18px;margin:0}.section-head p{font-size:11px;margin:4px 0 0;color:var(--muted)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border-radius:11px;padding:10px 12px;font-size:11px;font-weight:900;transition:.16s}.btn:active{transform:scale(.97)}.btn-main{background:var(--navy);color:#fff}.btn-sky{background:var(--sky);color:#fff}.btn-plain{background:#fff;border:1px solid var(--line);color:var(--ink)}.btn-danger{background:var(--danger);color:#fff}.btn-sm{padding:7px 9px;border-radius:9px;font-size:10px}
+    .field{display:grid;gap:6px}.field label{font-size:10px;font-weight:850;color:var(--muted)}.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:11px;padding:11px 12px;background:#fff;color:var(--ink)}
+    .form{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:end}
+    .status{display:inline-flex;align-items:center;padding:5px 8px;border-radius:999px;background:#e6f7ef;color:var(--ok);font-size:9px;font-weight:900;white-space:nowrap}.status.wait{background:#fff4df;color:var(--warn)}.status.done{background:#e9eef2;color:#566a79}
+    .job{border:1px solid var(--line);background:#fff;border-radius:17px;padding:15px;margin-bottom:11px}.job-top{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}.job b{font-size:12px}.job small{display:block;margin-top:4px;color:var(--muted);font-size:10px}
+    .route{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.point{padding:10px;border-radius:12px;background:#f4f9fc;font-size:10px;line-height:1.5}.point strong{display:block;color:var(--navy);font-size:10px}
+    .map{display:inline-flex;text-decoration:none;align-items:center;justify-content:center;padding:7px 8px;margin-top:7px;border-radius:8px;background:#fff;border:1px solid var(--line);color:var(--navy);font-size:9px;font-weight:900}.map.off{color:var(--muted);pointer-events:none}
+    .job-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}.notice{border-radius:13px;padding:12px;background:#fff8e5;color:#805f1a;font-size:10px;line-height:1.6}
+    .location{border-radius:14px;padding:13px;background:var(--sky-soft);border:1px solid #c9e7f9;font-size:10px;line-height:1.55;color:#285877}.location strong{display:block;color:var(--navy);font-size:11px}.location-actions{margin-top:9px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .empty{padding:24px;text-align:center;color:var(--muted);font-size:11px;border:1px dashed #c9dbe6;border-radius:14px}
+    .login{max-width:510px;margin:74px auto}.login .card{padding:27px}.login h1{font-size:25px;margin:13px 0 7px}.login p{margin:0 0 18px;color:var(--muted);font-size:11px;line-height:1.6}
+    .modal-overlay{position:fixed;inset:0;background:rgba(16,43,73,.56);backdrop-filter:blur(5px);z-index:50;display:grid;place-items:center;padding:16px;opacity:0;pointer-events:none;transition:.2s}
+    .modal-overlay.open{opacity:1;pointer-events:auto}
+    .modal{background:#fff;border-radius:22px;max-width:620px;width:100%;max-height:90vh;overflow:auto;padding:24px;box-shadow:0 24px 48px rgba(0,0,0,.22)}
+    .toast{position:fixed;z-index:100;right:18px;bottom:19px;background:#112d4a;color:#fff;padding:11px 13px;border-radius:11px;font-size:11px;font-weight:800;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}
+    .toast.show{opacity:1;transform:none}
     @media(max-width:760px){.hero{padding:23px}.hero-art{display:none}.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr}.route{grid-template-columns:1fr}.top{padding:10px 15px}.shell{padding:18px 15px 45px}}
   </style>
 </head>
 <body>
-  <header class="top"><div class="brand"><div class="mark">🛵</div><div><b>AP Rider</b><small>Delivery Operations Console</small></div></div><div class="top-actions"><span class="status" id="riderStatusBadge">ยังไม่ได้เข้าสู่ระบบ</span><button class="btn btn-plain btn-sm hidden" id="logoutBtn">ออกจากระบบ</button></div></header>
+  <header class="top">
+    <div class="brand"><div class="mark">🛵</div><div><b>AP Rider</b><small>Delivery Operations Console</small></div></div>
+    <div class="top-actions"><span class="status" id="riderStatusBadge">ยังไม่ได้เข้าสู่ระบบ</span><button class="btn btn-plain btn-sm hidden" id="logoutBtn">ออกจากระบบ</button></div>
+  </header>
   <main class="shell">
-    <section id="loginView" class="login"><div class="card"><div class="mark">🛵</div><h1>เข้าสู่ระบบไรเดอร์</h1><p>เข้าสู่ระบบด้วยอีเมล หรือ Login ID ที่ผู้ดูแลออกให้ พร้อมรหัสผ่านของคุณ ระบบจะยืนยันสิทธิ์ก่อนแสดงงาน</p><div class="field"><label>อีเมล หรือ Login ID</label><input id="riderIdentifier" autocomplete="username" autocapitalize="none" placeholder="เช่น rider.somchai หรือ rider@apservice.com" /></div><div class="field" style="margin-top:12px"><label>รหัสผ่าน</label><input id="riderPassword" type="password" autocomplete="current-password" placeholder="รหัสผ่านของคุณ" /></div><button class="btn btn-main" style="width:100%;margin-top:14px" id="loginBtn">เข้าสู่ Rider Console</button><div class="notice" style="margin-top:14px">ไม่มีการเลือกชื่อบัญชีจากรายการอีกต่อไป บัญชีต้องถูกสร้างและผูกกับโปรไฟล์ไรเดอร์โดยผู้ดูแลก่อนใช้งาน</div></div></section>
+    <section id="loginView" class="login">
+      <div class="card">
+        <div class="mark">🛵</div>
+        <h1>เข้าสู่ระบบไรเดอร์</h1>
+        <p>เข้าสู่ระบบด้วยอีเมล หรือ Login ID ที่ผู้ดูแลออกให้ พร้อมรหัสผ่านของคุณ ระบบจะยืนยันสิทธิ์ก่อนแสดงงาน</p>
+        <div class="field"><label>อีเมล หรือ Login ID</label><input id="riderIdentifier" autocomplete="username" autocapitalize="none" placeholder="เช่น rider.somchai หรือ rider@apservice.com" /></div>
+        <div class="field" style="margin-top:12px"><label>รหัสผ่าน</label><input id="riderPassword" type="password" autocomplete="current-password" placeholder="รหัสผ่านของคุณ" /></div>
+        <button class="btn btn-main" style="width:100%;margin-top:14px" id="loginBtn">เข้าสู่ Rider Console</button>
+        <div class="notice" style="margin-top:14px">บัญชีต้องถูกสร้างและผูกกับโปรไฟล์ไรเดอร์โดยผู้ดูแลก่อนใช้งาน</div>
+      </div>
+    </section>
+
     <section id="dashboardView" class="hidden">
-      <section class="hero"><div><div class="eyebrow">RIDER WORKSPACE</div><h1 id="welcome">พร้อมรับงาน</h1><p>รับงานที่เหมาะสม เปิดจุดรับและจุดส่งใน Google Maps แล้วรายงานความคืบหน้ากลับไปยังลูกค้า ร้านค้า และแอดมินจากหน้าจอเดียว</p></div><div class="hero-art">🛵</div></section>
-      <div class="stats"><div class="stat"><small>งานใหม่รอรับ</small><b id="newCount">0</b><small>ทุกประเภทงานที่ยังไม่ระบุไรเดอร์</small></div><div class="stat"><small>งานของฉัน</small><b id="myCount">0</b><small>กำลังดำเนินการ</small></div><div class="stat"><small>งานสำเร็จวันนี้</small><b id="doneCount">0</b><small>ยืนยันจากบัญชีรายได้</small></div></div>
-      <div class="grid"><div class="card"><h3 style="margin:0;font-size:16px">ตำแหน่งไรเดอร์</h3><p style="margin:5px 0 13px;color:var(--muted);font-size:11px">อัปเดตพิกัดเพื่อให้ศูนย์กลางเห็นตำแหน่งล่าสุดของคุณ</p><div class="location"><strong>พิกัดล่าสุด</strong><span id="riderLocationText">ยังไม่ได้ส่งพิกัด</span><div class="location-actions"><button class="btn btn-sky btn-sm" id="locationBtn">📍 ส่งพิกัดปัจจุบัน</button><a id="riderMap" class="map off" target="_blank" rel="noopener">เปิดตำแหน่งใน Google Maps</a></div></div></div><div class="card"><h3 style="margin:0;font-size:16px">สถานะการทำงาน</h3><p style="margin:5px 0 13px;color:var(--muted);font-size:11px">เลือกรับงานหนึ่งรายการ ระบบจะเปลี่ยนสถานะเป็นกำลังส่งงานโดยอัตโนมัติ</p><div class="form"><div class="field"><label>สถานะปัจจุบัน</label><select id="availability"><option value="พร้อมรับงาน">พร้อมรับงาน</option><option value="ออฟไลน์">ออฟไลน์</option></select></div><button class="btn btn-main" id="saveAvailability">บันทึก</button></div></div></div>
-      <div class="section-head"><div><h2>งานใหม่ที่รอรับทุกประเภท</h2><p>แสดงงานอาหาร พัสดุ และฝากซื้อที่ยังไม่ได้มอบหมายไรเดอร์</p></div><button class="btn btn-plain btn-sm" id="refreshBtn">รีเฟรชข้อมูล</button></div><div id="availableJobs"></div>
-      <div class="section-head"><div><h2>งานของฉัน</h2><p>เปิดนำทางไปยังจุดรับและจุดส่ง แล้วอัปเดตสถานะตามขั้นตอนจริง</p></div></div><div id="myJobs"></div>
-      <div class="section-head"><div><h2>รายได้และกระเป๋า Rider</h2><p>ระบบบันทึกส่วนแบ่งทันทีเมื่อคุณยืนยันส่งสำเร็จ: Rider 80% และแพลตฟอร์ม 20%</p></div></div>
-      <div class="stats"><div class="stat"><small>รายได้ Rider วันนี้</small><b id="todayRiderIncome">฿0</b><small>ส่วนแบ่ง 80%</small></div><div class="stat"><small>กระเป๋ารายได้สะสม</small><b id="walletBalance">฿0</b><small>รอปิดยอดตามรอบ</small></div><div class="stat"><small>COD วันนี้</small><b id="todayCod">฿0</b><small>เงินสดที่เก็บจากลูกค้า</small></div></div>
+      <section class="hero">
+        <div><div class="eyebrow">RIDER WORKSPACE</div><h1 id="welcome">พร้อมรับงาน</h1><p>จัดการงาน จัดเส้นทาง ตรวจสอบตำแหน่ง GPS และบันทึกส่งสำเร็จพร้อมรับชำระเงินตามขั้นตอนมาตรฐาน</p></div>
+        <div class="hero-art">🛵</div>
+      </section>
+      <div class="stats">
+        <div class="stat"><small>งานใหม่รอรับ</small><b id="newCount">0</b><small>ทุกประเภทงาน</small></div>
+        <div class="stat"><small>งานของฉัน</small><b id="myCount">0</b><small>กำลังดำเนินการ</small></div>
+        <div class="stat"><small>งานสำเร็จวันนี้</small><b id="doneCount">0</b><small>ยืนยันจากบัญชีรายได้</small></div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3 style="margin:0;font-size:16px">ตำแหน่งไรเดอร์</h3>
+          <p style="margin:5px 0 13px;color:var(--muted);font-size:11px">อัปเดตพิกัดเพื่อให้ศูนย์กลางและระบบตรวจสอบระยะจัดส่งเห็นตำแหน่งล่าสุดของคุณ</p>
+          <div class="location">
+            <strong>พิกัดล่าสุด</strong>
+            <span id="riderLocationText">ยังไม่ได้ส่งพิกัด</span>
+            <div class="location-actions">
+              <button class="btn btn-sky btn-sm" id="locationBtn">📍 ส่งพิกัดปัจจุบัน</button>
+              <a id="riderMap" class="map off" target="_blank" rel="noopener">เปิดตำแหน่งใน Google Maps</a>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 style="margin:0;font-size:16px">สถานะการทำงาน</h3>
+          <p style="margin:5px 0 13px;color:var(--muted);font-size:11px">ควบคุมสถานะพร้อมรับงานหรือพักการรับงานชั่วคราว</p>
+          <div class="form">
+            <div class="field"><label>สถานะปัจจุบัน</label><select id="availability"><option value="พร้อมรับงาน">พร้อมรับงาน</option><option value="ออฟไลน์">ออฟไลน์</option></select></div>
+            <button class="btn btn-main" id="saveAvailability">บันทึก</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head"><div><h2>งานใหม่ที่รอรับทุกประเภท</h2><p>แสดงงานอาหาร พัสดุ และฝากซื้อที่ยังไม่ได้มอบหมายไรเดอร์</p></div><button class="btn btn-plain btn-sm" id="refreshBtn">รีเฟรชข้อมูล</button></div>
+      <div id="availableJobs"></div>
+
+      <div class="section-head"><div><h2>งานของฉัน (กำลังดำเนินการ)</h2><p>กดอัปเดตสถานะตามขั้นตอน (กำลังไปรับร้าน → ยืนยันถึงร้านค้า → ยืนยันรับสินค้าแล้ว → ไปจุดส่ง)</p></div></div>
+      <div id="myJobs"></div>
+
+      <div class="section-head"><div><h2>รายได้และกระเป๋า Rider</h2><p>สรุปยอดรายได้สุทธิจากค่าส่ง (คิดจากค่าส่ง 80% แยกจากราคาสินค้า)</p></div></div>
+      <div class="stats">
+        <div class="stat"><small>รายได้สุทธิวันนี้</small><b id="todayRiderIncome">฿0</b><small>ยอดสะสมจากค่าส่งวันนี้</small></div>
+        <div class="stat"><small>กระเป๋ารายได้สะสม</small><b id="walletBalance">฿0</b><small>รอปิดยอดตามรอบ</small></div>
+        <div class="stat"><small>COD วันนี้</small><b id="todayCod">฿0</b><small>เงินสดที่เก็บจากลูกค้า</small></div>
+      </div>
       <div id="earningHistory" style="margin-top:12px"></div>
     </section>
   </main>
+
+  <!-- ORDER DETAIL & DELIVERY COMPLETION MODAL & WORKFLOW -->
+  <div class="modal-overlay" id="orderModal" aria-hidden="true">
+    <div class="modal">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px">
+        <div>
+          <h2 id="modalOrderId" style="margin:0;font-size:18px">จัดการออร์เดอร์</h2>
+          <p id="modalOrderSubtitle" style="margin:3px 0 0;color:var(--muted);font-size:11px">รายละเอียดการรับ–ส่งและการชำระเงิน</p>
+        </div>
+        <button class="btn btn-plain btn-sm" onclick="closeOrderModal()">ปิดหน้าต่าง</button>
+      </div>
+      <div id="modalOrderBody" style="display:grid;gap:14px"></div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
+
   <script>
     const $=s=>document.querySelector(s);const money=n=>'฿'+Number(n||0).toLocaleString('th-TH');const now=()=>new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});const today=()=>new Date().toISOString().slice(0,10);const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','>':'&gt;','<':'&lt;','"':'&quot;'}[c]));
     const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};const write=(key,value)=>localStorage.setItem(key,JSON.stringify(value));
-    const storedRiders=read('apcx_riders',[]);const State={riders:storedRiders.length?storedRiders:[{id:'rider-1',name:'ธนา พรหมมา',emoji:'🛵',phone:'081-555-1001',vehicle:'มอเตอร์ไซค์',status:'พร้อมรับงาน'},{id:'rider-2',name:'กานต์ชนา วงศ์ดี',emoji:'🛵',phone:'089-555-1002',vehicle:'มอเตอร์ไซค์',status:'พร้อมรับงาน'}],orders:read('apcx_orders',[]),earnings:read('apcx_rider_earnings',[]),session:read('apcx_rider_session',null)};
-    const Cloud={url:'https://abtsctwfkgzciseppach.supabase.co',key:'sb_publishable_TyJWnKkbS8vKcQKKAzoqSg_BOguwKRv',session:()=>read('apcx_supabase_session',null),setSession(session){write('apcx_supabase_session',session)},headers(){const session=this.session(),headers={apikey:this.key,'Content-Type':'application/json'};if(session?.access_token)headers.Authorization='Bearer '+session.access_token;return headers},async request(path,options={}){if(!this.session()?.access_token)return null;const response=await fetch(this.url+'/rest/v1/'+path,{...options,headers:{...this.headers(),...(options.headers||{})}});const text=await response.text();let data=null;try{data=text?JSON.parse(text):null}catch{data=text}if(!response.ok)throw new Error(data?.message||'Supabase HTTP '+response.status);return data},async login(identifier,password){const response=await fetch(this.url+'/functions/v1/role-access',{method:'POST',headers:{apikey:this.key,'Content-Type':'application/json'},body:JSON.stringify({action:'login',role:'rider',identifier,password})});const data=await response.json();if(!response.ok)throw new Error(data?.error||'เข้าสู่ระบบไม่สำเร็จ');this.setSession(data.session);const rows=await this.request('riders?select=*&user_id=eq.'+encodeURIComponent(data.user.id)+'&limit=1');const remote=rows?.[0];if(!remote)throw new Error('ไม่พบโปรไฟล์ไรเดอร์ของบัญชีนี้');const rider={id:remote.id,name:remote.name,emoji:remote.emoji||'🛵',phone:remote.phone||'',vehicle:remote.vehicle||'มอเตอร์ไซค์',status:remote.status||'พร้อมรับงาน',lastLocation:remote.last_location||null};State.riders=[rider];State.session={riderId:rider.id,userId:data.user.id,loginAt:new Date().toISOString()};write('apcx_riders',State.riders);write('apcx_rider_session',State.session);return rider},async pullOrders(){const rows=await this.request('delivery_orders?select=*&order=ordered_at.desc&limit=100');if(!Array.isArray(rows))return;State.orders=rows.map(row=>({id:row.id,storeId:row.store_id,storeName:row.store_name,serviceType:row.service_type||'food',riderId:row.rider_id,riderName:row.rider_name,name:row.customer_name,customerEmail:row.customer_email,total:Number(row.total||0),payable:Number(row.payable||0),deliveryFee:Number(row.delivery_fee||0),status:row.status,time:row.ordered_at,orderedAt:row.ordered_at,pickupAddress:row.pickup_address,pickupLocation:row.pickup_location,deliveryAddress:row.delivery_address,deliveryLocation:row.delivery_location,acceptedAt:row.accepted_at,deliveryStartedAt:row.delivery_started_at,completedAt:row.completed_at,note:row.note||''}));write('apcx_orders',State.orders)},async pullEarnings(riderId){const rows=await this.request('rider_earnings?select=order_id,rider_id,delivery_fee,rider_share,platform_share,settlement_status,completed_at,delivery_orders(id,store_name,customer_name,service_type,payable)&rider_id=eq.'+encodeURIComponent(riderId)+'&order=completed_at.desc&limit=100');if(!Array.isArray(rows))return;State.earnings=rows.map(row=>({orderId:row.order_id,riderId:row.rider_id,deliveryFee:Number(row.delivery_fee||0),riderShare:Number(row.rider_share||0),platformShare:Number(row.platform_share||0),settlementStatus:row.settlement_status,completedAt:row.completed_at,order:row.delivery_orders||null}));write('apcx_rider_earnings',State.earnings)},async saveOrder(order){if(!this.session()?.access_token)return false;await this.request('delivery_orders?id=eq.'+encodeURIComponent(order.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:order.status,rider_id:order.riderId||null,rider_name:order.riderName||null,accepted_at:order.acceptedAt?new Date().toISOString():null,delivery_started_at:order.deliveryStartedAt?new Date().toISOString():null,completed_at:order.completedAt?new Date().toISOString():null})});return true},async saveRider(rider){return await this.request('riders?id=eq.'+encodeURIComponent(rider.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:rider.status,last_location:rider.lastLocation||null,updated_at:new Date().toISOString()})})}};
-    const toast=text=>{const e=$('#toast');e.textContent=text;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2800)};
+    const storedRiders=read('apcx_riders',[]);const State={riders:storedRiders.length?storedRiders:[{id:'rider-1',name:'ธนา พรหมมา',emoji:'🛵',phone:'081-555-1001',vehicle:'มอเตอร์ไซค์',status:'พร้อมรับงาน'}],orders:read('apcx_orders',[]),earnings:read('apcx_rider_earnings',[]),config:read('apcx_config',{payment:{promptPayId:''}}),session:read('apcx_rider_session',null),activeModalOrderId:null,isSyncing:false};
+
+    const Cloud={
+      url:'https://abtsctwfkgzciseppach.supabase.co',
+      key:'sb_publishable_TyJWnKkbS8vKcQKKAzoqSg_BOguwKRv',
+      session:()=>read('apcx_supabase_session',null),
+      setSession(session){write('apcx_supabase_session',session)},
+      headers(){const session=this.session(),headers={apikey:this.key,'Content-Type':'application/json'};if(session?.access_token)headers.Authorization='Bearer '+session.access_token;return headers},
+      async request(path,options={}){if(!this.session()?.access_token)return null;const response=await fetch(this.url+'/rest/v1/'+path,{...options,headers:{...this.headers(),...(options.headers||{})}});const text=await response.text();let data=null;try{data=text?JSON.parse(text):null}catch{data=text}if(!response.ok)throw new Error(data?.message||'Supabase HTTP '+response.status);return data},
+      async login(identifier,password){const response=await fetch(this.url+'/functions/v1/role-access',{method:'POST',headers:{apikey:this.key,'Content-Type':'application/json'},body:JSON.stringify({action:'login',role:'rider',identifier,password})});const data=await response.json();if(!response.ok)throw new Error(data?.error||'เข้าสู่ระบบไม่สำเร็จ');this.setSession(data.session);const rows=await this.request('riders?select=*&user_id=eq.'+encodeURIComponent(data.user.id)+'&limit=1');const remote=rows?.[0];if(!remote)throw new Error('ไม่พบโปรไฟล์ไรเดอร์ของบัญชีนี้');const rider={id:remote.id,name:remote.name,emoji:remote.emoji||'🛵',phone:remote.phone||'',vehicle:remote.vehicle||'มอเตอร์ไซค์',status:remote.status||'พร้อมรับงาน',lastLocation:remote.last_location||null};State.riders=[rider];State.session={riderId:rider.id,userId:data.user.id,loginAt:new Date().toISOString()};write('apcx_riders',State.riders);write('apcx_rider_session',State.session);return rider},
+      async pullOrders(){
+        if(State.isSyncing)return;
+        const rows=await this.request('delivery_orders?select=*&order=ordered_at.desc&limit=100');
+        if(!Array.isArray(rows))return;
+        State.orders=rows.map(row=>({
+          id:row.id,storeId:row.store_id,storeName:row.store_name,serviceType:row.service_type||'food',riderId:row.rider_id,riderName:row.rider_name,name:row.customer_name,customerEmail:row.customer_email,
+          total:Number(row.total||0),payable:Number(row.payable||0),deliveryFee:Number(row.delivery_fee||0),status:row.status,time:row.ordered_at,orderedAt:row.ordered_at,
+          pickupAddress:row.pickup_address,pickupLocation:row.pickup_location,deliveryAddress:row.delivery_address,deliveryLocation:row.delivery_location,
+          acceptedAt:row.accepted_at,arrivedAtStore:row.arrived_at_store,itemsCollected:row.items_collected,deliveryStartedAt:row.delivery_started_at,completedAt:row.completed_at,
+          note:row.note||'',paymentMethod:row.payment_method||'เงินสดปลายทาง (COD)',proofImage:row.proof_image||null
+        }));
+        write('apcx_orders',State.orders);
+      },
+      async pullEarnings(riderId){
+        const rows=await this.request('rider_earnings?select=order_id,rider_id,delivery_fee,rider_share,platform_share,settlement_status,completed_at,delivery_orders(id,store_name,customer_name,service_type,payable,delivery_fee)&rider_id=eq.'+encodeURIComponent(riderId)+'&order=completed_at.desc&limit=100');
+        if(!Array.isArray(rows))return;
+        State.earnings=rows.map(row=>({
+          orderId:row.order_id,riderId:row.rider_id,deliveryFee:Number(row.delivery_fee||row.delivery_orders?.delivery_fee||0),riderShare:Number(row.rider_share||0),platformShare:Number(row.platform_share||0),settlementStatus:row.settlement_status,completedAt:row.completed_at,order:row.delivery_orders
+        }));
+        write('apcx_rider_earnings',State.earnings);
+      },
+      async saveOrder(order){
+        const payload={
+          status:order.status,rider_id:order.riderId,rider_name:order.riderName,
+          accepted_at:order.acceptedAt||null,arrived_at_store:order.arrivedAtStore||null,items_collected:order.itemsCollected||null,
+          delivery_started_at:order.deliveryStartedAt||null,completed_at:order.completedAt||null,
+          payment_method:order.paymentMethod||null,proof_image:order.proofImage||null,updated_at:new Date().toISOString()
+        };
+        await this.request('delivery_orders?id=eq.'+encodeURIComponent(order.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)});
+      },
+      async recordEarning(order,riderId){
+        const deliveryFee=Number(order.deliveryFee||0);
+        const riderShare=Math.round(deliveryFee*.8*100)/100;
+        const platformShare=Math.round(deliveryFee*.2*100)/100;
+        await this.request('rider_earnings',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({
+          order_id:order.id,rider_id:riderId,delivery_fee:deliveryFee,rider_share:riderShare,platform_share:platformShare,settlement_status:'settled',completed_at:order.completedAt||new Date().toISOString()
+        })});
+      },
+      async saveRider(rider){await this.request('riders?id=eq.'+encodeURIComponent(rider.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:rider.status,last_location:rider.lastLocation,updated_at:new Date().toISOString()})})},
+      async syncConfig(){try{const rows=await this.request('platform_configs?select=key,value');if(Array.isArray(rows)){const payment=rows.find(r=>r.key==='payment')?.value;if(payment){State.config.payment=payment;write('apcx_config',State.config)}}}catch(e){}}
+    };
+
+    const toast=text=>{const e=$('#toast');e.textContent=text;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3000)};
     const mapUrl=location=>location?.lat!==undefined&&location?.lng!==undefined?`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(location.lat+','+location.lng)}`:'';
     const mapButton=(location,text)=>{const url=mapUrl(location);return url?`<a class="map" target="_blank" rel="noopener" href="${url}">${text}</a>`:`<span class="map off">ยังไม่มีพิกัด</span>`};
     const sync=()=>{State.riders=read('apcx_riders',[]);State.orders=read('apcx_orders',[]);State.earnings=read('apcx_rider_earnings',[])};const persist=()=>{write('apcx_riders',State.riders);write('apcx_orders',State.orders);write('apcx_rider_earnings',State.earnings)};
     function currentRider(){return State.riders.find(r=>r.id===State.session?.riderId)}
-    function syncSessionUI(){const rider=currentRider();const active=Boolean(rider);$('#loginView').classList.toggle('hidden',active);$('#dashboardView').classList.toggle('hidden',!active);$('#logoutBtn').classList.toggle('hidden',!active);$('#riderStatusBadge').textContent=active?rider.status:'ยังไม่ได้เข้าสู่ระบบ';$('#riderStatusBadge').classList.toggle('wait',active&&rider.status!=='พร้อมรับงาน');if(!active)return;$('#welcome').textContent=`สวัสดี ${rider.name}`;$('#availability').value=rider.status==='กำลังส่งงาน'?'พร้อมรับงาน':rider.status;const location=rider.lastLocation;$('#riderLocationText').textContent=location?`พิกัด ${Number(location.lat).toFixed(6)}, ${Number(location.lng).toFixed(6)} · ${location.capturedAt}`:'ยังไม่ได้ส่งพิกัด';const link=$('#riderMap'),url=mapUrl(location);link.href=url||'';link.classList.toggle('off',!url);link.textContent=url?'เปิดตำแหน่งใน Google Maps':'ยังไม่มีพิกัดสำหรับเปิดแผนที่'}
+
+    function syncSessionUI(){
+      const rider=currentRider();const active=Boolean(rider);
+      $('#loginView').classList.toggle('hidden',active);$('#dashboardView').classList.toggle('hidden',!active);$('#logoutBtn').classList.toggle('hidden',!active);
+      $('#riderStatusBadge').textContent=active?rider.status:'ยังไม่ได้เข้าสู่ระบบ';$('#riderStatusBadge').classList.toggle('wait',active&&rider.status!=='พร้อมรับงาน');
+      if(!active)return;
+      $('#welcome').textContent=`สวัสดี ${rider.name}`;$('#availability').value=rider.status==='กำลังส่งงาน'?'พร้อมรับงาน':rider.status;
+      const location=rider.lastLocation;
+      $('#riderLocationText').textContent=location?`พิกัด ${Number(location.lat).toFixed(6)}, ${Number(location.lng).toFixed(6)} · ${location.capturedAt}`:'ยังไม่ได้ส่งพิกัด (แนะนำเปิดสิทธิ์ Location ในมือถือ)';
+      const link=$('#riderMap'),url=mapUrl(location);link.href=url||'';link.classList.toggle('off',!url);link.textContent=url?'เปิดตำแหน่งใน Google Maps':'ยังไม่มีพิกัดสำหรับเปิดแผนที่';
+    }
+
     function statusHistory(order,status){order.status=status;order.statusHistory=order.statusHistory||[];order.statusHistory.push({status,time:now(),by:`ไรเดอร์: ${currentRider()?.name||'ไม่ระบุ'}`})}
-    function jobCard(order,mode){const pickup=order.pickupAddress||order.storeName||'ยังไม่ระบุจุดรับ';const delivery=order.deliveryAddress||order.address||'ยังไม่ระบุจุดส่ง';const assigned=mode==='mine';const progress=order.status==='ไรเดอร์กำลังไปรับ'?`<button class="btn btn-sky btn-sm" onclick="setStatus('${order.id}','กำลังจัดส่ง')">เริ่มจัดส่ง</button>`:order.status==='กำลังจัดส่ง'?`<button class="btn btn-main btn-sm" onclick="setStatus('${order.id}','สำเร็จแล้ว')">ยืนยันส่งสำเร็จ</button>`:'';return `<article class="job"><div class="job-top"><div><b>${esc(order.id)} · ${esc(order.serviceType||'บริการจัดส่ง')}</b><small>${esc(order.storeName||'บริการจัดส่ง')} · ยอด COD ${money(order.payable||order.total)}</small><small>ค่าส่ง ${money(order.deliveryFee)} · รายได้คุณ ${money(Number(order.deliveryFee||0)*.8)} (80%)</small><small>ลูกค้า: ${esc(order.name||'ไม่ระบุ')} · ${esc(order.customerEmail||'')}</small></div><span class="status ${order.status==='สำเร็จแล้ว'?'done':order.status==='กำลังจัดส่ง'?'wait':''}">${esc(order.status)}</span></div><div class="route"><div class="point"><strong>📍 จุดรับ</strong>${esc(pickup)}<br>${mapButton(order.pickupLocation,'เปิดจุดรับ')}</div><div class="point"><strong>🏁 จุดส่ง</strong>${esc(delivery)}<br>${mapButton(order.deliveryLocation,'เปิดจุดส่ง')}</div></div>${order.note?`<small>หมายเหตุ: ${esc(order.note)}</small>`:''}<div class="job-actions">${assigned?`${progress}<button class="btn btn-plain btn-sm" onclick="openBothMaps('${order.id}')">เปิดเส้นทางทั้งหมด</button>`:`<button class="btn btn-main btn-sm" onclick="acceptJob('${order.id}')">รับงานนี้</button>`}</div></article>`}
-    function render(){sync();const rider=currentRider();if(!rider){syncSessionUI();return}syncSessionUI();const open=State.orders.filter(o=>!o.riderId&&!['สำเร็จแล้ว','ยกเลิก'].includes(o.status));const mine=State.orders.filter(o=>o.riderId===rider.id&&!['สำเร็จแล้ว','ยกเลิก'].includes(o.status));const settled=State.earnings.filter(e=>e.riderId===rider.id&&e.settlementStatus==='settled');const day=new Date().toISOString().slice(0,10);const todayIncome=settled.filter(e=>String(e.completedAt||'').slice(0,10)===day);const todayCod=State.orders.filter(o=>o.riderId===rider.id&&o.status==='สำเร็จแล้ว'&&String(o.completedAt||'').slice(0,10)===day).reduce((sum,o)=>sum+Number(o.payable||o.total||0),0);$('#newCount').textContent=open.length;$('#myCount').textContent=mine.length;$('#doneCount').textContent=todayIncome.length;$('#todayRiderIncome').textContent=money(todayIncome.reduce((sum,e)=>sum+Number(e.riderShare||0),0));$('#walletBalance').textContent=money(settled.reduce((sum,e)=>sum+Number(e.riderShare||0),0));$('#todayCod').textContent=money(todayCod);$('#availableJobs').innerHTML=open.length?open.map(o=>jobCard(o,'open')).join(''):'<div class="empty">ไม่มีงานใหม่ในขณะนี้</div>';$('#myJobs').innerHTML=mine.length?mine.map(o=>jobCard(o,'mine')).join(''):'<div class="empty">คุณยังไม่มีงานที่กำลังดำเนินการ</div>';$('#earningHistory').innerHTML=settled.length?`<div class="card"><h3 style="margin:0 0 10px;font-size:15px">ประวัติรายได้ล่าสุด</h3>${settled.slice(0,12).map(e=>`<div class="job" style="margin-bottom:8px;padding:12px"><div class="job-top"><div><b>${esc(e.orderId)}</b><small>${esc(e.order?.store_name||'บริการจัดส่ง')} · ${esc(new Date(e.completedAt).toLocaleString('th-TH'))}</small></div><span class="status done">รับสุทธิ ${money(e.riderShare)}</span></div><small>ค่าส่ง ${money(e.deliveryFee)} · Rider 80% ${money(e.riderShare)} · แพลตฟอร์ม 20% ${money(e.platformShare)}</small></div>`).join('')}</div>`:'<div class="empty">ยังไม่มีรายได้จากงานที่ส่งสำเร็จ</div>'}
-    window.acceptJob=async id=>{sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id);if(!rider||!order||order.riderId)return toast('งานนี้ถูกมอบหมายแล้ว');if(!confirm(`ยืนยันรับงาน ${order.id}\nร้าน: ${order.storeName||'-'}\nยอด: ${money(order.payable||order.total)}\n\nเมื่อยืนยัน งานนี้จะถูกมอบหมายให้คุณ`))return;try{const claimed=await Cloud.request('delivery_orders?id=eq.'+encodeURIComponent(order.id)+'&rider_id=is.null',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({rider_id:rider.id,rider_name:rider.name,status:'ไรเดอร์กำลังไปรับ',accepted_at:new Date().toISOString()})});if(!Array.isArray(claimed)||!claimed.length)throw new Error('งานนี้ถูกไรเดอร์รายอื่นรับไปแล้ว');order.riderId=rider.id;order.riderName=rider.name;order.acceptedAt=new Date().toISOString();rider.status='กำลังส่งงาน';statusHistory(order,'ไรเดอร์กำลังไปรับ');persist();await Cloud.request('order_status_events',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({order_id:order.id,status:'ไรเดอร์กำลังไปรับ',actor_id:State.session?.userId||null,actor_label:'ไรเดอร์: '+rider.name})});await Cloud.pullOrders();await Cloud.pullEarnings(rider.id);render();toast('รับงานเรียบร้อยแล้ว')}catch(error){console.warn('Cloud rider accept failed',error);toast(error.message||'รับงานไม่สำเร็จ โปรดลองรีเฟรชข้อมูล')}};
-    window.setStatus=async(id,status)=>{sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id&&o.riderId===rider?.id);if(!order)return toast('ไม่พบงานของคุณ');const incomeNote=status==='สำเร็จแล้ว'?`\nค่าส่ง: ${money(order.deliveryFee)}\nรายได้ Rider 80%: ${money(Number(order.deliveryFee||0)*.8)}\nรายได้แพลตฟอร์ม 20%: ${money(Number(order.deliveryFee||0)*.2)}`:'';if(!confirm(`ยืนยันเปลี่ยนสถานะเป็น “${status}”\nออร์เดอร์: ${order.id}\nลูกค้า: ${order.name||'-'}\nยอด COD: ${money(order.payable||order.total)}${incomeNote}`))return;if(status==='สำเร็จแล้ว'){order.completedAt=new Date().toISOString();rider.status='พร้อมรับงาน'}else if(status==='กำลังจัดส่ง')order.deliveryStartedAt=new Date().toISOString();statusHistory(order,status);persist();try{await Cloud.saveOrder(order);await Cloud.pullOrders();await Cloud.pullEarnings(rider.id)}catch(error){console.warn('Cloud rider status sync skipped',error);toast('บันทึกในเครื่องแล้ว โปรดรีเฟรชเมื่อออนไลน์')}render();toast(`อัปเดตสถานะเป็น “${status}” แล้ว`)};
-    window.openBothMaps=id=>{const order=State.orders.find(o=>o.id===id);if(!order)return;const pickup=mapUrl(order.pickupLocation),delivery=mapUrl(order.deliveryLocation);if(pickup)window.open(pickup,'_blank','noopener');if(delivery)setTimeout(()=>window.open(delivery,'_blank','noopener'),250);if(!pickup&&!delivery)toast('ออร์เดอร์นี้ยังไม่มีพิกัด GPS')};
-    function getLocation(){const rider=currentRider();if(!rider)return;if(!confirm('ยืนยันส่งพิกัดปัจจุบันให้ศูนย์กลางเพื่อติดตามงานหรือไม่?'))return;if(!navigator.geolocation)return toast('เบราว์เซอร์นี้ไม่รองรับ GPS');toast('กำลังดึงพิกัด…');navigator.geolocation.getCurrentPosition(p=>{rider.lastLocation={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:Math.round(p.coords.accuracy||0),capturedAt:now(),capturedAtIso:new Date().toISOString()};persist();Cloud.saveRider(rider).catch(error=>console.warn('Cloud rider location sync skipped',error));syncSessionUI();toast('อัปเดตตำแหน่งไรเดอร์แล้ว')},e=>toast(e.code===1?'กรุณาอนุญาตสิทธิ์เข้าถึงตำแหน่ง':'ไม่สามารถดึงพิกัดได้'),{enableHighAccuracy:true,timeout:15000,maximumAge:30000})}
-    async function refreshFromCloud(silent=true){const rider=currentRider();if(!rider||!Cloud.session()?.access_token)return false;try{await Promise.all([Cloud.pullOrders(),Cloud.pullEarnings(rider.id)]);render();if(!silent)toast('รีเฟรชข้อมูลจากฐานกลางแล้ว');return true}catch(error){console.warn('Cloud rider refresh failed',error);if(!silent)toast(error.message||'ไม่สามารถดึงข้อมูลจากฐานกลาง');return false}}
-    $('#loginBtn').onclick=async()=>{const identifier=$('#riderIdentifier').value.trim(),password=$('#riderPassword').value;if(!identifier||!password)return toast('กรอก Login ID/อีเมล และรหัสผ่านก่อน');try{await Cloud.login(identifier,password);await refreshFromCloud(true);render();toast('ยืนยันบัญชี Rider และดึงงานล่าสุดแล้ว')}catch(error){toast(error.message||'เข้าสู่ระบบไม่สำเร็จ')}};$('#logoutBtn').onclick=()=>{if(!confirm('ยืนยันออกจากระบบไรเดอร์หรือไม่?'))return;State.session=null;localStorage.removeItem('apcx_rider_session');localStorage.removeItem('apcx_supabase_session');render()};$('#locationBtn').onclick=getLocation;$('#refreshBtn').onclick=()=>refreshFromCloud(false);$('#saveAvailability').onclick=()=>{const rider=currentRider(),next=$('#availability').value;if(!rider)return;if(!confirm(`ยืนยันเปลี่ยนสถานะรับงานเป็น “${next}” หรือไม่?`))return;rider.status=next;persist();Cloud.saveRider(rider).catch(error=>console.warn('Cloud rider availability sync skipped',error));render();toast('บันทึกสถานะแล้ว')};window.addEventListener('storage',e=>{if(['apcx_orders','apcx_riders','apcx_rider_earnings','apcx_supabase_session'].includes(e.key))render()});window.addEventListener('focus',()=>refreshFromCloud(true));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshFromCloud(true)});
+
+    function jobCard(order,mode){
+      const pickup=order.pickupAddress||order.storeName||'ยังไม่ระบุจุดรับ';
+      const delivery=order.deliveryAddress||order.address||'ยังไม่ระบุจุดส่ง';
+      const assigned=mode==='mine';
+      const netDeliveryFee=Number(order.deliveryFee||0);
+      const riderShare=money(netDeliveryFee*.8);
+      
+      let progress='';
+      if(order.status==='ไรเดอร์กำลังไปรับ'||order.status==='กำลังดำเนินการ'||order.status==='ร้านค้ารับออร์เดอร์'){
+        progress=`<button class="btn btn-sky btn-sm" onclick="setStatusStep('${order.id}','ถึงร้านค้า')">📍 ยืนยันถึงร้านค้า</button>`;
+      }else if(order.status==='ถึงร้านค้า'){
+        progress=`<button class="btn btn-sky btn-sm" onclick="setStatusStep('${order.id}','รับสินค้าแล้ว')">📦 ยืนยันรับสินค้าครบ</button>`;
+      }else if(order.status==='รับสินค้าแล้ว'||order.status==='กำลังจัดส่ง'){
+        progress=`<button class="btn btn-main btn-sm" onclick="openOrderModal('${order.id}')">🏁 ไปจุดส่ง / ส่งสำเร็จ</button>`;
+      }
+
+      return `<article class="job">
+        <div class="job-top">
+          <div>
+            <b>${esc(order.id)} · ${esc(order.serviceType||'บริการจัดส่ง')}</b>
+            <small>${esc(order.storeName||'บริการจัดส่ง')} · ยอด COD ${money(order.payable||order.total)}</small>
+            <small style="color:var(--ok);font-weight:800">รายได้สุทธิที่จะได้รับ: ${riderShare}</small>
+            <small>ลูกค้า: ${esc(order.name||'ไม่ระบุ')} · ${esc(order.customerEmail||'')}</small>
+          </div>
+          <span class="status ${order.status==='สำเร็จแล้ว'?'done':order.status==='กำลังจัดส่ง'?'wait':''}">${esc(order.status)}</span>
+        </div>
+        <div class="route">
+          <div class="point"><strong>📍 จุดรับ</strong>${esc(pickup)}<br>${mapButton(order.pickupLocation,'เปิดจุดรับ')}</div>
+          <div class="point"><strong>🏁 จุดส่ง</strong>${esc(delivery)}<br>${mapButton(order.deliveryLocation,'เปิดจุดส่ง')}</div>
+        </div>
+        ${order.note?`<small>หมายเหตุ: ${esc(order.note)}</small>`:''}
+        <div class="job-actions">
+          ${assigned?`${progress}<button class="btn btn-plain btn-sm" onclick="openBothMaps('${order.id}')">เปิดเส้นทางทั้งหมด</button><button class="btn btn-plain btn-sm" onclick="openOrderModal('${order.id}')">รายละเอียดงาน</button>`:`<button class="btn btn-main btn-sm" onclick="acceptJob('${order.id}')">รับงานนี้</button>`}
+        </div>
+      </article>`;
+    }
+
+    function render(){
+      sync();const rider=currentRider();if(!rider){syncSessionUI();return}syncSessionUI();
+      const open=State.orders.filter(o=>!o.riderId&&!['สำเร็จแล้ว','ยกเลิก'].includes(o.status));
+      const mine=State.orders.filter(o=>o.riderId===rider.id&&!['สำเร็จแล้ว','ยกเลิก'].includes(o.status));
+      const settled=State.earnings.filter(e=>e.riderId===rider.id&&e.settlementStatus==='settled');
+      const day=new Date().toISOString().slice(0,10);
+      const todayIncome=settled.filter(e=>String(e.completedAt||'').slice(0,10)===day);
+      const todayCod=State.orders.filter(o=>o.riderId===rider.id&&o.status==='สำเร็จแล้ว'&&String(o.completedAt||'').slice(0,10)===day).reduce((sum,o)=>sum+Number(o.payable||o.total||0),0);
+      $('#newCount').textContent=open.length;$('#myCount').textContent=mine.length;$('#doneCount').textContent=todayIncome.length;
+      $('#todayRiderIncome').textContent=money(todayIncome.reduce((sum,e)=>sum+Number(e.riderShare||0),0));
+      $('#walletBalance').textContent=money(settled.reduce((sum,e)=>sum+Number(e.riderShare||0),0));
+      $('#todayCod').textContent=money(todayCod);
+      $('#availableJobs').innerHTML=open.length?open.map(o=>jobCard(o,'open')).join(''):'<div class="empty">ไม่มีงานใหม่ในขณะนี้</div>';
+      $('#myJobs').innerHTML=mine.length?mine.map(o=>jobCard(o,'mine')).join(''):'<div class="empty">คุณยังไม่มีงานที่กำลังดำเนินการ (งานที่ส่งสำเร็จจะย้ายไปที่ประวัติรายได้ด้านล่างทันที)</div>';
+      $('#earningHistory').innerHTML=settled.length?`<div class="card"><h3 style="margin:0 0 10px;font-size:15px">ประวัติงานที่ส่งสำเร็จแล้ว</h3>${settled.slice(0,12).map(e=>`<div class="job" style="margin-bottom:8px;padding:12px"><div class="job-top"><div><b>${esc(e.orderId)}</b><small>${esc(e.order?.store_name||'บริการจัดส่ง')} · ${esc(new Date(e.completedAt).toLocaleString('th-TH'))}</small></div><span class="status done">ได้รับ ${money(e.riderShare)}</span></div><small>ค่าส่งสุทธิ ${money(e.deliveryFee)} · รายได้สุทธิ ${money(e.riderShare)} (ส่งสำเร็จ)</small></div>`).join('')}</div>`:'<div class="empty">ยังไม่มีประวัติงานที่ส่งสำเร็จในระบบ</div>';
+    }
+
+    window.acceptJob=async id=>{
+      sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id);
+      if(!rider||!order||order.riderId)return toast('งานนี้ถูกมอบหมายแล้ว');
+      if(!confirm(`ยืนยันรับงาน ${order.id}\nร้าน: ${order.storeName||'-'}\nยอด: ${money(order.payable||order.total)}\n\nเมื่อยืนยัน งานนี้จะถูกมอบหมายให้คุณ`))return;
+      try{
+        State.isSyncing=true;
+        const claimed=await Cloud.request('delivery_orders?id=eq.'+encodeURIComponent(order.id)+'&rider_id=is.null',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({rider_id:rider.id,rider_name:rider.name,status:'ไรเดอร์กำลังไปรับ',accepted_at:new Date().toISOString()})});
+        if(!Array.isArray(claimed)||!claimed.length)throw new Error('งานนี้ถูกไรเดอร์รายอื่นรับไปแล้ว');
+        order.riderId=rider.id;order.riderName=rider.name;order.acceptedAt=new Date().toISOString();rider.status='กำลังส่งงาน';
+        statusHistory(order,'ไรเดอร์กำลังไปรับ');persist();
+        await Cloud.request('order_status_events',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({order_id:order.id,status:'ไรเดอร์กำลังไปรับ',actor_id:State.session?.userId||null,actor_label:'ไรเดอร์: '+rider.name})});
+        await Cloud.pullOrders();await Cloud.pullEarnings(rider.id);render();toast('รับงานและแจ้งศูนย์กลางว่ากำลังไปรับแล้ว');
+      }catch(error){console.warn('Cloud rider accept failed',error);toast(error.message||'รับงานไม่สำเร็จ โปรดลองรีเฟรชข้อมูล')}
+      finally{setTimeout(()=>State.isSyncing=false,1200)}
+    };
+
+    window.setStatusStep=async(id,stepStatus)=>{
+      sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id&&o.riderId===rider?.id);
+      if(!order)return toast('ไม่พบงานของคุณ');
+      if(!confirm(`ยืนยันอัปเดตสถานะเป็น “${stepStatus}”`))return;
+      if(stepStatus==='ถึงร้านค้า') order.arrivedAtStore=new Date().toISOString();
+      if(stepStatus==='รับสินค้าแล้ว') order.itemsCollected=new Date().toISOString();
+      statusHistory(order,stepStatus);persist();
+      render();toast(`อัปเดตสถานะเป็น “${stepStatus}” แล้ว`);
+      try{
+        State.isSyncing=true;
+        await Cloud.saveOrder(order);
+        await Cloud.pullOrders();
+        render();
+      }catch(err){console.warn('Step sync error',err);toast('บันทึกในเครื่องแล้ว แต่ซิงก์คลาวด์ขัดข้อง: '+(err.message||''))}
+      finally{setTimeout(()=>State.isSyncing=false,1200)}
+    };
+
+    window.openBothMaps=id=>{
+      const order=State.orders.find(o=>o.id===id);if(!order)return;
+      const pickup=mapUrl(order.pickupLocation),delivery=mapUrl(order.deliveryLocation);
+      if(pickup)window.open(pickup,'_blank','noopener');
+      if(delivery)setTimeout(()=>window.open(delivery,'_blank','noopener'),250);
+      if(!pickup&&!delivery)toast('ออร์เดอร์นี้ยังไม่มีพิกัด GPS');
+    };
+
+    function getLocation(){
+      const rider=currentRider();if(!rider)return;
+      if(!navigator.geolocation){
+        alert('เบราว์เซอร์นี้ไม่รองรับการดึงพิกัด GPS');
+        return;
+      }
+      toast('กำลังขอสิทธิ์เข้าถึง GPS…');
+      navigator.geolocation.getCurrentPosition(p=>{
+        rider.lastLocation={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:Math.round(p.coords.accuracy||0),capturedAt:now(),capturedAtIso:new Date().toISOString()};
+        persist();
+        Cloud.saveRider(rider).catch(error=>console.warn('Cloud rider location sync skipped',error));
+        syncSessionUI();
+        toast('บันทึกพิกัด GPS สำเร็จ!');
+      },e=>{
+        console.warn('Geolocation error:',e);
+        let msg='ไม่สามารถดึงพิกัดได้';
+        if(e.code===1) msg='ถูกปฏิเสธสิทธิ์ Location: โปรดแตะไอคอนแม่กุญแจ/การตั้งค่าเว็บในเบราว์เซอร์มือถือ เพื่ออนุญาตสิทธิ์ตำแหน่ง (Location Permission)';
+        else if(e.code===2) msg='ไม่พบสัญญาณ GPS: โปรดเปิด GPS อุปกรณ์';
+        else if(e.code===3) msg='หมดเวลาดึงพิกัด GPS';
+        alert(msg);
+        toast('กรุณาเปิดสิทธิ์ Location ในเบราว์เซอร์');
+      },{enableHighAccuracy:true,timeout:12000,maximumAge:10000});
+    }
+
+    // ORDER DETAIL & DELIVERY COMPLETION MODAL & WORKFLOW
+    window.openOrderModal=id=>{
+      State.activeModalOrderId=id;
+      const order=State.orders.find(o=>o.id===id);if(!order)return;
+      $('#modalOrderId').textContent=`ออร์เดอร์ ${order.id} · ${order.serviceType||'จัดส่ง'}`;
+      $('#modalOrderSubtitle').textContent=`ร้าน/จุดรับ: ${order.storeName||'-'} | ลูกค้า: ${order.name||'-'}`;
+      
+      const promptPay=State.config.payment?.promptPayId||'';
+      const totalPayable=Number(order.payable||order.total||0);
+      const deliveryFee=Number(order.deliveryFee||0);
+      const riderShare=Math.round(deliveryFee*.8*100)/100;
+      
+      $('#modalOrderBody').innerHTML=`
+        <div class="card" style="background:#f8fbfa;margin:0">
+          <b style="font-size:13px">สรุปรายการและเส้นทาง</b>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+            <b>📍 จุดรับ:</b> ${esc(order.pickupAddress||order.storeName||'-')}<br>
+            <b>🏁 จุดส่ง:</b> ${esc(order.deliveryAddress||order.address||'-')}<br>
+            <b>💰 ยอด COD / สินค้า:</b> ${money(totalPayable)} | <b style="color:var(--ok)">รายได้สุทธิที่จะได้รับ: ${money(riderShare)}</b>
+          </div>
+        </div>
+        <div class="card" style="margin:0">
+          <b style="font-size:13px">ขั้นตอนที่ 1: ตรวจสอบพิกัด GPS ระยะจัดส่ง (ในรัศมี 50 เมตร)</b>
+          <p style="font-size:11px;color:var(--muted);margin:4px 0 10px">ระบบจะดึงพิกัดปัจจุบันของคุณและเทียบกับพิกัดจุดส่งของลูกค้า</p>
+          <button class="btn btn-sky btn-sm" type="button" onclick="verifyDeliveryGps('${order.id}')">📍 ตรวจสอบตำแหน่ง GPS ปัจจุบัน</button>
+          <div id="gpsVerifyResult" style="margin-top:8px;font-size:11px;font-weight:800;color:var(--muted)">ยังไม่ได้ตรวจสอบพิกัด</div>
+        </div>
+        <div class="card" style="margin:0">
+          <b style="font-size:13px">ขั้นตอนที่ 2: เลือกวิธีชำระเงินและรับเงินจากลูกค้า</b>
+          <div class="field" style="margin-top:8px">
+            <label>ช่องทางชำระเงิน</label>
+            <select id="completionPaymentMethod" onchange="togglePaymentForm(this.value)">
+              <option value="เงินสดปลายทาง (COD)">เงินสดปลายทาง (Cash / COD)</option>
+              <option value="โอนสแกน QR Code">โอนสแกน QR Code (บัญชีกลางแพลตฟอร์ม)</option>
+            </select>
+          </div>
+          <div id="cashPaymentSection" style="margin-top:10px;display:grid;gap:8px">
+            <div class="field">
+              <label>จำนวนเงินสดที่ไรเดอร์รับมา (บาท)</label>
+              <input id="cashReceivedInput" type="number" step="any" placeholder="${totalPayable}" oninput="calculateChange(${totalPayable})" />
+            </div>
+            <div style="font-size:12px;font-weight:900;color:var(--ok)" id="changeDisplay">เงินทอนลูกค้า: ฿0.00</div>
+          </div>
+          <div id="qrPaymentSection" style="margin-top:10px;display:none;text-align:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px">
+            <b style="font-size:12px;display:block;margin-bottom:6px">สแกน QR Code บัญชีกลางแพลตฟอร์ม</b>
+            <div id="qrCodeContainer" style="font-size:11px;color:var(--muted)">
+              ${promptPay?`<div style="font-size:14px;font-weight:900;color:var(--navy)">PromptPay / เลขบัญชี: ${promptPay}</div><small>ยอดที่ต้องโอน: ${money(totalPayable)}</small>`:'<span style="color:var(--danger)">ผู้ดูแลยังไม่ได้ตั้งค่า PromptPay / QR Code กลางในหน้า Admin</span>'}
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin:0">
+          <b style="font-size:13px">ขั้นตอนที่ 3: แนบหลักฐานรูปถ่ายส่งมอบ</b>
+          <div class="field" style="margin-top:8px">
+            <label>อัปโหลดรูปถ่ายสินค้า / จุดส่งมอบ (ระบบบีบอัดให้อัตโนมัติ &lt; 1 MB)</label>
+            <input type="file" accept="image/*" onchange="handleProofImage(this)" />
+          </div>
+          <div id="proofImagePreview" style="margin-top:8px;font-size:11px;color:var(--muted)">ยังไม่มีรูปหลักฐาน</div>
+        </div>
+        <button class="btn btn-main" style="width:100%;padding:14px;font-size:13px" onclick="confirmAndCompleteOrder('${order.id}')">✨ ยืนยันส่งสำเร็จและบันทึกรายได้</button>
+      `;
+      $('#orderModal').classList.add('open');$('#orderModal').setAttribute('aria-hidden','false');
+    };
+
+    window.closeOrderModal=()=>{
+      $('#orderModal').classList.remove('open');$('#orderModal').setAttribute('aria-hidden','true');
+      State.activeModalOrderId=null;
+    };
+
+    window.togglePaymentForm=val=>{
+      const isCash=val.includes('เงินสด');
+      $('#cashPaymentSection').style.display=isCash?'grid':'none';
+      $('#qrPaymentSection').style.display=isCash?'none':'block';
+    };
+
+    window.calculateChange=total=>{
+      const received=Number($('#cashReceivedInput')?.value)||0;
+      const change=Math.max(0,received-total);
+      $('#changeDisplay').textContent=`เงินทอนลูกค้า: ${money(change)}`;
+    };
+
+    window.verifyDeliveryGps=orderId=>{
+      const order=State.orders.find(o=>o.id===orderId);if(!order)return;
+      if(!navigator.geolocation)return toast('เบราว์เซอร์นี้ไม่รองรับ GPS');
+      toast('กำลังตรวจสอบพิกัดตำแหน่งคุณกับจุดส่ง…');
+      navigator.geolocation.getCurrentPosition(p=>{
+        const rLat=p.coords.latitude,rLng=p.coords.longitude;
+        const target=order.deliveryLocation||order.pickupLocation;
+        let distText='ไม่พบพิกัดจุดส่งในออร์เดอร์ (อนุญาตให้ผ่านได้)';
+        let ok=true;
+        if(target?.lat!==undefined&&target?.lng!==undefined){
+          const R=6371e3;
+          const dLat=(target.lat-rLat)*Math.PI/180,dLon=(target.lng-rLng)*Math.PI/180;
+          const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(rLat*Math.PI/180)*Math.cos(target.lat*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+          const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+          const dist=R*c;
+          ok=dist<=50;
+          distText=`ระยะห่างจากจุดส่ง: ${Math.round(dist)} เมตร (${ok?'✓ อยู่ในรัศมี 50 ม.':'⚠ อยู่ห่างเกิน 50 ม.'})`;
+        }
+        const box=$('#gpsVerifyResult');
+        box.style.color=ok?'var(--ok)':'var(--danger)';
+        box.textContent=distText;
+        window._gpsVerifiedOk=ok;
+        toast(ok?'พิกัดผ่านเกณฑ์ 50 เมตรแล้ว':'ตำแหน่งคุณยังห่างจากจุดส่งเกิน 50 เมตร');
+      },e=>{
+        let msg='ไม่สามารถดึง GPS ได้';
+        if(e.code===1) msg='ถูกปฏิเสธสิทธิ์ Location: โปรดแตะไอคอนแม่กุญแจบน URL เบราว์เซอร์เพื่อเปิดสิทธิ์ตำแหน่ง';
+        alert(msg);
+        toast('กรุณาเปิดสิทธิ์ Location');
+      },{enableHighAccuracy:true,timeout:10000});
+    };
+
+    window.handleProofImage=async input=>{
+      const file=input.files?.[0];if(!file)return;
+      try{
+        toast('กำลังบีบอัดรูปหลักฐาน…');
+        const reader=new FileReader();
+        reader.onload=e=>{
+          window._capturedProofImage=e.target.result;
+          $('#proofImagePreview').innerHTML=`<img src="${e.target.result}" alt="หลักฐาน" style="max-height:110px;border-radius:8px;border:1px solid var(--line)" /><br><span style="color:var(--ok);font-weight:800">✓ แนบรูปหลักฐานสำเร็จ</span>`;
+          toast('แนบรูปหลักฐานแล้ว');
+        };
+        reader.readAsDataURL(file);
+      }catch(err){toast('ไม่สามารถโหลดรูปภาพได้')}
+    };
+
+    window.confirmAndCompleteOrder=async id=>{
+      sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id&&o.riderId===rider?.id);
+      if(!order)return toast('ไม่พบออร์เดอร์ของคุณ');
+      if(window._gpsVerifiedOk===false){
+        if(!confirm('คำเตือน: ตำแหน่ง GPS ของคุณอยู่ห่างจากจุดส่งเกิน 50 เมตร คุณต้องการบังคับยืนยันส่งสำเร็จหรือไม่?'))return;
+      }
+      const paymentMethod=$('#completionPaymentMethod')?.value||'เงินสดปลายทาง (COD)';
+      const proofImage=window._capturedProofImage||null;
+      
+      if(!confirm(`ยืนยันปิดงานส่งสำเร็จ\nออร์เดอร์: ${order.id}\nลูกค้า: ${order.name||'-'}\nวิธีชำระ: ${paymentMethod}\nรายได้สุทธิที่จะได้รับ: ${money(Number(order.deliveryFee||0)*.8)}`))return;
+
+      order.status='สำเร็จแล้ว';
+      order.completedAt=new Date().toISOString();
+      order.paymentMethod=paymentMethod;
+      order.proofImage=proofImage;
+      rider.status='พร้อมรับงาน';
+      statusHistory(order,'สำเร็จแล้ว');
+      persist();
+
+      const deliveryFee=Number(order.deliveryFee||0);
+      const riderShare=Math.round(deliveryFee*.8*100)/100;
+      const platformShare=Math.round(deliveryFee*.2*100)/100;
+      const earningItem={
+        orderId:order.id,riderId:rider.id,deliveryFee,riderShare,platformShare,settlementStatus:'settled',completedAt:order.completedAt,
+        order:{id:order.id,store_name:order.storeName,customer_name:order.name,service_type:order.serviceType,payable:order.payable||order.total,delivery_fee:deliveryFee}
+      };
+      State.earnings.unshift(earningItem);
+      write('apcx_rider_earnings',State.earnings);
+
+      try{
+        State.isSyncing=true;
+        await Cloud.saveOrder(order);
+        await Cloud.recordEarning(order,rider.id);
+        await Cloud.pullOrders();
+        await Cloud.pullEarnings(rider.id);
+        toast('ปิดงานส่งสำเร็จและบันทึกรายได้เรียบร้อยแล้ว!');
+      }catch(error){
+        console.warn('Cloud complete order sync failed',error);
+        toast('บันทึกในเครื่องสำเร็จ แต่วิทยุคลาวด์ขัดข้อง: '+(error.message||''));
+      }finally{
+        setTimeout(()=>State.isSyncing=false,1200);
+      }
+
+      closeOrderModal();
+      window._gpsVerifiedOk=null;
+      window._capturedProofImage=null;
+      render();
+    };
+
+    async function refreshFromCloud(silent=true){
+      if(State.isSyncing)return;
+      const rider=currentRider();if(!rider||!Cloud.session()?.access_token)return false;
+      try{
+        await Promise.all([Cloud.syncConfig(),Cloud.pullOrders(),Cloud.pullEarnings(rider.id)]);
+        render();if(!silent)toast('รีเฟรชข้อมูลจากฐานกลางแล้ว');return true;
+      }catch(error){
+        console.warn('Cloud rider refresh failed',error);
+        if(!silent)toast(error.message||'ไม่สามารถดึงข้อมูลจากฐานกลาง');
+        return false;
+      }
+    }
+
+    $('#loginBtn').onclick=async()=>{
+      const identifier=$('#riderIdentifier').value.trim(),password=$('#riderPassword').value;
+      if(!identifier||!password)return toast('กรอก Login ID/อีเมล และรหัสผ่านก่อน');
+      try{
+        const rider=await Cloud.login(identifier,password);
+        await refreshFromCloud(true);
+        render();toast('ยืนยันบัญชี Rider และดึงงานล่าสุดแล้ว');
+      }catch(error){toast(error.message||'เข้าสู่ระบบไม่สำเร็จ')}
+    };
+
+    $('#logoutBtn').onclick=()=>{
+      if(!confirm('ยืนยันออกจากระบบไรเดอร์หรือไม่?'))return;
+      State.session=null;localStorage.removeItem('apcx_rider_session');localStorage.removeItem('apcx_supabase_session');render();
+    };
+
+    $('#locationBtn').onclick=getLocation;
+    $('#refreshBtn').onclick=()=>refreshFromCloud(false);
+    $('#saveAvailability').onclick=()=>{
+      const rider=currentRider(),next=$('#availability').value;if(!rider)return;
+      if(!confirm(`ยืนยันเปลี่ยนสถานะรับงานเป็น “${next}” หรือไม่?`))return;
+      rider.status=next;persist();
+      Cloud.saveRider(rider).catch(error=>console.warn('Cloud rider availability sync skipped',error));
+      render();toast('บันทึกสถานะแล้ว');
+    };
+
+    window.addEventListener('storage',e=>{if(['apcx_orders','apcx_riders','apcx_rider_earnings','apcx_supabase_session','apcx_config'].includes(e.key)){State.config=read('apcx_config',State.config);render()}});
+    window.addEventListener('focus',()=>refreshFromCloud(true));
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshFromCloud(true)});
     render();setTimeout(()=>refreshFromCloud(true),200);setInterval(()=>refreshFromCloud(true),15000);
   </script>
 </body>
