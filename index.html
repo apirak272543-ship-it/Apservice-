@@ -12,7 +12,7 @@
     .topbar{height:76px;background:rgba(255,255,255,.9);backdrop-filter:blur(18px);border-bottom:1px solid rgba(229,238,236,.9);position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;padding:0 max(22px,calc((100vw - 1280px)/2))}
     .brand{display:flex;align-items:center;gap:11px;cursor:pointer}.brand-mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#54dcc9,#087368);color:#fff;font-weight:950;box-shadow:0 9px 22px rgba(11,140,124,.26)}.brand-name{font-size:17px;font-weight:950;letter-spacing:-.4px}.brand-tag{font-size:10px;color:var(--muted);margin-top:1px}
     .top-actions{display:flex;align-items:center;gap:10px}.profile-button{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:var(--paper);border:1px solid var(--line);color:var(--brand-deep);font-weight:900;box-shadow:0 4px 12px rgba(0,0,0,.03)}.profile-button:hover{background:var(--brand-soft)}.admin-button{background:var(--brand-deep);border-color:var(--brand-deep);color:#fff}.admin-button:hover{background:#086d63}
-    .shell{width:min(1280px,100%);margin:auto;padding:26px 22px 90px}.view{display:none;animation:fade .22s ease}.view.active{display:block}@keyframes fade{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .shell{width:min(1280px,100%);margin:auto;padding:26px 22px 90px}.view{display:none;animation:fade .22s ease}.view.active{display:block}@keyframes fade{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}.ap-back{display:none;align-items:center;gap:8px;margin:0 0 16px;padding:9px 13px;border:1px solid #a7e5db;border-radius:13px;background:linear-gradient(135deg,#fff,#ecfbf8);color:var(--brand-deep);font-size:11px;font-weight:950;box-shadow:0 8px 18px rgba(5,89,79,.08)}.ap-back.show{display:inline-flex}.ap-back:before{content:'‹';width:22px;height:22px;display:grid;place-items:center;border-radius:8px;background:var(--brand);color:#fff;font-size:20px;line-height:1}.ap-back:active{transform:scale(.98)}
     .hero{min-height:340px;padding:42px;overflow:hidden;position:relative;border-radius:30px;color:#fff;background:radial-gradient(circle at 80% 20%,rgba(123,255,226,.26),transparent 25%),radial-gradient(circle at 90% 100%,rgba(255,255,255,.14),transparent 27%),linear-gradient(125deg,#073f3b,#087b70 54%,#12a795);box-shadow:0 20px 45px rgba(5,96,86,.18);display:grid;grid-template-columns:1.15fr .85fr;align-items:center}.hero:after{content:"";position:absolute;width:260px;height:260px;right:60px;bottom:-145px;border:1px solid rgba(255,255,255,.26);border-radius:50%;box-shadow:0 0 0 28px rgba(255,255,255,.05),0 0 0 58px rgba(255,255,255,.04)}
     .eyebrow{font-size:10px;letter-spacing:.16em;font-weight:950;color:#c5fff4}.hero h1{font-size:clamp(35px,5vw,58px);letter-spacing:-2.3px;line-height:1.03;margin:13px 0 12px;max-width:650px}.hero p{max-width:570px;margin:0;color:#dcfff8;line-height:1.6;font-size:14px}.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:25px}.hero-art{height:250px;display:grid;place-items:center;position:relative;z-index:2}.hero-scooter{font-size:112px;filter:drop-shadow(0 18px 16px rgba(0,55,51,.24));transform:rotate(-4deg)}.route{position:absolute;width:190px;height:95px;border:3px dashed rgba(255,255,255,.4);border-left:0;border-bottom:0;border-radius:0 80px 0 0;top:45px;right:60px}.pin{position:absolute;right:42px;top:33px;font-size:29px}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 15px;border-radius:13px;font-weight:900;transition:.18s}.btn:active{transform:scale(.98)}.btn-main{background:var(--brand);color:#fff;box-shadow:0 10px 20px rgba(11,140,124,.22)}.btn-main:hover{background:#08776b}.btn-white{background:#fff;color:var(--brand-deep)}.btn-plain{background:#fff;border:1px solid var(--line);color:var(--ink)}.btn-danger{background:var(--danger);color:#fff}.btn-small{padding:7px 10px;border-radius:10px;font-size:11px}
@@ -310,8 +310,12 @@
     let toastTimer=null;
     const UI = {
       toast(text,tone=''){const el=$('#toast'),message=String(text||'').trim()||'ดำเนินการเรียบร้อยแล้ว',lower=message.toLowerCase(),resolved=tone||(/ไม่สำเร็จ|ไม่สามารถ|ขัดข้อง|ผิดพลาด|ถูกปฏิเสธ|ล้มเหลว|หมดอายุ/.test(lower)?'error':/กรุณา|คำเตือน|ยังไม่ได้|ไม่พบ|รออนุมัติ/.test(lower)?'warning':'success');el.textContent=message;el.className=`toast show is-${resolved}`;if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),5000)},
-      showView(name){
+      showView(name,options={}){
         if(name==='admin' && !Storage.isAdmin()) return showView('login');
+        const current=$$('.view.active')[0]?.id?.replace('view-','');
+        if(!options.back&&current&&current!==name&&name!=='home'){NavigationUX.remember(current);window.history.pushState({apView:name},'',window.location.href)}
+        if(name==='home'&&!options.back)NavigationUX.clear();
+        FormDraftUX.save();
         $$('.view').forEach(el=>el.classList.remove('active'));$('#view-'+name)?.classList.add('active');
         if(name==='home') renderHome();
         if(name==='stores') renderStores();
@@ -321,11 +325,15 @@
         if(name==='marketplace') renderMarketplace();
         if(name==='marketplace-profile') renderMarketplaceProfile();
         if(name==='marketplace-chat') renderMarketplaceChat();
+        NavigationUX.render();
         window.scrollTo({top:0,behavior:'smooth'});
       }
     };
     const showView = UI.showView;
     window.showView = UI.showView;
+    const FormDraftUX={key:'apcx_customer_form_drafts_v1',read(){try{return JSON.parse(sessionStorage.getItem(this.key)||'{}')}catch{return{}}},write(value){try{sessionStorage.setItem(this.key,JSON.stringify(value))}catch{}},save(){const value={};document.querySelectorAll('input,textarea,select').forEach(field=>{if(!field.id||field.type==='password'||field.type==='file')return;value[field.id]=field.type==='checkbox'?field.checked:field.value});this.write(value)},restore(){const value=this.read();Object.entries(value).forEach(([id,saved])=>{const field=$('#'+id);if(!field||field.type==='password'||field.type==='file')return;if(field.type==='checkbox')field.checked=!!saved;else field.value=saved})},init(){this.restore();document.addEventListener('input',()=>this.save(),true);document.addEventListener('change',()=>this.save(),true)}};
+    const NavigationUX={stack:[],remember(view){if(!view||view==='home'||this.stack.at(-1)===view)return;this.stack.push(view);this.stack=this.stack.slice(-12)},clear(){this.stack=[]},goBack(){const view=this.stack.pop()||'home';showView(view,{back:true})},render(){const active=$$('.view.active')[0];$$('.ap-back').forEach(button=>button.classList.remove('show'));if(!active||active.id==='view-home')return;let button=active.querySelector('.ap-back');if(!button){button=document.createElement('button');button.type='button';button.className='ap-back';button.textContent='กลับหน้าก่อนหน้า';button.onclick=()=>this.goBack();active.insertAdjacentElement('afterbegin',button)}button.classList.add('show')},init(){FormDraftUX.init();this.render();window.addEventListener('popstate',event=>showView(event.state?.apView||'home',{back:true}))}};
+    NavigationUX.init();
 
     function requireLoginThen(target){
       if(!AppState.user?.email){AppState.afterLogin=target;return showView('login')}
