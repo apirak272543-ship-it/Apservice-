@@ -136,13 +136,14 @@
     const $=s=>document.querySelector(s);const money=n=>'฿'+Number(n||0).toLocaleString('th-TH');const now=()=>new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});const today=()=>new Date().toISOString().slice(0,10);const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','>':'&gt;','<':'&lt;','"':'&quot;'}[c]));
     const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};const write=(key,value)=>localStorage.setItem(key,JSON.stringify(value));
     const storedRiders=read('apcx_riders',[]);const State={riders:storedRiders.length?storedRiders:[{id:'rider-1',name:'ธนา พรหมมา',emoji:'🛵',phone:'081-555-1001',vehicle:'มอเตอร์ไซค์',status:'พร้อมรับงาน'}],orders:read('apcx_orders',[]),earnings:read('apcx_rider_earnings',[]),config:read('apcx_config',{payment:{promptPayId:''}}),session:read('apcx_rider_session',null),activeModalOrderId:null,isSyncing:false};
+    const legacyRiderCloudSession=read('apcx_supabase_session',null);if(!read('apcx_rider_supabase_session',null)&&legacyRiderCloudSession?.user?.id&&legacyRiderCloudSession.user.id===State.session?.userId){write('apcx_rider_supabase_session',legacyRiderCloudSession);localStorage.removeItem('apcx_supabase_session')}
 
     const Cloud={
       url:'https://abtsctwfkgzciseppach.supabase.co',
       key:'sb_publishable_TyJWnKkbS8vKcQKKAzoqSg_BOguwKRv',
-      session:()=>read('apcx_supabase_session',null),
-      setSession(session){write('apcx_supabase_session',session)},
-      clearSession(){localStorage.removeItem('apcx_supabase_session')},
+      session:()=>read('apcx_rider_supabase_session',null),
+      setSession(session){write('apcx_rider_supabase_session',session)},
+      clearSession(){localStorage.removeItem('apcx_rider_supabase_session')},
       headers(session=this.session()){const headers={apikey:this.key,'Content-Type':'application/json'};if(session?.access_token)headers.Authorization='Bearer '+session.access_token;return headers},
       async refreshSession(){const current=this.session();if(!current?.refresh_token)throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่');const response=await fetch(this.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:this.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:current.refresh_token})});const data=await response.json().catch(()=>null);if(!response.ok||!data?.access_token){this.clearSession();throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่')}this.setSession(data);return data},
       async validSession(){let session=this.session();if(!session?.access_token)throw new Error('กรุณาเข้าสู่ระบบ Rider ใหม่');const expiresAt=Number(session.expires_at||0);if(expiresAt&&expiresAt<=Math.floor(Date.now()/1000)+60)session=await this.refreshSession();return session},
@@ -323,6 +324,13 @@
       if(!pickup&&!delivery)toast('ออร์เดอร์นี้ยังไม่มีพิกัด GPS');
     };
 
+    function gpsErrorMessage(error){
+      const code=Number(error?.code||0);
+      if(code===1)return 'ไม่อนุญาตสิทธิ์ตำแหน่ง: ใน Chrome ให้แตะไอคอนปรับแต่ง/แม่กุญแจข้าง URL → สิทธิ์เว็บไซต์ → ตำแหน่ง → อนุญาต แล้วกลับมากดตรวจสอบอีกครั้ง';
+      if(code===2)return 'ไม่พบตำแหน่ง: โปรดเปิด GPS/ตำแหน่งของโทรศัพท์ ออกจากอาคารหรือรอสัญญาณสักครู่ แล้วกดลองใหม่';
+      if(code===3)return 'หมดเวลารอ GPS: โปรดตรวจอินเทอร์เน็ต เปิด GPS แล้วกดตรวจสอบอีกครั้ง';
+      return 'ไม่สามารถดึงตำแหน่งได้: โปรดเปิด GPS และอนุญาตสิทธิ์ตำแหน่งให้ Chrome แล้วลองใหม่';
+    }
     function getLocation(){
       const rider=currentRider();if(!rider)return;
       if(!navigator.geolocation){
@@ -338,12 +346,9 @@
         toast('บันทึกพิกัด GPS สำเร็จ!');
       },e=>{
         console.warn('Geolocation error:',e);
-        let msg='ไม่สามารถดึงพิกัดได้';
-        if(e.code===1) msg='ถูกปฏิเสธสิทธิ์ Location: โปรดแตะไอคอนแม่กุญแจ/การตั้งค่าเว็บในเบราว์เซอร์มือถือ เพื่ออนุญาตสิทธิ์ตำแหน่ง (Location Permission)';
-        else if(e.code===2) msg='ไม่พบสัญญาณ GPS: โปรดเปิด GPS อุปกรณ์';
-        else if(e.code===3) msg='หมดเวลาดึงพิกัด GPS';
+        const msg=gpsErrorMessage(e);
         alert(msg);
-        toast('กรุณาเปิดสิทธิ์ Location ในเบราว์เซอร์');
+        toast(msg);
       },{enableHighAccuracy:true,timeout:12000,maximumAge:10000});
     }
 
@@ -456,25 +461,29 @@
         window._gpsVerifiedOk=ok;
         toast(ok?'พิกัดผ่านเกณฑ์ 50 เมตรแล้ว':'ตำแหน่งคุณยังห่างจากจุดส่งเกิน 50 เมตร');
       },e=>{
-        let msg='ไม่สามารถดึง GPS ได้';
-        if(e.code===1) msg='ถูกปฏิเสธสิทธิ์ Location: โปรดแตะไอคอนแม่กุญแจบน URL เบราว์เซอร์เพื่อเปิดสิทธิ์ตำแหน่ง';
+        const msg=gpsErrorMessage(e),box=$('#gpsVerifyResult');
+        if(box){box.style.color='var(--danger)';box.textContent=msg}
         alert(msg);
-        toast('กรุณาเปิดสิทธิ์ Location');
+        toast(msg);
       },{enableHighAccuracy:true,timeout:10000});
     };
 
+    async function compressRiderProofImage(file){
+      if(!file?.type?.startsWith('image/'))throw new Error('กรุณาเลือกรูปภาพจากไฟล์หรือกล้อง');
+      if(file.size>40*1024*1024)throw new Error('รูปมีขนาดเกิน 40 MB กรุณาเลือกรูปที่เล็กลง');
+      const source=URL.createObjectURL(file),image=await new Promise((resolve,reject)=>{const element=new Image();element.onload=()=>resolve(element);element.onerror=()=>reject(new Error('ไม่สามารถอ่านรูปภาพได้'));element.src=source});
+      URL.revokeObjectURL(source);let maxSide=Math.min(1600,Math.max(image.width,image.height)),quality=.88;
+      for(let attempt=0;attempt<12;attempt++){const ratio=Math.min(1,maxSide/Math.max(image.width,image.height)),width=Math.max(1,Math.round(image.width*ratio)),height=Math.max(1,Math.round(image.height*ratio)),canvas=document.createElement('canvas'),context=canvas.getContext('2d');canvas.width=width;canvas.height=height;context.drawImage(image,0,0,width,height);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));if(blob&&blob.size<=1000000){const dataUrl=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(new Error('ไม่สามารถแปลงรูปภาพได้'));reader.readAsDataURL(blob)});return {dataUrl,bytes:blob.size,compressed:blob.size<file.size}}if(quality>.5)quality=Math.max(.48,quality-.1);else{maxSide=Math.max(480,Math.round(maxSide*.78));quality=.82}}
+      throw new Error('ไม่สามารถบีบอัดรูปให้ต่ำกว่า 1 MB ได้ กรุณาถ่ายหรือเลือกรูปใหม่');
+    }
     window.handleProofImage=async input=>{
       const file=input.files?.[0];if(!file)return;
       try{
         toast('กำลังบีบอัดรูปหลักฐาน…');
-        const reader=new FileReader();
-        reader.onload=e=>{
-          window._capturedProofImage=e.target.result;
-          $('#proofImagePreview').innerHTML=`<img src="${e.target.result}" alt="หลักฐาน" style="max-height:110px;border-radius:8px;border:1px solid var(--line)" /><br><span style="color:var(--ok);font-weight:800">✓ แนบรูปหลักฐานสำเร็จ</span>`;
-          toast('แนบรูปหลักฐานแล้ว');
-        };
-        reader.readAsDataURL(file);
-      }catch(err){toast('ไม่สามารถโหลดรูปภาพได้')}
+        const result=await compressRiderProofImage(file);window._capturedProofImage=result.dataUrl;
+        $('#proofImagePreview').innerHTML=`<img src="${result.dataUrl}" alt="หลักฐาน" style="max-height:110px;border-radius:8px;border:1px solid var(--line)" /><br><span style="color:var(--ok);font-weight:800">✓ แนบรูปหลักฐานสำเร็จ · ${Math.ceil(result.bytes/1024)} KB</span>`;
+        toast(result.compressed?'บีบอัดและแนบรูปหลักฐานแล้ว':'แนบรูปหลักฐานแล้ว');
+      }catch(error){input.value='';toast(error.message||'ไม่สามารถโหลดรูปภาพได้')}
     };
 
     window.confirmAndCompleteOrder=async id=>{
@@ -555,7 +564,7 @@
 
     $('#logoutBtn').onclick=()=>{
       if(!confirm('ยืนยันออกจากระบบไรเดอร์หรือไม่?'))return;
-      State.session=null;localStorage.removeItem('apcx_rider_session');localStorage.removeItem('apcx_supabase_session');render();
+      State.session=null;localStorage.removeItem('apcx_rider_session');localStorage.removeItem('apcx_rider_supabase_session');render();
     };
 
     $('#locationBtn').onclick=getLocation;
@@ -574,12 +583,12 @@
     const rideDestinationInputs=()=>({lat:Number($('#rideDestinationLat')?.value),lng:Number($('#rideDestinationLng')?.value)});
     const setRideDestinationPoint=(point,pan=true)=>{if(!point||!Number.isFinite(Number(point.lat))||!Number.isFinite(Number(point.lng)))return;rideDestinationPoint={lat:Number(point.lat),lng:Number(point.lng)};if($('#rideDestinationLat'))$('#rideDestinationLat').value=rideDestinationPoint.lat.toFixed(6);if($('#rideDestinationLng'))$('#rideDestinationLng').value=rideDestinationPoint.lng.toFixed(6);if(window.L&&rideDestinationMap){if(!rideDestinationMarker){rideDestinationMarker=L.marker([rideDestinationPoint.lat,rideDestinationPoint.lng],{draggable:true}).addTo(rideDestinationMap);rideDestinationMarker.on('dragend',event=>setRideDestinationPoint(event.target.getLatLng(),false))}else rideDestinationMarker.setLatLng([rideDestinationPoint.lat,rideDestinationPoint.lng]);if(pan)rideDestinationMap.setView([rideDestinationPoint.lat,rideDestinationPoint.lng],16,{animate:false})}const hint=$('#rideDestinationMapHint');if(hint)hint.textContent=`เลือกพิกัด ${rideDestinationPoint.lat.toFixed(6)}, ${rideDestinationPoint.lng.toFixed(6)} แล้ว`};
     window.confirmRideJob=async id=>{sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id);if(!rider||!order||order.serviceType!=='ap_ride')return toast('ไม่พบงาน AP Ride ที่เลือก');if(order.rideSelectedRiderId!==rider.id)return toast('งานนี้ไม่ได้ส่งถึงบัญชี Rider ของคุณ');if(!confirm(`ยืนยันรับงาน AP Ride\nผู้โดยสาร: ${order.name||'-'}\nจุดรับ: ${order.pickupAddress||'-'}\n\nเมื่อยืนยัน คุณต้องไปถึงจุดรับและยืนยัน GPS ภายใน 50 เมตรก่อนตั้งจุดหมาย`))return;try{State.isSyncing=true;await Cloud.request('rpc/rider_confirm_ride_job',{method:'POST',body:JSON.stringify({p_order_id:id})});rider.status='กำลังส่งงาน';persist();await Cloud.saveRider(rider).catch(()=>{});await Cloud.pullOrders();await Cloud.pullEarnings(rider.id);render();toast('ยืนยันรับงาน AP Ride แล้ว กรุณาไปยังจุดรับผู้โดยสาร')}catch(error){toast('ยืนยันรับงาน AP Ride ไม่สำเร็จ: '+error.message)}finally{setTimeout(()=>State.isSyncing=false,1200)}};
-    window.arriveRidePickup=id=>{sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id&&o.riderId===rider?.id);if(!order||order.serviceType!=='ap_ride')return toast('ไม่พบงาน AP Ride ของคุณ');if(!navigator.geolocation)return toast('เบราว์เซอร์นี้ไม่รองรับ GPS');toast('กำลังตรวจสอบระยะห่างจากจุดรับ…');navigator.geolocation.getCurrentPosition(async position=>{const location={lat:position.coords.latitude,lng:position.coords.longitude,accuracy:Math.round(position.coords.accuracy||0),capturedAt:now(),capturedAtIso:new Date().toISOString()},distance=distanceMeters(location,order.pickupLocation);if(distance!==null&&distance>50)return toast(`ยังห่างจากจุดรับ ${Math.round(distance)} เมตร ต้องอยู่ในรัศมี 50 เมตร`);if(!confirm(`ยืนยันถึงจุดรับผู้โดยสาร${distance!==null?` (ห่าง ${Math.round(distance)} เมตร)`:''}?\nระบบจะเปิดขั้นตอนตั้งจุดหมายร่วมกับผู้โดยสาร`))return;try{State.isSyncing=true;await Cloud.request('delivery_orders?id=eq.'+encodeURIComponent(id)+'&rider_id=eq.'+encodeURIComponent(rider.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'ถึงจุดรับผู้โดยสาร',ride_arrived_at:new Date().toISOString(),ride_arrived_location:location,updated_at:new Date().toISOString()})});await Cloud.request('order_status_events',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({order_id:id,status:'ถึงจุดรับผู้โดยสาร',actor_id:State.session?.userId||null,actor_label:'ไรเดอร์: '+rider.name})}).catch(()=>{});await Cloud.pullOrders();render();toast('ยืนยันถึงจุดรับแล้ว ตั้งจุดหมายร่วมกับผู้โดยสารได้เลย')}catch(error){toast('บันทึกการถึงจุดรับไม่สำเร็จ: '+error.message)}finally{setTimeout(()=>State.isSyncing=false,1200)}},error=>{if(error.code===1)toast('กรุณาอนุญาตสิทธิ์ Location ในเบราว์เซอร์');else toast('ไม่สามารถดึงพิกัด GPS ได้')},{enableHighAccuracy:true,timeout:12000,maximumAge:0})};
+    window.arriveRidePickup=id=>{sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id&&o.riderId===rider?.id);if(!order||order.serviceType!=='ap_ride')return toast('ไม่พบงาน AP Ride ของคุณ');if(!navigator.geolocation)return toast('เบราว์เซอร์นี้ไม่รองรับ GPS');toast('กำลังตรวจสอบระยะห่างจากจุดรับ…');navigator.geolocation.getCurrentPosition(async position=>{const location={lat:position.coords.latitude,lng:position.coords.longitude,accuracy:Math.round(position.coords.accuracy||0),capturedAt:now(),capturedAtIso:new Date().toISOString()},distance=distanceMeters(location,order.pickupLocation);if(distance!==null&&distance>50)return toast(`ยังห่างจากจุดรับ ${Math.round(distance)} เมตร ต้องอยู่ในรัศมี 50 เมตร`);if(!confirm(`ยืนยันถึงจุดรับผู้โดยสาร${distance!==null?` (ห่าง ${Math.round(distance)} เมตร)`:''}?\nระบบจะเปิดขั้นตอนตั้งจุดหมายร่วมกับผู้โดยสาร`))return;try{State.isSyncing=true;await Cloud.request('delivery_orders?id=eq.'+encodeURIComponent(id)+'&rider_id=eq.'+encodeURIComponent(rider.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:'ถึงจุดรับผู้โดยสาร',ride_arrived_at:new Date().toISOString(),ride_arrived_location:location,updated_at:new Date().toISOString()})});await Cloud.request('order_status_events',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({order_id:id,status:'ถึงจุดรับผู้โดยสาร',actor_id:State.session?.userId||null,actor_label:'ไรเดอร์: '+rider.name})}).catch(()=>{});await Cloud.pullOrders();render();toast('ยืนยันถึงจุดรับแล้ว ตั้งจุดหมายร่วมกับผู้โดยสารได้เลย')}catch(error){toast('บันทึกการถึงจุดรับไม่สำเร็จ: '+error.message)}finally{setTimeout(()=>State.isSyncing=false,1200)}},error=>toast(gpsErrorMessage(error)),{enableHighAccuracy:true,timeout:20000,maximumAge:0})};
     function ensureRideDestinationModal(){if($('#rideDestinationModal'))return;const modal=document.createElement('div');modal.id='rideDestinationModal';modal.className='modal-overlay';modal.setAttribute('aria-hidden','true');modal.innerHTML=`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="rideDestinationTitle"><div class="modal-head"><div><h2 id="rideDestinationTitle">ตั้งจุดหมาย AP Ride</h2><p>กำหนดจุดหมายร่วมกับผู้โดยสาร แล้วระบบจะคำนวณค่าโดยสารอัตโนมัติ</p></div><button type="button" class="modal-close" onclick="closeRideDestinationModal()" aria-label="ปิด">×</button></div><div class="notice" style="margin:0 0 14px;background:#edf8f4;color:#276651"><b>อัตราค่าโดยสาร</b><br>เริ่มต้น ฿50 รวม 3 กม.แรก และเพิ่ม ฿12 ต่อกม.สำหรับระยะที่เกิน</div><div class="field"><label>รายละเอียดจุดหมาย</label><input id="rideDestinationAddress" maxlength="500" placeholder="เช่น ตลาดสดเทศบาล ประตู 2" /></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><div class="field"><label>Latitude</label><input id="rideDestinationLat" inputmode="decimal" placeholder="13.756300" onchange="setRideDestinationFromInputs()" /></div><div class="field"><label>Longitude</label><input id="rideDestinationLng" inputmode="decimal" placeholder="100.501800" onchange="setRideDestinationFromInputs()" /></div></div><div class="location-actions"><button type="button" class="btn btn-plain btn-sm" onclick="useCurrentRideDestinationGps()">ใช้ GPS ณ จุดหมาย</button><button type="button" class="btn btn-plain btn-sm" onclick="setRideDestinationFromInputs()">ตั้งหมุดจากพิกัด</button></div><div id="rideDestinationMap" style="height:320px;min-height:260px;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:12px;background:#eef7fb"></div><small id="rideDestinationMapHint" style="display:block;margin-top:8px;color:var(--muted)">แตะบนแผนที่เพื่อเลือกจุดหมาย หรือใช้ GPS/กรอกพิกัดด้านบน</small><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:17px"><button type="button" class="btn btn-plain" onclick="closeRideDestinationModal()">ยกเลิก</button><button type="button" class="btn btn-main" onclick="saveRideDestination()">บันทึกจุดหมายและคำนวณค่าโดยสาร</button></div></div>`;document.body.appendChild(modal)};
     window.openRideDestinationModal=id=>{sync();const order=State.orders.find(o=>o.id===id&&o.serviceType==='ap_ride');if(!order)return toast('ไม่พบงาน AP Ride');ensureRideDestinationModal();rideDestinationOrderId=id;$('#rideDestinationAddress').value=order.deliveryAddress&&order.deliveryAddress!=='รอ Rider ตั้งจุดหมายร่วมกับผู้โดยสาร'?order.deliveryAddress:'';const seed=order.deliveryLocation||currentRider()?.lastLocation||order.pickupLocation||{lat:13.7563,lng:100.5018};rideDestinationPoint={lat:Number(seed.lat),lng:Number(seed.lng)};$('#rideDestinationModal').classList.add('open');$('#rideDestinationModal').setAttribute('aria-hidden','false');setTimeout(()=>{const canvas=$('#rideDestinationMap');if(window.L){if(!rideDestinationMap){rideDestinationMap=L.map(canvas,{zoomControl:true,attributionControl:true});L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(rideDestinationMap);rideDestinationMap.on('click',event=>setRideDestinationPoint(event.latlng,true))}rideDestinationMap.invalidateSize();setRideDestinationPoint(rideDestinationPoint,true)}else setRideDestinationPoint(rideDestinationPoint,false)},100)};
     window.closeRideDestinationModal=()=>{$('#rideDestinationModal')?.classList.remove('open');$('#rideDestinationModal')?.setAttribute('aria-hidden','true');rideDestinationOrderId=null};
     window.setRideDestinationFromInputs=()=>{const point=rideDestinationInputs();if(!Number.isFinite(point.lat)||!Number.isFinite(point.lng)||Math.abs(point.lat)>90||Math.abs(point.lng)>180)return toast('กรุณากรอกพิกัด Latitude และ Longitude ให้ถูกต้อง');setRideDestinationPoint(point,true)};
-    window.useCurrentRideDestinationGps=()=>{if(!navigator.geolocation)return toast('เบราว์เซอร์นี้ไม่รองรับ GPS');toast('กำลังดึงพิกัด GPS ณ จุดหมาย…');navigator.geolocation.getCurrentPosition(position=>{setRideDestinationPoint({lat:position.coords.latitude,lng:position.coords.longitude},true);toast('ตั้งหมุดจาก GPS ปัจจุบันแล้ว')},()=>toast('ไม่สามารถดึงพิกัด GPS ได้'),{enableHighAccuracy:true,timeout:12000,maximumAge:0})};
+    window.useCurrentRideDestinationGps=()=>{if(!navigator.geolocation)return toast('เบราว์เซอร์นี้ไม่รองรับ GPS');toast('กำลังดึงพิกัด GPS ณ จุดหมาย…');navigator.geolocation.getCurrentPosition(position=>{setRideDestinationPoint({lat:position.coords.latitude,lng:position.coords.longitude},true);toast('ตั้งหมุดจาก GPS ปัจจุบันแล้ว')},error=>toast(gpsErrorMessage(error)),{enableHighAccuracy:true,timeout:20000,maximumAge:0})};
     window.saveRideDestination=async()=>{sync();const rider=currentRider(),order=State.orders.find(o=>o.id===rideDestinationOrderId&&o.riderId===rider?.id);const address=$('#rideDestinationAddress')?.value.trim()||'';if(!order||order.serviceType!=='ap_ride')return toast('ไม่พบงาน AP Ride ของคุณ');if(!address)return toast('กรุณาระบุรายละเอียดจุดหมาย');if(!rideDestinationPoint)return toast('กรุณาเลือกพิกัดจุดหมายบนแผนที่ ใช้ GPS หรือกรอกพิกัด');if(!confirm(`ยืนยันตั้งจุดหมาย\n${address}\nระบบจะคำนวณค่าโดยสารจริงตามระยะทางก่อนเริ่มเดินทาง`))return;try{State.isSyncing=true;const fare=await Cloud.request('rpc/rider_set_ride_destination',{method:'POST',body:JSON.stringify({p_order_id:order.id,p_destination_address:address,p_destination_location:rideDestinationPoint})});const value=Number(Array.isArray(fare)?fare[0]:fare)||50;await Cloud.pullOrders();render();closeRideDestinationModal();toast(`บันทึกจุดหมายแล้ว ค่าโดยสาร ${money(value)} กรุณาพาผู้โดยสารไปยังจุดหมาย`)}catch(error){toast('บันทึกจุดหมายไม่สำเร็จ: '+error.message)}finally{setTimeout(()=>State.isSyncing=false,1200)}};
     const standardOrderModal=window.openOrderModal;window.openOrderModal=id=>{const order=State.orders.find(o=>o.id===id);if(order?.serviceType!=='ap_ride')return standardOrderModal(id);State.activeModalOrderId=id;const due=Number(order.payable||order.total||0),riderIncome=money(Number(order.deliveryFee||0)*.8),promptPay=State.config.payment?.promptPayId||'',qr=State.config.payment?.qrImageUrl||'';$('#modalOrderId').textContent=`AP Ride ${order.id}`;$('#modalOrderSubtitle').textContent=`ผู้โดยสาร: ${order.name||'-'} · ${order.ridePassengerCount||1} คน`;$('#modalOrderBody').innerHTML=`<div class="card" style="background:#f8fbfa;margin:0"><b style="font-size:13px">สรุปการเดินทาง</b><div style="font-size:11px;color:var(--muted);margin-top:5px"><b>📍 จุดรับ:</b> ${esc(order.pickupAddress||'-')}<br><b>🏁 จุดหมาย:</b> ${esc(order.deliveryAddress||'-')}<br><b>💰 ค่าโดยสาร:</b> ${money(due)} · <b style="color:var(--ok)">รายได้สุทธิที่จะได้รับ: ${riderIncome}</b></div></div><div class="card" style="margin:0"><b style="font-size:13px">ขั้นตอนที่ 1: ยืนยันถึงจุดหมาย (GPS 50 เมตร)</b><p style="font-size:11px;color:var(--muted);margin:4px 0 10px">ตรวจสอบว่าคุณอยู่ภายในรัศมี 50 เมตรของจุดหมายก่อนปิดงาน</p><button class="btn btn-sky btn-sm" type="button" onclick="verifyDeliveryGps('${order.id}')">📍 ตรวจสอบตำแหน่ง GPS ปัจจุบัน</button><div id="gpsVerifyResult" style="margin-top:8px;font-size:11px;font-weight:800;color:var(--muted)">ยังไม่ได้ตรวจสอบพิกัด</div></div><div class="card" style="margin:0"><b style="font-size:13px">ขั้นตอนที่ 2: รับชำระค่าโดยสาร</b><div class="field" style="margin-top:8px"><label>ช่องทางชำระเงิน</label><select id="completionPaymentMethod" onchange="togglePaymentForm(this.value)"><option value="เงินสดปลายทาง (COD)">เงินสด</option><option value="โอนสแกน QR Code">โอนสแกน QR Code</option></select></div><div id="cashPaymentSection" style="margin-top:10px;display:grid;gap:8px"><div class="field"><label>จำนวนเงินสดที่รับมา (บาท)</label><input id="cashReceivedInput" type="number" step="any" placeholder="${due}" oninput="calculateChange(${due})" /></div><div style="font-size:12px;font-weight:900;color:var(--ok)" id="changeDisplay">เงินทอนผู้โดยสาร: ฿0.00</div></div><div id="qrPaymentSection" style="margin-top:10px;display:none;text-align:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px">${qr?`<img src="${esc(qr)}" alt="QR Code รับชำระเงิน" style="display:block;width:min(220px,100%);margin:0 auto 9px;border-radius:12px;border:1px solid var(--line)">`:`<b>${promptPay?esc(promptPay):'ผู้ดูแลยังไม่ได้ตั้งค่า QR Code'}</b>`}<div style="font-size:12px;font-weight:900;color:var(--navy);margin-top:6px">ยอดที่ต้องชำระ: ${money(due)}</div></div></div><div class="card" style="margin:0"><b style="font-size:13px">ขั้นตอนที่ 3: แนบภาพหลักฐานถึงจุดหมาย</b><div class="field" style="margin-top:8px"><label>อัปโหลดรูปจุดส่งมอบ (ระบบบีบอัดให้อัตโนมัติ)</label><input type="file" accept="image/*" onchange="handleProofImage(this)" /></div><div id="proofImagePreview" style="margin-top:8px;font-size:11px;color:var(--muted)">ยังไม่มีรูปหลักฐาน</div></div><button class="btn btn-main" style="width:100%;padding:14px;font-size:13px" onclick="confirmAndCompleteOrder('${order.id}')">✨ ยืนยันถึงจุดหมายและปิดงาน</button>`;$('#orderModal').classList.add('open');$('#orderModal').setAttribute('aria-hidden','false')};
     const standardJobCard=jobCard;
@@ -605,10 +614,13 @@
       $('#myJobs').innerHTML=mine.length?section('🏍️ งาน AP Ride ของฉัน',mine.filter(order=>order.serviceType==='ap_ride'),'mine')+section('📦 งานจัดส่งและฝากซื้อของฉัน',mine.filter(order=>order.serviceType!=='ap_ride'),'mine'):'<div class="empty">คุณยังไม่มีงานที่กำลังดำเนินการ</div>';
     };
 
-    window.addEventListener('storage',e=>{if(['apcx_orders','apcx_riders','apcx_rider_earnings','apcx_supabase_session','apcx_config'].includes(e.key)){State.config=read('apcx_config',State.config);render()}});
+    window.addEventListener('storage',e=>{if(['apcx_orders','apcx_riders','apcx_rider_earnings','apcx_rider_supabase_session','apcx_config'].includes(e.key)){State.config=read('apcx_config',State.config);render()}});
     window.addEventListener('focus',()=>refreshFromCloud(true));
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')refreshFromCloud(true)});
     render();setTimeout(()=>refreshFromCloud(true),200);setInterval(()=>refreshFromCloud(true),15000);
+  </script>
+  <script>
+    const RiderCameraCaptureUX={apply(root=document){root.querySelectorAll('input[type="file"][accept*="image"]').forEach(input=>{if(input.dataset.cameraCaptureReady)return;input.dataset.cameraCaptureReady='true';input.setAttribute('capture','environment');input.title='เลือกไฟล์เดิมหรือถ่ายภาพใหม่ด้วยกล้อง';const hint=document.createElement('small');hint.textContent='เลือกไฟล์เดิม หรือแตะเพื่อถ่ายภาพด้วยกล้อง';hint.style.cssText='display:block;margin-top:5px;color:var(--muted);font-size:10px';input.insertAdjacentElement('afterend',hint)})}};RiderCameraCaptureUX.apply();new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{if(node.nodeType===1)RiderCameraCaptureUX.apply(node)}))).observe(document.body,{childList:true,subtree:true});
   </script>
 </body>
 </html>
