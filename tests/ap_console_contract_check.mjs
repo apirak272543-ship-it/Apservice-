@@ -9,6 +9,10 @@ const files = {
 const requirements = [
   ['Customer/Admin: สมัครสมาชิกและสร้างโปรไฟล์', files.customer, /RegistrationUX[\s\S]*createAccount[\s\S]*user_profiles/],
   ['Customer/Admin: CRM โหลดรายชื่อลูกค้าจาก Supabase', files.customer, /CustomerDirectory[\s\S]*user_profiles\?select=user_id,email,display_name/],
+  ['Customer/Admin: ยอมรับเงื่อนไขและนโยบายก่อนสมัคร', files.customer, /registrationCustomerConsent[\s\S]*registrationCustomerLocationNotice[\s\S]*type="checkbox" required/],
+  ['Customer/Admin: checkbox การยินยอมไม่ถูกติ๊กล่วงหน้า', files.customer, /<input id="registrationCustomerConsent" type="checkbox" required \/>[\s\S]*<input id="registrationCustomerLocationNotice" type="checkbox" required \/>/],
+  ['Customer/Admin: ส่ง metadata การยินยอมตอนสมัคร', files.customer, /privacy_policy_accepted[\s\S]*location_service_notice_accepted/],
+  ['Customer/Admin: ขอ GPS ครั้งแรกโดยไม่ถามซ้ำทุกออร์เดอร์', files.customer, /PrivacyUX[\s\S]*ensureFirstLocationUse[\s\S]*requestPosition/],
   ['Customer/Admin: แอดมินจัดการคำขอถอนเงิน', files.customer, /admin_review_withdrawal/],
   ['Customer/Admin: AP Ride และคัดเลือก Rider', files.customer, /list_eligible_ride_riders/],
   ['Customer/Admin: เปิดกล้องในช่องรูปภาพ', files.customer, /CameraCaptureUX[\s\S]*capture/],
