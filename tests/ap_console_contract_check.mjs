@@ -5,7 +5,10 @@ const files = {
   rider: readFileSync('/home/ubuntu/app-delivery-mobile/ap-rider.html', 'utf8'),
   store: readFileSync('/home/ubuntu/app-delivery-mobile/ap-store.html', 'utf8'),
   reviewMigration: readFileSync('/home/ubuntu/app-delivery-mobile/supabase/migrations/20260814_review_legacy_customer_email.sql', 'utf8'),
+  errorMigration: readFileSync('/home/ubuntu/app-delivery-mobile/supabase/migrations/20260814_error_monitoring_center.sql', 'utf8'),
+  notFound: readFileSync('/home/ubuntu/app-delivery-mobile/404.html', 'utf8'),
 };
+files.customerErrorMonitor = files.customer.match(/const ErrorMonitor=[\s\S]*?ErrorMonitor\.init\(\);/)?.[0] || '';
 
 const requirements = [
   ['Customer/Admin: สมัครสมาชิกและสร้างโปรไฟล์', files.customer, /RegistrationUX[\s\S]*createAccount[\s\S]*user_profiles/],
@@ -36,6 +39,13 @@ const requirements = [
   ['Store: ยอดขายรวมและยอดพร้อมถอนแสดงบนหน้าแรก', files.store, /StoreDashboardFinance[\s\S]*ยอดขายทั้งหมด[\s\S]*พร้อมถอน/],
   ['Store: ปุ่มย้อนกลับและคงข้อมูลฟอร์ม', files.store, /(?=[\s\S]*storeBackButton)(?=[\s\S]*StoreNavigationUX)(?=[\s\S]*apcx_store_form_drafts_v1)/],
   ['Store: เลือกได้ทั้งคลังไฟล์และกล้อง', files.store, /StoreImageSourceChoices[\s\S]*removeAttribute\('capture'\)[\s\S]*ถ่ายรูปด้วยกล้อง/],
+  ['Customer/Admin: ศูนย์ติดตาม error และปุ่มส่งให้ตรวจสอบ', files.customer, /ErrorMonitor[\s\S]*error_reports[\s\S]*ส่งให้ตรวจสอบ[\s\S]*อนุมัติวิเคราะห์/],
+  ['Customer/Admin: ป้องกันข้อมูลอ่อนไหวและรวม error ซ้ำ', files.customer, /PUBLISHABLE_KEY_REDACTED[\s\S]*Date\.now\(\)-last<120000/],
+  ['Customer/Admin: ไม่ติดตามการคลิกหรือการเคลื่อนไหวทุกครั้ง', files.customerErrorMonitor, /^(?![\s\S]*addEventListener\('(?:click|mousemove|scroll))(?=[\s\S]*window\.addEventListener\('error')/],
+  ['Rider: รายงาน error แบบ background และแนบภาพ private', files.rider, /RiderErrorMonitor[\s\S]*error-evidence[\s\S]*SUPABASE_REQUEST/],
+  ['Store: รายงาน error แบบ background และแนบภาพ private', files.store, /StoreErrorMonitor[\s\S]*error-evidence[\s\S]*SUPABASE_REQUEST/],
+  ['Supabase: error report กรองข้อความ ตั้ง RLS และเก็บหลักฐาน private', files.errorMigration, /redact_error_text[\s\S]*error_reports[\s\S]*ENABLE ROW LEVEL SECURITY[\s\S]*INSERT INTO storage\.buckets[\s\S]*error-evidence[\s\S]*false/],
+  ['404: มีปุ่มกลับหน้าก่อนหน้าและหน้าแรก', files.notFound, /history\.back\(\)[\s\S]*index\.html/],
 ];
 
 const failed = requirements.filter(([, content, pattern]) => !pattern.test(content));
