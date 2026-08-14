@@ -53,6 +53,12 @@ const requirements = [
   ['Supabase: scheduler เรียกฟังก์ชันผ่าน Vault และ Authorization', files.retentionMigration, /(?=[\s\S]*vault\.decrypted_secrets)(?=[\s\S]*Authorization)(?=[\s\S]*error-retention-cleanup)/],
   ['Edge Function: ลบภาพผ่าน Storage API ก่อนลบ error log ที่หมดอายุ', files.retentionFunction, /IMAGE_RETENTION_DAYS = 14[\s\S]*LOG_RETENTION_DAYS = 30[\s\S]*storage\.from\('error-evidence'\)\.remove[\s\S]*from\('error_reports'\)\.delete/],
   ['Edge Function: ห้ามแตะตารางข้อมูลธุรกิจในการล้างข้อมูล', files.retentionFunction, /^(?![\s\S]*(?:from\('delivery_orders'\)|from\('wallet_transactions'\)|from\('stores'\)|from\('riders'\)|from\('user_profiles'\)))[\s\S]*error_reports/],
+  ['Customer/Admin: ซ่อนปุ่มลอยและย้ายแจ้งปัญหาไว้ในเมนูโปรไฟล์', files.customer, /(?=[\s\S]*\.error-report-fab\{display:none!important\})(?=[\s\S]*ความช่วยเหลือและการแจ้งปัญหา)(?=[\s\S]*openErrorReport)/],
+  ['Customer/Admin: ฟอร์มแจ้งปัญหาปิดได้ด้วยฉากหลังหรือ Escape', files.customer, /safeDismiss[\s\S]*pointerdown[\s\S]*event\.key==='Escape'/],
+  ['Rider: ซ่อนปุ่มลอยและย้ายแจ้งปัญหาไว้หน้า Settings', files.rider, /ความช่วยเหลือและการแจ้งปัญหา[\s\S]*openRiderErrorReport[\s\S]*\.error-report-fab\{display:none!important/],
+  ['Rider: ฟอร์มแจ้งปัญหาปิดได้ด้วยฉากหลังหรือ Escape', files.rider, /safeDismiss[\s\S]*pointerdown[\s\S]*event\.key==='Escape'/],
+  ['Store: ซ่อนปุ่มลอยและย้ายแจ้งปัญหาไว้หน้าโปรไฟล์ร้าน', files.store, /ความช่วยเหลือและการแจ้งปัญหา[\s\S]*openStoreErrorReport[\s\S]*\.error-report-fab\{display:none!important/],
+  ['Store: ฟอร์มแจ้งปัญหาปิดได้ด้วยฉากหลังหรือ Escape', files.store, /safeDismiss[\s\S]*pointerdown[\s\S]*event\.key==='Escape'/],
 ];
 
 const failed = requirements.filter(([, content, pattern]) => !pattern.test(content));
