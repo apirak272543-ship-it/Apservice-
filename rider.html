@@ -7,7 +7,7 @@
   <style>
     :root{--navy:#102b49;--navy-2:#193b60;--sky:#3e90c8;--sky-soft:#eaf6ff;--ink:#17212b;--muted:#6c7a87;--line:#dce7ef;--paper:#fff;--canvas:#f2f7fa;--ok:#16805b;--warn:#b77615;--danger:#c04d5a;--shadow:0 16px 38px rgba(16,43,73,.10)}
     *{box-sizing:border-box}body{margin:0;background:var(--canvas);color:var(--ink);font-family:Inter,"Noto Sans Thai",system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{border:0;cursor:pointer}.hidden{display:none!important}
-    .top{position:sticky;top:0;z-index:10;min-height:72px;padding:12px max(18px,calc((100vw - 1150px)/2));background:rgba(255,255,255,.93);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px}.brand{display:flex;align-items:center;gap:10px}.mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#173b61,#3e90c8);font-size:20px;box-shadow:0 9px 18px rgba(25,59,96,.22)}.brand b{display:block;font-size:15px}.brand small{display:block;margin-top:2px;color:var(--muted);font-size:10px}.top-actions{display:flex;gap:8px;align-items:center}.shell{max-width:1150px;margin:auto;padding:24px 18px 56px}
+    .top{position:sticky;top:0;z-index:10;min-height:72px;padding:12px max(18px,calc((100vw - 1150px)/2));background:rgba(255,255,255,.93);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px}.brand{display:flex;align-items:center;gap:10px}.mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#173b61,#3e90c8);font-size:20px;box-shadow:0 9px 18px rgba(25,59,96,.22)}.brand b{display:block;font-size:15px}.brand small{display:block;margin-top:2px;color:var(--muted);font-size:10px}.top-actions{display:flex;gap:8px;align-items:center}.shell{max-width:1150px;margin:auto;padding:24px 18px 56px}.rider-nav{display:flex;gap:8px;overflow:auto;padding:12px 0 3px;scrollbar-width:none}.rider-nav::-webkit-scrollbar{display:none}.rider-nav button{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:12px;padding:10px 13px;font-size:11px;font-weight:900}.rider-nav button.active{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 8px 16px rgba(16,43,73,.16)}.rider-page{display:none}.rider-page.active{display:block}
     .hero{padding:29px;border-radius:25px;background:radial-gradient(circle at 85% 15%,rgba(94,189,255,.34),transparent 23%),linear-gradient(128deg,#102b49,#1d5f93);color:#fff;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:20px}.hero h1{font-size:clamp(27px,4vw,42px);letter-spacing:-1.4px;margin:7px 0}.hero p{margin:0;max-width:580px;color:#d9efff;font-size:12px;line-height:1.65}.hero-art{font-size:76px;filter:drop-shadow(0 14px 18px rgba(0,0,0,.19))}.eyebrow{font-size:10px;font-weight:900;letter-spacing:.14em;color:#bce5ff}
     .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:19px;box-shadow:0 6px 16px rgba(35,77,111,.035)}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:18px}.stat{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.stat small{color:var(--muted);font-size:10px}.stat b{font-size:24px;display:block;margin:7px 0 1px}
     .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:23px 0 12px}.section-head h2{font-size:18px;margin:0}.section-head p{font-size:11px;margin:4px 0 0;color:var(--muted)}
@@ -25,8 +25,7 @@
     .modal-overlay{position:fixed;inset:0;background:rgba(16,43,73,.56);backdrop-filter:blur(5px);z-index:50;display:grid;place-items:center;padding:16px;opacity:0;pointer-events:none;transition:.2s}
     .modal-overlay.open{opacity:1;pointer-events:auto}
     .modal{background:#fff;border-radius:22px;max-width:620px;width:100%;max-height:90vh;overflow:auto;padding:24px;box-shadow:0 24px 48px rgba(0,0,0,.22)}
-    .toast{position:fixed;z-index:100;right:18px;bottom:19px;background:#112d4a;color:#fff;padding:11px 13px;border-radius:11px;font-size:11px;font-weight:800;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}
-    .toast.show{opacity:1;transform:none}
+    .toast{position:fixed;z-index:100;right:max(16px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));display:grid;grid-template-columns:26px minmax(0,1fr);gap:9px;align-items:start;width:min(460px,calc(100vw - 32px));background:linear-gradient(135deg,#137a59,#2a9d74);border:2px solid rgba(255,255,255,.9);box-shadow:0 17px 34px rgba(16,43,73,.30),0 0 0 4px rgba(42,157,116,.14);color:#fff;padding:15px 17px;border-radius:16px;font-size:13px;font-weight:900;line-height:1.5;white-space:pre-line;opacity:0;transform:translateY(16px);pointer-events:none;transition:.22s}.toast:before{content:'✓';width:26px;height:26px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.55);border-radius:50%;background:rgba(255,255,255,.22);font-size:15px}.toast.show{opacity:1;transform:none}.toast.is-warning{background:linear-gradient(135deg,#b06a12,#dc962d);box-shadow:0 17px 34px rgba(111,70,10,.26),0 0 0 4px rgba(220,150,45,.14)}.toast.is-warning:before{content:'!'}.toast.is-error{background:linear-gradient(135deg,#a63c47,#ca5860);box-shadow:0 17px 34px rgba(117,32,38,.26),0 0 0 4px rgba(202,88,96,.14)}.toast.is-error:before{content:'×';font-size:19px}
     @media(max-width:760px){.hero{padding:23px}.hero-art{display:none}.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr}.route{grid-template-columns:1fr}.top{padding:10px 15px}.shell{padding:18px 15px 45px}}
   </style>
 </head>
@@ -53,11 +52,17 @@
         <div><div class="eyebrow">RIDER WORKSPACE</div><h1 id="welcome">พร้อมรับงาน</h1><p>จัดการงาน จัดเส้นทาง ตรวจสอบตำแหน่ง GPS และบันทึกส่งสำเร็จพร้อมรับชำระเงินตามขั้นตอนมาตรฐาน</p></div>
         <div class="hero-art">🛵</div>
       </section>
+      <nav class="rider-nav" aria-label="เมนู Rider"><button class="active" data-rider-page="home">ภาพรวม</button><button data-rider-page="jobs">งานรับส่ง</button><button data-rider-page="profile">โปรไฟล์และสถานะ</button><button data-rider-page="earnings">รายได้</button><button data-rider-page="settings">ตั้งค่า</button></nav>
+      <section class="rider-page active" id="riderPage-home">
       <div class="stats">
         <div class="stat"><small>งานใหม่รอรับ</small><b id="newCount">0</b><small>ทุกประเภทงาน</small></div>
         <div class="stat"><small>งานของฉัน</small><b id="myCount">0</b><small>กำลังดำเนินการ</small></div>
         <div class="stat"><small>งานสำเร็จวันนี้</small><b id="doneCount">0</b><small>ยืนยันจากบัญชีรายได้</small></div>
       </div>
+      </section>
+
+      <section class="rider-page" id="riderPage-profile">
+      <div class="section-head"><div><h2>โปรไฟล์และสถานะการทำงาน</h2><p>อัปเดตพิกัดและสถานะพร้อมรับงานจากหน้านี้</p></div></div>
       <div class="grid">
         <div class="card">
           <h3 style="margin:0;font-size:16px">ตำแหน่งไรเดอร์</h3>
@@ -80,20 +85,30 @@
           </div>
         </div>
       </div>
+      </section>
 
+      <section class="rider-page" id="riderPage-settings">
+      <div class="section-head"><div><h2>การตั้งค่า Rider</h2><p>จัดการข้อมูลการใช้งานและดึงข้อมูลล่าสุดจากฐานข้อมูลกลาง</p></div></div>
+      <div class="card"><h3 style="margin:0 0 7px;font-size:16px">การเชื่อมต่อและความปลอดภัย</h3><p style="margin:0 0 14px;color:var(--muted);font-size:11px;line-height:1.6">ระบบจะรีเฟรชงาน สถานะ และ QR รับชำระเงินอัตโนมัติเมื่อเปิดหน้าจอ คุณสามารถกดรีเฟรชเองได้เมื่อสัญญาณอินเทอร์เน็ตกลับมา</p><button class="btn btn-main" type="button" onclick="refreshRiderWorkspace()">รีเฟรชข้อมูลจากฐานกลาง</button></div>
+      </section>
+
+      <section class="rider-page" id="riderPage-jobs">
       <div class="section-head"><div><h2>งานใหม่ที่รอรับทุกประเภท</h2><p>แสดงงานอาหาร พัสดุ และฝากซื้อที่ยังไม่ได้มอบหมายไรเดอร์</p></div><button class="btn btn-plain btn-sm" id="refreshBtn">รีเฟรชข้อมูล</button></div>
       <div id="availableJobs"></div>
 
       <div class="section-head"><div><h2>งานของฉัน (กำลังดำเนินการ)</h2><p>กดอัปเดตสถานะตามขั้นตอน (กำลังไปรับร้าน → ยืนยันถึงร้านค้า → ยืนยันรับสินค้าแล้ว → ไปจุดส่ง)</p></div></div>
       <div id="myJobs"></div>
+      </section>
 
-      <div class="section-head"><div><h2>รายได้และกระเป๋า Rider</h2><p>สรุปยอดรายได้สุทธิจากค่าส่ง (คิดจากค่าส่ง 80% แยกจากราคาสินค้า)</p></div></div>
+      <section class="rider-page" id="riderPage-earnings">
+      <div class="section-head"><div><h2>รายได้และกระเป๋า Rider</h2><p>สรุปยอดรายได้สุทธิจากค่าส่งและประวัติงานที่ส่งสำเร็จ</p></div></div>
       <div class="stats">
         <div class="stat"><small>รายได้สุทธิวันนี้</small><b id="todayRiderIncome">฿0</b><small>ยอดสะสมจากค่าส่งวันนี้</small></div>
         <div class="stat"><small>กระเป๋ารายได้สะสม</small><b id="walletBalance">฿0</b><small>รอปิดยอดตามรอบ</small></div>
         <div class="stat"><small>COD วันนี้</small><b id="todayCod">฿0</b><small>เงินสดที่เก็บจากลูกค้า</small></div>
       </div>
       <div id="earningHistory" style="margin-top:12px"></div>
+      </section>
     </section>
   </main>
 
@@ -166,10 +181,10 @@
         await this.request('delivery_orders?id=eq.'+encodeURIComponent(order.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify(payload)});
       },
       async saveRider(rider){await this.request('riders?id=eq.'+encodeURIComponent(rider.id),{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({status:rider.status,last_location:rider.lastLocation,updated_at:new Date().toISOString()})})},
-      async syncConfig(){try{const rows=await this.request('platform_configs?select=key,value');if(Array.isArray(rows)){const payment=rows.find(r=>r.key==='payment')?.value;if(payment){State.config.payment=payment;write('apcx_config',State.config)}}}catch(e){}}
+      async syncConfig(){try{const rows=await this.request('platform_configs?select=key,value');if(Array.isArray(rows)){const payment=rows.find(r=>r.key==='payment_public')?.value;if(payment){State.config.payment={...(State.config.payment||{}),provider:payment.provider||'manual',promptPayId:payment.promptPayId||'',qrImageUrl:payment.qrImageUrl||'',cod:Boolean(payment.cod)};write('apcx_config',State.config)}}}catch(e){}}
     };
 
-    const toast=text=>{const e=$('#toast');e.textContent=text;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),3000)};
+    let toastTimer=null;const toast=(text,tone='')=>{const e=$('#toast'),message=String(text||'').trim()||'ดำเนินการเรียบร้อยแล้ว',lower=message.toLowerCase(),resolved=tone||(/ไม่สำเร็จ|ไม่สามารถ|ขัดข้อง|ผิดพลาด|ถูกปฏิเสธ|ล้มเหลว|หมดอายุ/.test(lower)?'error':/กรุณา|คำเตือน|ยังไม่ได้|ไม่พบ|รออนุมัติ/.test(lower)?'warning':'success');e.textContent=message;e.className=`toast show is-${resolved}`;if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('show'),5000)};
     const mapUrl=location=>location?.lat!==undefined&&location?.lng!==undefined?`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(location.lat+','+location.lng)}`:'';
     const mapButton=(location,text)=>{const url=mapUrl(location);return url?`<a class="map" target="_blank" rel="noopener" href="${url}">${text}</a>`:`<span class="map off">ยังไม่มีพิกัด</span>`};
     const optionSummary=item=>{
@@ -191,6 +206,9 @@
       const link=$('#riderMap'),url=mapUrl(location);link.href=url||'';link.classList.toggle('off',!url);link.textContent=url?'เปิดตำแหน่งใน Google Maps':'ยังไม่มีพิกัดสำหรับเปิดแผนที่';
     }
 
+    function showRiderPage(page='home'){State.page=page;document.querySelectorAll('[data-rider-page]').forEach(button=>button.classList.toggle('active',button.dataset.riderPage===page));document.querySelectorAll('.rider-page').forEach(section=>section.classList.toggle('active',section.id===`riderPage-${page}`));}
+    document.querySelectorAll('[data-rider-page]').forEach(button=>button.addEventListener('click',()=>showRiderPage(button.dataset.riderPage)));
+    window.refreshRiderWorkspace=()=>refreshFromCloud(false);
     function statusHistory(order,status){order.status=status;order.statusHistory=order.statusHistory||[];order.statusHistory.push({status,time:now(),by:`ไรเดอร์: ${currentRider()?.name||'ไม่ระบุ'}`})}
 
     function jobCard(order,mode){
@@ -320,7 +338,7 @@
       $('#modalOrderId').textContent=`ออร์เดอร์ ${order.id} · ${order.serviceType||'จัดส่ง'}`;
       $('#modalOrderSubtitle').textContent=`ร้าน/จุดรับ: ${order.storeName||'-'} | ลูกค้า: ${order.name||'-'}`;
       
-      const promptPay=State.config.payment?.promptPayId||'';
+      const promptPay=State.config.payment?.promptPayId||'',qrImageUrl=State.config.payment?.qrImageUrl||'';
       const totalPayable=Number(order.payable||order.total||0);
       const deliveryFee=Number(order.deliveryFee||0);
       const riderShare=Math.round(deliveryFee*.8*100)/100;
@@ -364,7 +382,7 @@
           <div id="qrPaymentSection" style="margin-top:10px;display:none;text-align:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:12px">
             <b style="font-size:12px;display:block;margin-bottom:6px">สแกน QR Code บัญชีกลางแพลตฟอร์ม</b>
             <div id="qrCodeContainer" style="font-size:11px;color:var(--muted)">
-              ${promptPay?`<div style="font-size:14px;font-weight:900;color:var(--navy)">PromptPay / เลขบัญชี: ${promptPay}</div><small>ยอดที่ต้องโอน: ${money(totalPayable)}</small>`:'<span style="color:var(--danger)">ผู้ดูแลยังไม่ได้ตั้งค่า PromptPay / QR Code กลางในหน้า Admin</span>'}
+              ${qrImageUrl?`<img src="${esc(qrImageUrl)}" alt="QR Code รับชำระเงินของแพลตฟอร์ม" style="display:block;width:min(220px,100%);margin:0 auto 9px;border-radius:12px;border:1px solid var(--line)"><div style="font-size:12px;font-weight:900;color:var(--navy)">ยอดที่ต้องโอน: ${money(totalPayable)}</div>${promptPay?`<small>PromptPay / เลขบัญชี: ${esc(promptPay)}</small>`:''}`:promptPay?`<div style="font-size:14px;font-weight:900;color:var(--navy)">PromptPay / เลขบัญชี: ${esc(promptPay)}</div><small>ยอดที่ต้องโอน: ${money(totalPayable)}</small>`:'<span style="color:var(--danger)">ผู้ดูแลยังไม่ได้ตั้งค่า PromptPay / QR Code กลางในหน้า Admin</span>'}
             </div>
           </div>
         </div>
