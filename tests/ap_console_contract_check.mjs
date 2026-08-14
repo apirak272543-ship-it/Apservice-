@@ -6,6 +6,8 @@ const files = {
   store: readFileSync('/home/ubuntu/app-delivery-mobile/ap-store.html', 'utf8'),
   reviewMigration: readFileSync('/home/ubuntu/app-delivery-mobile/supabase/migrations/20260814_review_legacy_customer_email.sql', 'utf8'),
   errorMigration: readFileSync('/home/ubuntu/app-delivery-mobile/supabase/migrations/20260814_error_monitoring_center.sql', 'utf8'),
+  retentionMigration: readFileSync('/home/ubuntu/app-delivery-mobile/supabase/migrations/20260814_error_monitoring_retention.sql', 'utf8'),
+  retentionFunction: readFileSync('/home/ubuntu/app-delivery-mobile/supabase/functions/error-retention-cleanup/index.ts', 'utf8'),
   notFound: readFileSync('/home/ubuntu/app-delivery-mobile/404.html', 'utf8'),
 };
 files.customerErrorMonitor = files.customer.match(/const ErrorMonitor=[\s\S]*?ErrorMonitor\.init\(\);/)?.[0] || '';
@@ -46,6 +48,11 @@ const requirements = [
   ['Store: รายงาน error แบบ background และแนบภาพ private', files.store, /StoreErrorMonitor[\s\S]*error-evidence[\s\S]*SUPABASE_REQUEST/],
   ['Supabase: error report กรองข้อความ ตั้ง RLS และเก็บหลักฐาน private', files.errorMigration, /redact_error_text[\s\S]*error_reports[\s\S]*ENABLE ROW LEVEL SECURITY[\s\S]*INSERT INTO storage\.buckets[\s\S]*error-evidence[\s\S]*false/],
   ['404: มีปุ่มกลับหน้าก่อนหน้าและหน้าแรก', files.notFound, /history\.back\(\)[\s\S]*index\.html/],
+  ['Customer/Admin: แสดงนโยบายประหยัดพื้นที่และปุ่มล้างเฉพาะข้อมูลหมดอายุ', files.customer, /นโยบายประหยัดพื้นที่[\s\S]*ภาพแจ้งปัญหาเก็บ 14 วัน[\s\S]*runErrorRetentionCleanup/],
+  ['Supabase: นโยบายเก็บภาพ 14 วัน log 30 วัน และจำกัดไฟล์ 1 MB', files.retentionMigration, /(?=[\s\S]*file_size_limit = 1000000)(?=[\s\S]*error-retention-cleanup)(?=[\s\S]*pg_cron)/],
+  ['Supabase: scheduler เรียกฟังก์ชันผ่าน Vault และ Authorization', files.retentionMigration, /(?=[\s\S]*vault\.decrypted_secrets)(?=[\s\S]*Authorization)(?=[\s\S]*error-retention-cleanup)/],
+  ['Edge Function: ลบภาพผ่าน Storage API ก่อนลบ error log ที่หมดอายุ', files.retentionFunction, /IMAGE_RETENTION_DAYS = 14[\s\S]*LOG_RETENTION_DAYS = 30[\s\S]*storage\.from\('error-evidence'\)\.remove[\s\S]*from\('error_reports'\)\.delete/],
+  ['Edge Function: ห้ามแตะตารางข้อมูลธุรกิจในการล้างข้อมูล', files.retentionFunction, /^(?![\s\S]*(?:from\('delivery_orders'\)|from\('wallet_transactions'\)|from\('stores'\)|from\('riders'\)|from\('user_profiles'\)))[\s\S]*error_reports/],
 ];
 
 const failed = requirements.filter(([, content, pattern]) => !pattern.test(content));

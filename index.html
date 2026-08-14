@@ -1131,5 +1131,33 @@
       ErrorMonitor.renderAdmin=async function(){const host=$('#errorMonitorRows');if(!host)return;if(!Storage.isAdmin()){host.innerHTML='<tr><td colspan="6">เฉพาะ Master Admin เท่านั้นที่เข้าถึงศูนย์นี้ได้</td></tr>';return}try{const rows=await SupabaseSync.request('error_reports?select=*&order=created_at.desc&limit=150'),query=String($('#errorMonitorQuery')?.value||'').trim().toLowerCase(),severity=$('#errorMonitorSeverity')?.value||'',status=$('#errorMonitorStatus')?.value||'',filtered=rows.filter(row=>(!query||[row.error_code,row.title,row.message,row.app_source].join(' ').toLowerCase().includes(query))&&(!severity||row.severity===severity)&&(!status||row.status===status));host.innerHTML=filtered.length?filtered.map(row=>`<tr><td><b>${escapeHtml(row.error_code||'UNCLASSIFIED')}</b><br><small>${escapeHtml(row.app_source)} · ${new Date(row.created_at).toLocaleString('th-TH')}</small></td><td><span class="error-status ${escapeHtml(row.severity)}">${escapeHtml(row.severity)}</span><br><small>${escapeHtml(row.source_type)}</small></td><td>${escapeHtml(row.title)}<br><small>${escapeHtml(row.message).slice(0,220)}</small></td><td><span class="error-status ${row.status==='resolved'?'resolved':''}">${escapeHtml(row.status)}</span><br><small>${escapeHtml(row.analysis_status)}</small></td><td>${row.evidence_path?`<button class="btn btn-plain btn-small" onclick="viewErrorEvidence('${escapeHtml(row.evidence_path)}')">ดูภาพ</button>`:'-'}</td><td><div style="display:flex;gap:6px;flex-wrap:wrap">${row.analysis_status==='not_requested'?`<button class="btn btn-main btn-small" onclick="queueErrorReview('${row.id}')">ส่งให้ตรวจสอบ</button>`:''}${row.analysis_status==='awaiting_approval'?`<button class="btn btn-plain btn-small" onclick="approveErrorReview('${row.id}')">อนุมัติวิเคราะห์</button>`:''}${row.status!=='resolved'?`<button class="btn btn-plain btn-small" onclick="resolveErrorReport('${row.id}')">ปิดเคส</button>`:''}</div></td></tr>`).join(''):`<tr><td colspan="6">${rows.length?'ไม่พบเคสตามตัวกรอง':'ยังไม่มีเคสข้อผิดพลาด'}</td></tr>`}catch(error){host.innerHTML=`<tr><td colspan="6">โหลดคิวข้อผิดพลาดไม่สำเร็จ: ${escapeHtml(error.message)}</td></tr>`}};
     })();
   </script>
+  <script>
+    /* Storage retention controls: only Master Admin can invoke the protected function, which uses fixed expiry thresholds. */
+    (function(){
+      const decorateRetention=()=>{
+        const section=$('#admin-errors');
+        if(!section||$('#errorRetentionPolicy'))return;
+        const table=section.querySelector('.table-wrap');
+        table?.insertAdjacentHTML('beforebegin','<div class="notice" id="errorRetentionPolicy" style="margin:0 0 14px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><b>นโยบายประหยัดพื้นที่</b><br><small>ภาพแจ้งปัญหาเก็บ 14 วัน · error log เก็บ 30 วัน · สูงสุด 1 ภาพต่อเคส (ไม่เกิน 1 MB) · ไม่ลบข้อมูลลูกค้า ออร์เดอร์ การเงิน ร้านค้า หรือ Rider</small></div><button class="btn btn-plain btn-small" type="button" onclick="runErrorRetentionCleanup()">ล้างเฉพาะรายการหมดอายุ</button></div></div>');
+      };
+      const existingInit=ErrorMonitor.initAdmin.bind(ErrorMonitor);
+      ErrorMonitor.initAdmin=function(){existingInit();decorateRetention()};
+      ErrorMonitor.runRetentionCleanup=async function(){
+        if(!Storage.isAdmin())return UI.toast('เฉพาะ Master Admin เท่านั้นที่สั่งล้างข้อมูลได้','error');
+        if(!confirm('ล้างเฉพาะภาพแจ้งปัญหาที่เกิน 14 วัน และ error log ที่เกิน 30 วันหรือไม่? ข้อมูลลูกค้า ออร์เดอร์ การเงิน ร้านค้า และ Rider จะไม่ถูกแตะต้อง'))return;
+        const session=SupabaseSync.session(),cfg=SupabaseSync.config();
+        if(!session?.access_token)return UI.toast('กรุณาเข้าสู่ระบบแอดมินอีกครั้ง','warning');
+        try{
+          const response=await fetch(`${cfg.url}/functions/v1/error-retention-cleanup`,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.publishableKey,Authorization:'Bearer '+session.access_token},body:JSON.stringify({manual:true})});
+          const result=await response.json().catch(()=>({}));
+          if(!response.ok)throw new Error(result.error||'ไม่สามารถล้างข้อมูลหมดอายุได้');
+          UI.toast(`ล้างรายการหมดอายุแล้ว · ภาพ ${result.evidence_removed||0} รายการ · log ${result.logs_deleted||0} รายการ`,'success');
+          this.renderAdmin();
+        }catch(error){UI.toast('ล้างข้อมูลไม่สำเร็จ: '+error.message,'error')}
+      };
+      window.runErrorRetentionCleanup=()=>ErrorMonitor.runRetentionCleanup();
+      decorateRetention();
+    })();
+  </script>
 </body>
 </html>
