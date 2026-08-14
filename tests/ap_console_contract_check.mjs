@@ -21,6 +21,8 @@ const requirements = [
   ['Store: จัดการเมนูผ่านฐานข้อมูล', files.store, /createFood[\s\S]*menu_items/],
   ['Store: คำขอถอนเงินผ่าน RPC', files.store, /request_full_wallet_withdrawal/],
   ['Store: เปิดกล้องในช่องรูปภาพ', files.store, /StoreCameraCaptureUX[\s\S]*capture/],
+  ['Store: ยอดขายรวมและยอดพร้อมถอนแสดงบนหน้าแรก', files.store, /StoreDashboardFinance[\s\S]*ยอดขายทั้งหมด[\s\S]*พร้อมถอน/],
+  ['Store: เลือกได้ทั้งคลังไฟล์และกล้อง', files.store, /StoreImageSourceChoices[\s\S]*removeAttribute\('capture'\)[\s\S]*ถ่ายรูปด้วยกล้อง/],
 ];
 
 const failed = requirements.filter(([, content, pattern]) => !pattern.test(content));
