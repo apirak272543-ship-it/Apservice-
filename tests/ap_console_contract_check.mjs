@@ -4,6 +4,7 @@ const files = {
   customer: readFileSync('/home/ubuntu/app-delivery-mobile/ap-service-location-options.html', 'utf8'),
   rider: readFileSync('/home/ubuntu/app-delivery-mobile/ap-rider.html', 'utf8'),
   store: readFileSync('/home/ubuntu/app-delivery-mobile/ap-store.html', 'utf8'),
+  reviewMigration: readFileSync('/home/ubuntu/app-delivery-mobile/supabase/migrations/20260814_review_legacy_customer_email.sql', 'utf8'),
 };
 
 const requirements = [
@@ -15,6 +16,10 @@ const requirements = [
   ['Customer/Admin: ย้อนกลับและคงข้อมูลฟอร์ม', files.customer, /(?=[\s\S]*NavigationUX)(?=[\s\S]*apcx_customer_form_drafts_v1)(?=[\s\S]*history\.pushState)/],
   ['Customer/Admin: ส่ง metadata การยินยอมตอนสมัคร', files.customer, /privacy_policy_accepted[\s\S]*location_service_notice_accepted/],
   ['Customer/Admin: ขอ GPS ครั้งแรกโดยไม่ถามซ้ำทุกออร์เดอร์', files.customer, /PrivacyUX[\s\S]*ensureFirstLocationUse[\s\S]*requestPosition/],
+  ['Customer/Admin: หน้าร้านจัดเมนูแบบการ์ดแนวตั้งสำหรับมือถือ', files.customer, /@media\(max-width:580px\)[\s\S]*#view-storefront \.food-grid\{grid-template-columns:1fr/],
+  ['Customer/Admin: แผนที่กลับสู่ตำแหน่งปัจจุบันได้และให้พิกัดลูกค้ามาก่อนค่าเริ่มต้น', files.customer, /(?=[\s\S]*mapFocusLocation)(?=[\s\S]*focusMapOnCurrentLocation)(?=[\s\S]*customerPoint)(?=[\s\S]*configuredPoint)/],
+  ['Customer/Admin: รีวิวเฉพาะร้านหรือ Rider ที่ผูกกับออร์เดอร์', files.customer, /reviewTargets[\s\S]*reviewTargetRatings[\s\S]*reviewTargetLabel/],
+  ['Supabase: รีวิวออร์เดอร์เดิมตรวจเจ้าของจากอีเมลเมื่อยังไม่มี customer_id', files.reviewMigration, /o\.customer_id IS NULL[\s\S]*customer_email[\s\S]*auth\.jwt\(\)/],
   ['Customer/Admin: แอดมินจัดการคำขอถอนเงิน', files.customer, /admin_review_withdrawal/],
   ['Customer/Admin: AP Ride และคัดเลือก Rider', files.customer, /list_eligible_ride_riders/],
   ['Customer/Admin: เปิดกล้องในช่องรูปภาพ', files.customer, /CameraCaptureUX[\s\S]*capture/],
