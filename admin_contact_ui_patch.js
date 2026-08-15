@@ -111,9 +111,21 @@
 
   const priorOpenStoreModal = window.openStoreModal;
   window.openStoreModal = id => {
-    priorOpenStoreModal(id); ensureStoreContactFields();
     const store = id ? AppState.stores.find(item => item.id === id) : null;
-    q('#storeFormPhone').value = store?.phone || ''; repairImageSourceButtons(q('#storeModal'));
+    if (id && !store) return UI.toast('ไม่พบข้อมูลร้านเดิม กรุณารีเฟรชรายการร้านค้าแล้วลองใหม่', 'error');
+    priorOpenStoreModal(id); ensureStoreContactFields();
+    const values = {
+      '#storeEditId': store?.id || '', '#storeFormName': store?.name || '', '#storeFormEmoji': store?.emoji || '🍽️',
+      '#storeFormDesc': store?.desc || store?.description || '', '#storeFormRating': store?.rating ?? 4.5,
+      '#storeFormEta': store?.eta || '25–35 นาที', '#storeFormOwner': store?.owner || store?.ownerEmail || '',
+      '#storeFormLoginId': store?.loginId || '', '#storeFormPhone': store?.phone || '', '#storeFormOpenTime': store?.openTime || '08:00',
+      '#storeFormCloseTime': store?.closeTime || '20:00', '#storeFormCutoff': store?.cutoffMinutes ?? 30,
+      '#storeFormEmergency': String(Boolean(store?.emergencyClosed)), '#storeFormEmergencyNote': store?.emergencyNote || '',
+      '#storeFormImageUrl': store?.imageUrl || '', '#storeFormBackgroundUrl': store?.backgroundUrl || '', '#storeFormCategory': store?.categoryId || 'store-other'
+    };
+    Object.entries(values).forEach(([selector, value]) => { const input = q(selector); if (input) input.value = String(value); });
+    q('#storeFormPassword').value = '';
+    renderStoreLocationForm(store?.location || null); repairImageSourceButtons(q('#storeModal'));
   };
   const priorPublishCatalog = SupabaseAdminSync.publishCatalog.bind(SupabaseAdminSync);
   SupabaseAdminSync.publishCatalog = async function () {
@@ -123,25 +135,32 @@
     return result;
   };
   SupabaseAdminSync.provisionRole = async function (role, entityId, account) {
-    await this.publishCatalog();
+    const entity = role === 'rider' ? AppState.riders.find(item => item.id === entityId) : AppState.stores.find(item => item.id === entityId);
+    if (!entity) throw new Error('ไม่พบข้อมูลร้านหรือ Rider ที่ต้องการบันทึก');
     const cfg = SupabaseSync.config();
-    const body = JSON.stringify({ action: 'provision', role, entity_id: entityId, email: account.email, login_id: account.loginId, display_name: account.displayName, password: account.password, phone: account.phone || '' });
+    const body = JSON.stringify({ action: 'provision', role, entity_id: entityId, email: account.email, login_id: account.loginId, display_name: account.displayName, password: account.password, phone: account.phone || '', entity });
     const send = () => fetch(cfg.url + '/functions/v1/role-access', { method: 'POST', headers: SupabaseSync.headers(), body });
     let response = await send(); if (response.status === 401) { await SupabaseSync.refreshSession(true); response = await send(); }
-    const data = await response.json(); if (!response.ok) throw new Error(data?.error || 'ไม่สามารถออกบัญชีได้'); return data;
+    const data = await response.json(); if (!response.ok) throw new Error(data?.error || 'ไม่สามารถออกบัญชีได้');
+    await this.publishCatalog();
+    return data;
   };
-  q('#storeForm')?.addEventListener('submit', event => {
+  document.addEventListener('submit', event => {
+    if (event.target?.id !== 'storeForm') return;
     event.preventDefault(); event.stopImmediatePropagation();
     if (typeof requireAdminAction === 'function' && !requireAdminAction()) return;
     const id = q('#storeEditId').value; const existing = id ? AppState.stores.find(store => store.id === id) : null; const password = q('#storeFormPassword').value;
     const open = q('#storeFormOpenTime')?.value || '08:00'; const close = q('#storeFormCloseTime')?.value || '20:00';
+    if (id && !existing) return UI.toast('ไม่พบแถวร้านเดิม จึงยกเลิกการบันทึกเพื่อป้องกันการสร้างข้อมูลซ้ำ', 'error');
     const data = { name: q('#storeFormName').value.trim(), emoji: q('#storeFormEmoji').value.trim() || '🍽️', desc: q('#storeFormDesc').value.trim(), imageUrl: q('#storeFormImageUrl')?.value.trim() || '', backgroundUrl: q('#storeFormBackgroundUrl')?.value.trim() || '', rating: Number(q('#storeFormRating').value), eta: q('#storeFormEta').value.trim(), owner: q('#storeFormOwner').value.trim().toLowerCase(), phone: q('#storeFormPhone').value.trim(), loginId: q('#storeFormLoginId').value.trim().toLowerCase(), location: storeLocationFromForm(existing?.location || null), openTime: open, closeTime: close, cutoffMinutes: Number(q('#storeFormCutoff')?.value) || 30, emergencyClosed: q('#storeFormEmergency')?.value === 'true', emergencyNote: q('#storeFormEmergencyNote')?.value.trim() || '', categoryId: q('#storeFormCategory')?.value || existing?.categoryId || 'store-other' };
-    const issues = [!data.name && 'ชื่อร้านค้า', !data.desc && 'คำอธิบายร้าน', !data.eta && 'เวลาจัดส่งโดยประมาณ', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.owner) && 'อีเมลเจ้าของร้าน', !phoneIsValid(data.phone) && 'เบอร์โทรติดต่อร้าน', !/^[a-z0-9][a-z0-9._-]{2,31}$/.test(data.loginId) && 'Login ID', !id && !password && 'รหัสผ่านบัญชีร้านค้า', password && password.length < 8 && 'รหัสผ่านอย่างน้อย 8 ตัวอักษร'].filter(Boolean);
+    const currentEmail = String(SupabaseSync.session()?.user?.email || AppState.user?.email || '').trim().toLowerCase();
+    const reuseAdminAccount = data.owner === currentEmail;
+    const issues = [!data.name && 'ชื่อร้านค้า', !data.desc && 'คำอธิบายร้าน', !data.eta && 'เวลาจัดส่งโดยประมาณ', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.owner) && 'อีเมลเจ้าของร้าน', !phoneIsValid(data.phone) && 'เบอร์โทรติดต่อร้าน', !/^[a-z0-9][a-z0-9._-]{2,31}$/.test(data.loginId) && 'Login ID', !id && !password && !reuseAdminAccount && 'รหัสผ่านบัญชีร้านค้า', password && password.length < 8 && 'รหัสผ่านอย่างน้อย 8 ตัวอักษร'].filter(Boolean);
     if (issues.length) return UI.toast('กรุณากรอกหรือแก้ไข: ' + issues.join(' · '), 'error'); if (!open || !close || close <= open) return UI.toast('เวลาเปิด–ปิดร้านไม่ถูกต้อง', 'error');
-    openActionConfirmation({ title: id ? 'ยืนยันบันทึกร้านค้าและบัญชี' : 'ยืนยันสร้างร้านค้าและบัญชี', message: 'บันทึกข้อมูลติดต่อ พิกัดร้าน และสิทธิ์ Store App หลังยืนยัน', body: `<b>ร้าน:</b> ${esc(data.name)}<br><b>โทร:</b> ${esc(data.phone)}<br><b>อีเมล:</b> ${esc(data.owner)}<br><b>เวลา:</b> ${esc(open)}–${esc(close)}`, confirmText: 'ยืนยันบันทึก', onConfirm: async () => {
+    openActionConfirmation({ title: id ? 'ยืนยันแก้ไขร้านเดิม' : 'ยืนยันสร้างร้านค้าและบัญชี', message: reuseAdminAccount ? 'ร้านนี้จะใช้บัญชีผู้ดูแลที่เข้าสู่ระบบอยู่เป็นเจ้าของร้าน โดยเพิ่มบทบาท Store Owner ให้บัญชีเดิม' : 'บันทึกข้อมูลติดต่อ พิกัดร้าน และสิทธิ์ Store App หลังยืนยัน', body: `<b>ร้าน:</b> ${esc(data.name)}<br><b>โทร:</b> ${esc(data.phone)}<br><b>อีเมล:</b> ${esc(data.owner)}<br><b>เวลา:</b> ${esc(open)}–${esc(close)}`, confirmText: id ? 'ยืนยันแก้ไขร้านเดิม' : 'ยืนยันบันทึก', onConfirm: async () => {
       const before = existing ? { ...existing } : null; let store = existing;
       if (store) Object.assign(store, data); else { store = { id: 'store-' + Date.now(), ...data, active: true, foods: [] }; AppState.stores.push(store); } Storage.save();
-      try { await SupabaseAdminSync.provisionRole('store_owner', store.id, { email: data.owner, loginId: data.loginId, displayName: data.name, password, phone: data.phone }); closeModal('storeModal'); renderAdminStores(); renderHome(); renderOverview(); UI.toast('บันทึกร้านค้า ข้อมูลติดต่อ และบัญชี Store App แล้ว', 'success'); }
+      try { await SupabaseAdminSync.provisionRole('store_owner', store.id, { email: data.owner, loginId: data.loginId, displayName: data.name, password, phone: data.phone }); closeModal('storeModal'); renderAdminStores(); renderHome(); renderOverview(); UI.toast(id ? 'แก้ไขร้านเดิมและซิงก์ข้อมูลแล้ว' : 'บันทึกร้านค้า ข้อมูลติดต่อ และบัญชี Store App แล้ว', 'success'); }
       catch (error) { if (before) Object.assign(store, before); else AppState.stores = AppState.stores.filter(item => item.id !== store.id); Storage.save(); renderAdminStores(); renderHome(); renderOverview(); UI.toast('บันทึกบัญชีร้านไม่สำเร็จ: ' + error.message, 'error'); }
     }});
   }, true);
