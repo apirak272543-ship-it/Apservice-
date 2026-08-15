@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:modular-contract": "node tests/modular_contract_check.mjs"
+    "test:modular-contract": "node tests/ap_console_contract_check.mjs",
+    "test:ap-console": "node tests/ap_console_contract_check.mjs"
   }
 }
