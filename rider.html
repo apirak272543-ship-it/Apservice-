@@ -632,6 +632,41 @@
   </script>
   <style>.error-report-fab{display:none!important}</style>
   <script>
+    /* Make asynchronous role login obvious in Android WebView instead of looking like an unresponsive button. */
+    (()=>{
+      const button=$('#loginBtn');
+      if(!button||!window.Cloud)return;
+      let pending=false;
+      const runWithTimeout=(job,ms=15000)=>Promise.race([job,new Promise((_,reject)=>setTimeout(()=>reject(new Error('การเชื่อมต่อใช้เวลานานกว่าปกติ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง')),ms))]);
+      button.onclick=async()=>{
+        if(pending)return;
+        const identifier=$('#riderIdentifier').value.trim(),password=$('#riderPassword').value;
+        if(!identifier||!password)return toast('กรอก Login ID/อีเมล และรหัสผ่านก่อน');
+        pending=true;
+        const originalLabel=button.textContent;
+        button.disabled=true;
+        button.setAttribute('aria-busy','true');
+        button.textContent='กำลังยืนยันบัญชี…';
+        try{
+          await runWithTimeout((async()=>{await Cloud.login(identifier,password);await refreshFromCloud(true)})());
+          render();
+          toast('เข้าสู่ Rider Console สำเร็จแล้ว');
+        }catch(error){
+          const message=String(error?.message||'เข้าสู่ระบบไม่สำเร็จ');
+          const friendly=/อีเมล\/รหัส ID หรือรหัสผ่านไม่ถูกต้อง|invalid login credentials/i.test(message)
+            ? 'อีเมล/Login ID หรือรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง'
+            : message;
+          toast(friendly,'error');
+        }finally{
+          pending=false;
+          button.disabled=false;
+          button.removeAttribute('aria-busy');
+          button.textContent=originalLabel;
+        }
+      };
+    })();
+  </script>
+  <script>
     /* Keep the optional support modal dismissible so it cannot trap the Rider workspace. */
     (()=>{const baseEnsure=RiderErrorMonitor.ensureModal.bind(RiderErrorMonitor),baseOpen=RiderErrorMonitor.open.bind(RiderErrorMonitor);let opening=false;const bind=()=>{const modal=$('#riderErrorReportModal');if(!modal||modal.dataset.safeDismiss)return;modal.dataset.safeDismiss='true';modal.setAttribute('aria-hidden','true');modal.addEventListener('pointerdown',event=>{if(event.target===modal)RiderErrorMonitor.close()});document.addEventListener('keydown',event=>{if(event.key==='Escape'&&modal.classList.contains('open'))RiderErrorMonitor.close()})};RiderErrorMonitor.ensureModal=function(){baseEnsure();bind()};RiderErrorMonitor.open=function(){if(opening)return;opening=true;try{baseOpen();$('#riderErrorReportModal')?.setAttribute('aria-hidden','false')}finally{requestAnimationFrame(()=>opening=false)}}})();
   </script>
