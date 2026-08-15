@@ -17,7 +17,7 @@
     .admin-nav-group[open] summary::after{transform:rotate(180deg)}.admin-nav-group-note{display:block;margin-top:3px;color:var(--muted);font-size:9px;font-weight:700}
     .admin-nav-group-body{display:grid;gap:4px;padding:0 8px 9px}.admin-nav-group-body button{margin:0;text-align:left;border-radius:11px;min-height:39px}
     .admin-call-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.admin-call-actions .btn{min-height:32px;padding:6px 9px;font-size:10px;text-decoration:none}.admin-phone-empty{display:block;margin-top:5px;color:var(--muted);font-size:10px}
-    .media-source-actions label.btn{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-align:center}
+    .media-source-actions label.btn{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-align:center}.account-recovery-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:7px}.account-recovery-tools .btn{min-height:32px;padding:6px 9px;font-size:10px}.account-recovery-note{display:block;margin-top:6px;font-size:10px;line-height:1.45;color:#786231}.account-temp-status{font-size:10px;font-weight:800;color:#087d68}
     @media (max-width:720px){.admin-nav-group summary{padding:14px}.admin-nav-group-body{padding-bottom:10px}.admin-nav-group-body button{font-size:12px}.admin-call-actions .btn{flex:1 1 128px}}
   `;
   document.head.appendChild(style);
@@ -83,6 +83,21 @@
       field.innerHTML = '<label>เบอร์โทรติดต่อร้าน</label><input id="storeFormPhone" type="tel" inputmode="tel" autocomplete="tel" required maxlength="24" placeholder="เช่น 081-234-5678" /><small style="color:var(--muted)">ใช้ให้แอดมินติดต่อยืนยันออร์เดอร์หรือสอบถามสินค้า</small>';
       ownerField.insertAdjacentElement('afterend', field);
     }
+    const passwordInput = q('#storeFormPassword'); const passwordField = passwordInput?.closest('.field');
+    if (passwordInput && passwordField && !q('#storeTemporaryPasswordButton')) {
+      const tools = document.createElement('div'); tools.className = 'account-recovery-tools';
+      tools.innerHTML = '<button type="button" class="btn btn-plain btn-small" id="storeTemporaryPasswordButton">สร้างรหัสผ่านชั่วคราว</button><span class="account-temp-status" id="storeTemporaryPasswordStatus"></span>';
+      const note = document.createElement('small'); note.className = 'account-recovery-note'; note.id = 'storePasswordSecurityNote';
+      note.textContent = 'รหัสผ่านเดิมถูกเก็บเป็นค่าเข้ารหัส จึงไม่สามารถเปิดดูได้ เว้นว่างไว้เพื่อคงรหัสเดิม หรือสร้างรหัสผ่านชั่วคราวเมื่อเจ้าของร้านลืมรหัส';
+      passwordField.insertAdjacentElement('afterend', tools); tools.insertAdjacentElement('afterend', note);
+      q('#storeTemporaryPasswordButton').addEventListener('click', async () => {
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%'; const bytes = crypto.getRandomValues(new Uint32Array(14));
+        const temporary = `AP-${[...bytes].map(value => alphabet[value % alphabet.length]).join('')}`;
+        passwordInput.value = temporary; passwordInput.type = 'text'; passwordInput.dataset.temporaryPassword = 'true';
+        q('#storeTemporaryPasswordStatus').textContent = 'สร้างแล้ว — คัดลอกรหัสและกดบันทึกเพื่อใช้งาน';
+        try { await navigator.clipboard?.writeText(temporary); q('#storeTemporaryPasswordStatus').textContent = 'สร้างและคัดลอกรหัสชั่วคราวแล้ว — กดบันทึกเพื่อใช้งาน'; } catch (_) {}
+      });
+    }
     if (typeof ensureStoreLocationControls === 'function') ensureStoreLocationControls();
     const actions = q('#storeLocationStatus')?.parentElement?.querySelector('.location-actions');
     if (actions && !q('#storeMapPickerButton')) {
@@ -110,6 +125,12 @@
   };
 
   const priorOpenStoreModal = window.openStoreModal;
+  const getEntityAccountDetails = async (role, entityId) => {
+    const cfg = SupabaseSync.config(); const body = JSON.stringify({ action: 'get_entity_account', role, entity_id: entityId });
+    const send = () => fetch(cfg.url + '/functions/v1/role-access', { method: 'POST', headers: SupabaseSync.headers(), body });
+    let response = await send(); if (response.status === 401) { await SupabaseSync.refreshSession(true); response = await send(); }
+    const data = await response.json(); if (!response.ok) throw new Error(data?.error || 'ไม่สามารถอ่านข้อมูลบัญชีร้านได้'); return data;
+  };
   const applyStoreEditValues = store => {
     const values = {
       '#storeEditId': store?.id || '', '#storeFormName': store?.name || '', '#storeFormEmoji': store?.emoji || '🍽️',
@@ -121,15 +142,17 @@
       '#storeFormImageUrl': store?.imageUrl || '', '#storeFormBackgroundUrl': store?.backgroundUrl || '', '#storeFormCategory': store?.categoryId || 'store-other'
     };
     Object.entries(values).forEach(([selector, value]) => { const input = q(selector); if (input) input.value = String(value); });
-    q('#storeFormPassword').value = '';
+    q('#storeFormPassword').value = ''; q('#storeFormPassword').type = 'password'; delete q('#storeFormPassword').dataset.temporaryPassword;
+    if (q('#storeTemporaryPasswordStatus')) q('#storeTemporaryPasswordStatus').textContent = '';
     renderStoreLocationForm(store?.location || null);
   };
   const hydrateStoreForEdit = async store => {
     if (!store?.id || !Storage.isAdmin() || !SupabaseSync.session()?.user?.id) return store;
     try {
+      const account = await getEntityAccountDetails('store_owner', store.id);
       const rows = await SupabaseSync.request(`stores?select=*&id=eq.${encodeURIComponent(store.id)}&limit=1`);
       const row = Array.isArray(rows) ? rows[0] : null;
-      if (!row) return store;
+      if (!row) return { ...store, owner: account.email || store.owner || '', loginId: account.login_id || store.loginId || '', phone: account.phone || store.phone || '' };
       let profile = null;
       if (row.owner_id) {
         const profiles = await SupabaseSync.request(`user_profiles?select=email,login_id,phone&user_id=eq.${encodeURIComponent(row.owner_id)}&limit=1`).catch(() => []);
@@ -138,8 +161,8 @@
       return {
         ...store, name: row.name || store.name, emoji: row.emoji || store.emoji, desc: row.description ?? store.desc ?? '',
         imageUrl: row.image_url ?? store.imageUrl ?? '', backgroundUrl: row.background_url ?? store.backgroundUrl ?? '', rating: Number(row.rating ?? store.rating ?? 0),
-        eta: row.eta ?? store.eta ?? '', phone: row.phone || profile?.phone || store.phone || '', owner: row.owner_email || profile?.email || store.owner || '',
-        loginId: profile?.login_id || store.loginId || '', location: row.location ?? store.location ?? null,
+        eta: row.eta ?? store.eta ?? '', phone: account.phone || row.phone || profile?.phone || store.phone || '', owner: account.email || row.owner_email || profile?.email || store.owner || '',
+        loginId: account.login_id || profile?.login_id || store.loginId || '', location: row.location ?? store.location ?? null,
         openTime: String(row.open_time || store.openTime || '08:00').slice(0, 5), closeTime: String(row.close_time || store.closeTime || '20:00').slice(0, 5),
         cutoffMinutes: Number(row.order_cutoff_minutes ?? store.cutoffMinutes ?? 30), emergencyClosed: Boolean(row.emergency_closed ?? store.emergencyClosed),
         emergencyNote: row.emergency_note ?? store.emergencyNote ?? '', categoryId: row.category_id || store.categoryId || 'store-other'
