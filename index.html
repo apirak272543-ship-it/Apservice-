@@ -1170,5 +1170,85 @@
       ErrorMonitor.open=function(){if(opening)return;opening=true;try{baseOpen()}finally{requestAnimationFrame(()=>opening=false)}};
     })();
   </script>
+  <script>
+    /* One authoritative Store-account save path. Earlier feature extensions attached
+       multiple submit listeners, which could invoke an older validation after the
+       current form had been completed. */
+    (function(){
+      const original=$('#storeForm');
+      if(!original)return;
+      const form=original.cloneNode(true);
+      original.replaceWith(form);
+
+      const storeAccountErrors=({name,desc,emoji,rating,eta,owner,loginId,password,isNew})=>{
+        const errors=[];
+        if(!name)errors.push('ชื่อร้านค้า');
+        if(!emoji)errors.push('ไอคอนหรือ Emoji');
+        if(!desc)errors.push('คำอธิบายร้าน');
+        if(!Number.isFinite(rating)||rating<0||rating>5)errors.push('เรตติ้ง 0–5');
+        if(!eta)errors.push('เวลาจัดส่งโดยประมาณ');
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(owner))errors.push('อีเมลเจ้าของร้าน');
+        if(!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(loginId))errors.push('Login ID 3–32 ตัว (อังกฤษ/ตัวเลข/จุด/ขีด)');
+        if(isNew&&!password)errors.push('รหัสผ่านบัญชีร้านค้า');
+        if(password&&password.length<8)errors.push('รหัสผ่านอย่างน้อย 8 ตัวอักษร');
+        return errors;
+      };
+
+      form.addEventListener('submit',event=>{
+        event.preventDefault();
+        if(!requireAdminAction())return;
+        const id=$('#storeEditId').value;
+        const existing=id?AppState.stores.find(store=>store.id===id):null;
+        const open=$('#storeFormOpenTime')?.value||'08:00';
+        const close=$('#storeFormCloseTime')?.value||'20:00';
+        const password=$('#storeFormPassword').value;
+        const data={
+          name:$('#storeFormName').value.trim(),
+          emoji:$('#storeFormEmoji').value.trim(),
+          desc:$('#storeFormDesc').value.trim(),
+          imageUrl:$('#storeFormImageUrl')?.value.trim()||'',
+          backgroundUrl:$('#storeFormBackgroundUrl')?.value.trim()||'',
+          rating:Number($('#storeFormRating').value),
+          eta:$('#storeFormEta').value.trim(),
+          owner:$('#storeFormOwner').value.trim().toLowerCase(),
+          loginId:$('#storeFormLoginId').value.trim().toLowerCase(),
+          location:storeLocationFromForm(existing?.location||null),
+          openTime:open,
+          closeTime:close,
+          cutoffMinutes:Number($('#storeFormCutoff')?.value)||30,
+          emergencyClosed:$('#storeFormEmergency')?.value==='true',
+          emergencyNote:$('#storeFormEmergencyNote')?.value.trim()||'',
+          categoryId:$('#storeFormCategory')?.value||existing?.categoryId||'store-other'
+        };
+        const errors=storeAccountErrors({...data,password,isNew:!id});
+        if(errors.length)return UI.toast('กรุณากรอกหรือแก้ไข: '+errors.join(' · '),'error');
+        if(!open||!close||close<=open)return UI.toast('เวลาเปิด–ปิดร้านไม่ถูกต้อง','error');
+
+        openActionConfirmation({
+          title:id?'ยืนยันบันทึกร้านค้าและบัญชี':'ยืนยันสร้างร้านค้าและบัญชี',
+          message:'ระบบจะตรวจข้อมูลบัญชี สร้างหรือรีเซ็ตรหัสผ่าน และผูก Store App ในรายการเดียว',
+          body:`<b>ร้าน:</b> ${escapeHtml(data.name)}<br><b>อีเมล:</b> ${escapeHtml(data.owner)}<br><b>Login ID:</b> ${escapeHtml(data.loginId)}<br><b>เวลา:</b> ${escapeHtml(open)}–${escapeHtml(close)}`,
+          confirmText:'ยืนยันบันทึก',
+          onConfirm:async()=>{
+            const before=existing?{...existing}:null;
+            let store=existing;
+            if(store)Object.assign(store,data);
+            else {store={id:'store-'+Date.now(),...data,active:true,foods:[]};AppState.stores.push(store)}
+            Storage.save();
+            try{
+              await SupabaseAdminSync.provisionRole('store_owner',store.id,{email:data.owner,loginId:data.loginId,displayName:data.name,password});
+              closeModal('storeModal');
+              renderAdminStores();renderHome();renderOverview();
+              UI.toast('บันทึกร้านค้าและตั้งค่าบัญชี Store App แล้ว','success');
+            }catch(error){
+              if(before)Object.assign(store,before);else AppState.stores=AppState.stores.filter(item=>item.id!==store.id);
+              Storage.save();renderAdminStores();renderHome();renderOverview();
+              UI.toast('บันทึกบัญชีร้านไม่สำเร็จ: '+error.message,'error');
+            }
+          }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>
