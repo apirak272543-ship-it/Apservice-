@@ -110,10 +110,7 @@
   };
 
   const priorOpenStoreModal = window.openStoreModal;
-  window.openStoreModal = id => {
-    const store = id ? AppState.stores.find(item => item.id === id) : null;
-    if (id && !store) return UI.toast('ไม่พบข้อมูลร้านเดิม กรุณารีเฟรชรายการร้านค้าแล้วลองใหม่', 'error');
-    priorOpenStoreModal(id); ensureStoreContactFields();
+  const applyStoreEditValues = store => {
     const values = {
       '#storeEditId': store?.id || '', '#storeFormName': store?.name || '', '#storeFormEmoji': store?.emoji || '🍽️',
       '#storeFormDesc': store?.desc || store?.description || '', '#storeFormRating': store?.rating ?? 4.5,
@@ -125,7 +122,39 @@
     };
     Object.entries(values).forEach(([selector, value]) => { const input = q(selector); if (input) input.value = String(value); });
     q('#storeFormPassword').value = '';
-    renderStoreLocationForm(store?.location || null); repairImageSourceButtons(q('#storeModal'));
+    renderStoreLocationForm(store?.location || null);
+  };
+  const hydrateStoreForEdit = async store => {
+    if (!store?.id || !Storage.isAdmin() || !SupabaseSync.session()?.user?.id) return store;
+    try {
+      const rows = await SupabaseSync.request(`stores?select=*&id=eq.${encodeURIComponent(store.id)}&limit=1`);
+      const row = Array.isArray(rows) ? rows[0] : null;
+      if (!row) return store;
+      let profile = null;
+      if (row.owner_id) {
+        const profiles = await SupabaseSync.request(`user_profiles?select=email,login_id,phone&user_id=eq.${encodeURIComponent(row.owner_id)}&limit=1`).catch(() => []);
+        profile = Array.isArray(profiles) ? profiles[0] : null;
+      }
+      return {
+        ...store, name: row.name || store.name, emoji: row.emoji || store.emoji, desc: row.description ?? store.desc ?? '',
+        imageUrl: row.image_url ?? store.imageUrl ?? '', backgroundUrl: row.background_url ?? store.backgroundUrl ?? '', rating: Number(row.rating ?? store.rating ?? 0),
+        eta: row.eta ?? store.eta ?? '', phone: row.phone || profile?.phone || store.phone || '', owner: row.owner_email || profile?.email || store.owner || '',
+        loginId: profile?.login_id || store.loginId || '', location: row.location ?? store.location ?? null,
+        openTime: String(row.open_time || store.openTime || '08:00').slice(0, 5), closeTime: String(row.close_time || store.closeTime || '20:00').slice(0, 5),
+        cutoffMinutes: Number(row.order_cutoff_minutes ?? store.cutoffMinutes ?? 30), emergencyClosed: Boolean(row.emergency_closed ?? store.emergencyClosed),
+        emergencyNote: row.emergency_note ?? store.emergencyNote ?? '', categoryId: row.category_id || store.categoryId || 'store-other'
+      };
+    } catch (error) { console.warn('ไม่สามารถโหลดรายละเอียดร้านสำหรับแก้ไข', error); return store; }
+  };
+  window.openStoreModal = async id => {
+    const store = id ? AppState.stores.find(item => item.id === id) : null;
+    if (id && !store) return UI.toast('ไม่พบข้อมูลร้านเดิม กรุณารีเฟรชรายการร้านค้าแล้วลองใหม่', 'error');
+    priorOpenStoreModal(id); ensureStoreContactFields();
+    applyStoreEditValues(store); repairImageSourceButtons(q('#storeModal'));
+    if (!store) return;
+    const hydrated = await hydrateStoreForEdit(store);
+    if (q('#storeEditId')?.value !== store.id) return;
+    Object.assign(store, hydrated); Storage.save(); applyStoreEditValues(hydrated);
   };
   const priorPublishCatalog = SupabaseAdminSync.publishCatalog.bind(SupabaseAdminSync);
   SupabaseAdminSync.publishCatalog = async function () {
