@@ -1,0 +1,8 @@
+{
+  "name": "ap-service-static-console",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:modular-contract": "node tests/modular_contract_check.mjs"
+  }
+}
