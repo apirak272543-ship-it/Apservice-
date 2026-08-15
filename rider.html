@@ -296,7 +296,7 @@
         order.riderId=rider.id;order.riderName=rider.name;order.acceptedAt=new Date().toISOString();rider.status='กำลังส่งงาน';
         statusHistory(order,'ไรเดอร์กำลังไปรับ');persist();
         await Cloud.request('order_status_events',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({order_id:order.id,status:'ไรเดอร์กำลังไปรับ',actor_id:State.session?.userId||null,actor_label:'ไรเดอร์: '+rider.name})});
-        await Cloud.pullOrders();await Cloud.pullEarnings(rider.id);render();toast('รับงานและแจ้งศูนย์กลางว่ากำลังไปรับแล้ว');
+        await Cloud.pullOrders();await Cloud.pullEarnings(rider.id);render();if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(JSON.stringify({type:'ap-service-rider-job-accepted',orderId:order.id}));toast('รับงานและแจ้งศูนย์กลางว่ากำลังไปรับแล้ว');
       }catch(error){console.warn('Cloud rider accept failed',error);toast(error.message||'รับงานไม่สำเร็จ โปรดลองรีเฟรชข้อมูล')}
       finally{setTimeout(()=>State.isSyncing=false,1200)}
     };
