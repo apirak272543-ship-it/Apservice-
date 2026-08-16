@@ -139,9 +139,25 @@
             <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer"><input type="radio" name="paymentMethod" value="transfer" onchange="togglePaymentMethod('transfer')"> โอนเงินผ่าน QR Code</label>
           </div>
           <div id="transferQrContainer" class="hidden" style="text-align:center;background:var(--surface);padding:14px;border-radius:12px;border:1px solid var(--line);margin-bottom:14px">
-            <div id="qrDynamicDisplay" style="width:140px;height:140px;margin:0 auto 8px;background:#fff;border-radius:8px;display:grid;place-items:center;font-size:36px;border:1px dashed var(--brand)">🧾</div>
+            <div id="qrDynamicDisplay" style="width:160px;height:160px;margin:0 auto 8px;background:#fff;border-radius:8px;display:grid;place-items:center;font-size:36px;border:1px dashed var(--brand);overflow:hidden;padding:4px">🧾</div>
             <strong id="qrDynamicAmount" style="color:var(--brand-deep);font-size:14px">ยอดชำระ: ฿0</strong>
-            <p style="font-size:11px;color:var(--muted);margin:4px 0 0">สแกนผ่านแอปธนาคารเพื่อโอนเงินตามยอดสุทธิ</p>
+            <p style="font-size:11px;color:var(--muted);margin:4px 0 10px">สแกนผ่านแอปธนาคารเพื่อโอนเงินตามยอดสุทธิ</p>
+            <div style="display:flex;gap:8px;margin:0 auto 10px;max-width:340px">
+              <button type="button" class="btn btn-main btn-small" style="flex:1;font-size:12px" onclick="saveQrImage()">📥 บันทึกรูป QR</button>
+              <button type="button" class="btn btn-plain btn-small" style="flex:1;font-size:12px" onclick="copyCheckoutTotal()">📋 คัดลอกยอดโอน</button>
+            </div>
+            <div style="max-width:340px;margin:0 auto;text-align:left">
+              <label style="font-size:11px;font-weight:800;color:var(--brand-deep);display:block;margin-bottom:5px">🏦 เลือกแอปธนาคารเพื่อเปิดไปสแกนรูป QR:</label>
+              <select id="bankAppSelect" class="table-input" style="width:100%;font-size:12px;padding:9px" onchange="openBankAppDropdown(this.value)">
+                  <option value="">-- แตะเพื่อเลือกแอปธนาคารของคุณ --</option>
+                  <option value="kplus">K PLUS (กสิกรไทย)</option>
+                  <option value="scbeasy">SCB EASY (ไทยพาณิชย์)</option>
+                  <option value="krungsri">KMA (กรุงศรีอยุธยา)</option>
+                  <option value="ktb">Krungthai NEXT (กรุงไทย)</option>
+                  <option value="bbl">Bangkok Bank (กรุงเทพ)</option>
+                  <option value="ttb">ttb touch (ทหารไทยธนชาต)</option>
+              </select>
+            </div>
           </div>
           <div class="field full" style="margin-bottom:14px">
             <label style="font-size:12px;font-weight:700;margin-bottom:4px;display:block">หมายเหตุพิเศษถึง Rider (ถ้ามี)</label>

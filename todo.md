@@ -10,3 +10,4 @@
 - [x] Login Geolocation Onboarding & Rating/Proximity Store Sorting
 - [x] Customer Spacing Cascade Fixes & Store Routing Reset to 'all'
 - [x] End-to-End Contract Tests & CDP Layout Audits Verified
+- [x] Add QR image download and customer-selected bank app navigation beneath the existing platform QR in checkout summary

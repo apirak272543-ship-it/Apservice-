@@ -367,10 +367,58 @@
     if (qrContainer) {
       if (method === 'transfer') {
         qrContainer.classList.remove('hidden');
+        qrContainer.style.animation = 'fadeInDown .3s ease';
       } else {
         qrContainer.classList.add('hidden');
       }
     }
+  };
+
+  window.copyCheckoutTotal = () => {
+    const totEl = document.getElementById('checkoutSummaryTotal');
+    const text = totEl ? totEl.textContent.replace(/[^0-9.]/g, '') : '0';
+    navigator.clipboard?.writeText(text).then(() => {
+      if (window.UI?.toast) UI.toast(`คัดลอกยอดเงิน ฿${text} เรียบร้อยแล้ว`);
+    }).catch(() => {
+      if (window.UI?.toast) UI.toast(`ยอดโอน: ฿${text}`);
+    });
+  };
+
+  window.saveQrImage = () => {
+    const img = document.querySelector('#qrDynamicDisplay img');
+    if (!img || !img.src) {
+      if (window.UI?.toast) UI.toast('ยังไม่มีรูป QR Code ในระบบ');
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = img.src;
+    a.download = 'APService-Payment-QR.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (window.UI?.toast) UI.toast('ดาวน์โหลดรูป QR Code เรียบร้อยแล้ว');
+  };
+
+  window.openBankAppDropdown = (val) => {
+    if (!val) return;
+    const schemes = {
+      kplus: 'kplus://',
+      scbeasy: 'scbeasy://',
+      krungsri: 'krungsri://',
+      ktb: 'ktbnext://',
+      bbl: 'bbl://',
+      ttb: 'ttbtouch://'
+    };
+    const url = schemes[val];
+    if (url) {
+      if (window.UI?.toast) UI.toast('กำลังเปิดแอปพลิเคชันธนาคาร...');
+      window.location.href = url;
+    }
+    // Reset dropdown after action
+    setTimeout(() => {
+      const sel = document.getElementById('bankAppSelect');
+      if (sel) sel.value = '';
+    }, 1000);
   };
 
   const baseRenderCheckoutSummary = window.renderCheckoutSummary;
