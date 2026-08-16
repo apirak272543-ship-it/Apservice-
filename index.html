@@ -423,7 +423,25 @@
     function safePromoColor(color){return /^#[0-9a-f]{6}$/i.test(String(color||''))?color:'#0B8C7C'}
     function promotionActionLabel(action){return ({stores:'ดูร้านอาหาร',errand:'เรียกไรเดอร์',marketplace:'ดูตลาดสินค้า',orders:'ดูออร์เดอร์',link:'เปิดลิงก์',none:'ดูรายละเอียด'})[action]||'ดูรายละเอียด'}
     function promotionCard(promo){const accent=safePromoColor(promo.color),hasImg=isMediaUrl(promo.imageUrl),visual=hasImg?`<img src="${escapeHtml(promo.imageUrl)}" alt="${escapeHtml(promo.title)}" />`:`<span>${escapeHtml(promo.icon||'✨')}</span>`,cardStyle=hasImg?`style="--promo-accent:${accent};--promo-bg-image:url('${escapeHtml(promo.imageUrl)}')" `:`style="--promo-accent:${accent}"`;return `<article class="promo-card" ${cardStyle}><span class="promo-badge">AD · ${escapeHtml(promo.badge||'โปรโมชัน')}</span><div class="promo-visual">${visual}</div><div class="promo-copy"><h3>${escapeHtml(promo.title||'โฆษณาและข้อเสนอพิเศษ')}</h3><p>${escapeHtml(promo.description||'')}</p><button class="btn btn-small" type="button" onclick="openPromotion('${escapeHtml(promo.id)}')">${escapeHtml(promo.buttonText||promotionActionLabel(promo.action))} →</button></div></article>`}
-    function renderPromotions(){const rail=$('#homePromotions'),heading=$('#homePromotionHeading');if(!rail||!heading)return;const items=(AppState.config.content.promotions||[]).filter(promo=>promo.active!==false);heading.classList.toggle('hidden',!items.length);rail.classList.toggle('hidden',!items.length);rail.innerHTML=items.map(promotionCard).join('');$('#homePromotionCount').textContent=`${items.length} รายการ`}
+    let promoScrollInterval=null;
+    function renderPromotions(){const rail=$('#homePromotions'),heading=$('#homePromotionHeading');if(!rail||!heading)return;const items=(AppState.config.content.promotions||[]).filter(promo=>promo.active!==false);heading.classList.toggle('hidden',!items.length);rail.classList.toggle('hidden',!items.length);rail.innerHTML=items.map(promotionCard).join('');$('#homePromotionCount').textContent=`${items.length} รายการ`;
+      if(window.promoScrollInterval)clearInterval(window.promoScrollInterval);
+      if(items.length>1){
+        window.promoScrollInterval=setInterval(()=>{
+          if(!rail || !document.contains(rail)) { clearInterval(window.promoScrollInterval); return; }
+          const firstCard=rail.querySelector('.promo-card');
+          if(!firstCard) return;
+          const cardWidth=firstCard.offsetWidth+14;
+          if(rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 10){
+            rail.scrollTo({left:0,behavior:'smooth'});
+          }else{
+            rail.scrollBy({left:cardWidth,behavior:'smooth'});
+          }
+        },5000);
+        rail.onmouseenter=()=>clearInterval(window.promoScrollInterval);
+        rail.ontouchstart=()=>clearInterval(window.promoScrollInterval);
+      }
+    }
     window.openPromotion=id=>{const promo=(AppState.config.content.promotions||[]).find(item=>item.id===id);if(!promo)return;const action=promo.action||'none';if(action==='stores')return requireLoginThen('stores');if(action==='errand')return requireLoginThen('errand');if(action==='marketplace')return requireLoginThen('marketplace');if(action==='orders')return requireLoginThen('orders');if(action==='link'){const url=String(promo.linkUrl||'').trim();if(!/^https?:\/\//i.test(url))return UI.toast('ผู้ดูแลยังไม่ได้ใส่ลิงก์สำหรับโฆษณานี้');window.open(url,'_blank','noopener');return}UI.toast(promo.description||'โปรโมชันนี้กำลังรอการอัปเดต')}
     function deliveryRules(){return AppState.config.delivery||defaults.config.delivery}
     function errandQuote(){const rule=deliveryRules();const km=Math.max(1,Number($('#errandDistance')?.value)||1);const isParcel=String($('#errandType')?.value||'').includes('พัสดุ');const base=Number(isParcel?rule.parcelBaseFee||rule.baseFee:rule.errandBaseFee||rule.baseFee)||0;const included=Math.max(0,Number(rule.includedKm)||0);const billable=Math.max(0,km-included);const distance=billable*(Number(rule.perKm)||0)*(Number(rule.zoneMultiplier)||1);return {km,base,distance,total:base+distance,included}}
