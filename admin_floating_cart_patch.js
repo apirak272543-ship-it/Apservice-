@@ -31,6 +31,7 @@
 
     let isDragging = false, hasMoved = false, startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
     const triggerBtn = fab.querySelector('.ap-cart-trigger');
+    fab.style.touchAction = 'none';
 
     const onStart = (clientX, clientY) => {
       isDragging = true;
@@ -50,15 +51,15 @@
       if (!isDragging) return;
       const dx = clientX - startX;
       const dy = clientY - startY;
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
         hasMoved = true;
       }
       let newLeft = initialLeft + dx;
       let newTop = initialTop + dy;
-      const maxLeft = window.innerWidth - fab.offsetWidth - 10;
-      const maxTop = window.innerHeight - fab.offsetHeight - 10;
-      newLeft = Math.max(10, Math.min(newLeft, maxLeft));
-      newTop = Math.max(10, Math.min(newTop, maxTop));
+      const maxLeft = window.innerWidth - fab.offsetWidth - 8;
+      const maxTop = window.innerHeight - fab.offsetHeight - 8;
+      newLeft = Math.max(8, Math.min(newLeft, maxLeft));
+      newTop = Math.max(8, Math.min(newTop, maxTop));
       fab.style.left = newLeft + 'px';
       fab.style.top = newTop + 'px';
     };
@@ -72,25 +73,25 @@
       }
     };
 
-    fab.addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
+    fab.addEventListener('pointerdown', e => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
       onStart(e.clientX, e.clientY);
-      e.preventDefault();
+      fab.setPointerCapture(e.pointerId);
     });
-    window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
-    window.addEventListener('mouseup', onEnd);
 
-    fab.addEventListener('touchstart', e => {
-      if (e.touches.length === 1) {
-        onStart(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, {passive: true});
-    window.addEventListener('touchmove', e => {
-      if (e.touches.length === 1) {
-        onMove(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }, {passive: true});
-    window.addEventListener('touchend', onEnd);
+    fab.addEventListener('pointermove', e => {
+      onMove(e.clientX, e.clientY);
+    });
+
+    fab.addEventListener('pointerup', e => {
+      try { fab.releasePointerCapture(e.pointerId); } catch(err) {}
+      onEnd();
+    });
+
+    fab.addEventListener('pointercancel', e => {
+      try { fab.releasePointerCapture(e.pointerId); } catch(err) {}
+      onEnd();
+    });
 
     triggerBtn.addEventListener('click', e => {
       if (hasMoved) {
