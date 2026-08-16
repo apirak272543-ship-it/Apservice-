@@ -10,12 +10,99 @@
     const fab = document.createElement('div');
     fab.id = 'apFloatingCart';
     fab.className = 'ap-floating-cart-fab';
+    // Restore saved position if available
+    const savedPos = localStorage.getItem('ap_floating_cart_pos');
+    if (savedPos) {
+      try {
+        const pos = JSON.parse(savedPos);
+        fab.style.left = pos.left + 'px';
+        fab.style.top = pos.top + 'px';
+        fab.style.right = 'auto';
+        fab.style.bottom = 'auto';
+      } catch(e) {}
+    }
+
     fab.innerHTML = `
-      <button type="button" class="ap-cart-trigger" onclick="toggleCartPopup()" aria-label="เปิดตะกร้าสินค้า">
+      <button type="button" class="ap-cart-trigger" aria-label="เปิดตะกร้าสินค้าและลากย้ายตำแหน่ง">
         <span aria-hidden="true">🛒</span> <span id="apCartBadge" class="ap-cart-badge">0</span>
       </button>
     `;
     document.body.appendChild(fab);
+
+    let isDragging = false, hasMoved = false, startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+    const triggerBtn = fab.querySelector('.ap-cart-trigger');
+
+    const onStart = (clientX, clientY) => {
+      isDragging = true;
+      hasMoved = false;
+      startX = clientX;
+      startY = clientY;
+      const rect = fab.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      fab.style.right = 'auto';
+      fab.style.bottom = 'auto';
+      fab.style.left = initialLeft + 'px';
+      fab.style.top = initialTop + 'px';
+    };
+
+    const onMove = (clientX, clientY) => {
+      if (!isDragging) return;
+      const dx = clientX - startX;
+      const dy = clientY - startY;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        hasMoved = true;
+      }
+      let newLeft = initialLeft + dx;
+      let newTop = initialTop + dy;
+      const maxLeft = window.innerWidth - fab.offsetWidth - 10;
+      const maxTop = window.innerHeight - fab.offsetHeight - 10;
+      newLeft = Math.max(10, Math.min(newLeft, maxLeft));
+      newTop = Math.max(10, Math.min(newTop, maxTop));
+      fab.style.left = newLeft + 'px';
+      fab.style.top = newTop + 'px';
+    };
+
+    const onEnd = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      if (hasMoved) {
+        const rect = fab.getBoundingClientRect();
+        localStorage.setItem('ap_floating_cart_pos', JSON.stringify({left: rect.left, top: rect.top}));
+      }
+    };
+
+    fab.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      onStart(e.clientX, e.clientY);
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup', onEnd);
+
+    fab.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        onStart(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, {passive: true});
+    window.addEventListener('touchmove', e => {
+      if (e.touches.length === 1) {
+        onMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, {passive: true});
+    window.addEventListener('touchend', onEnd);
+
+    triggerBtn.addEventListener('click', e => {
+      if (hasMoved) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        hasMoved = false;
+        return;
+      }
+      if (typeof window.toggleCartPopup === 'function') {
+        window.toggleCartPopup();
+      }
+    });
 
     const overlay = document.createElement('div');
     overlay.id = 'apCartModal';
