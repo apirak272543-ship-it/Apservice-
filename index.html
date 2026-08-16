@@ -1265,19 +1265,21 @@
   <script>
     /* Compatibility export: classic scripts keep their lexical globals while new ES modules
        read the exact same runtime objects. Inline onclick handlers remain unchanged. */
-    window.APServiceLegacyPages=Object.assign(window.APServiceLegacyPages||{},{renderHome,renderStores,renderPromotions,renderOrders,renderAdminStores,renderAdminRiders,renderOperationsOrders,renderFinance,renderWithdrawals,renderContent});
+    const legacyPageExports={
+      ...(typeof renderHome==='function'?{renderHome}:{}),
+      ...(typeof renderStores==='function'?{renderStores}:{}),
+      ...(typeof renderPromotions==='function'?{renderPromotions}:{}),
+      ...(typeof renderOrders==='function'?{renderOrders}:{}),
+      ...(typeof renderAdminStores==='function'?{renderAdminStores}:{}),
+      ...(typeof renderAdminRiders==='function'?{renderAdminRiders}:{}),
+      ...(typeof renderOperationsOrders==='function'?{renderOperationsOrders}:{}),
+      ...(typeof renderFinance==='function'?{renderFinance}:{}),
+      ...(typeof renderWithdrawals==='function'?{renderWithdrawals}:{}),
+      ...(typeof renderContent==='function'?{renderContent}:{})
+    };
+    window.APServiceLegacyPages=Object.assign(window.APServiceLegacyPages||{},legacyPageExports);
     window.APServiceModulePages=window.APServiceModulePages||{};
-    window.APServiceModulePages.renderHome=(...args)=>window.APServiceLegacyPages.renderHome(...args);
-    window.APServiceModulePages.renderStores=(...args)=>window.APServiceLegacyPages.renderStores(...args);
-    window.APServiceModulePages.renderPromotions=(...args)=>window.APServiceLegacyPages.renderPromotions(...args);
-    window.APServiceModulePages.renderOrders=(...args)=>window.APServiceLegacyPages.renderOrders(...args);
-    window.APServiceModulePages.renderAdminStores=(...args)=>window.APServiceLegacyPages.renderAdminStores(...args);
-    window.APServiceModulePages.renderAdminRiders=(...args)=>window.APServiceLegacyPages.renderAdminRiders(...args);
-    window.APServiceModulePages.renderOperationsOrders=(...args)=>window.APServiceLegacyPages.renderOperationsOrders(...args);
-    window.APServiceModulePages.renderFinance=(...args)=>window.APServiceLegacyPages.renderFinance(...args);
-    window.APServiceModulePages.renderWithdrawals=(...args)=>window.APServiceLegacyPages.renderWithdrawals(...args);
-    window.APServiceModulePages.renderContent=(...args)=>window.APServiceLegacyPages.renderContent(...args);
-    renderHome=(...args)=>window.APServiceModulePages.renderHome(...args);renderStores=(...args)=>window.APServiceModulePages.renderStores(...args);renderPromotions=(...args)=>window.APServiceModulePages.renderPromotions(...args);renderOrders=(...args)=>window.APServiceModulePages.renderOrders(...args);renderAdminStores=(...args)=>window.APServiceModulePages.renderAdminStores(...args);renderAdminRiders=(...args)=>window.APServiceModulePages.renderAdminRiders(...args);renderOperationsOrders=(...args)=>window.APServiceModulePages.renderOperationsOrders(...args);renderFinance=(...args)=>window.APServiceModulePages.renderFinance(...args);renderWithdrawals=(...args)=>window.APServiceModulePages.renderWithdrawals(...args);renderContent=(...args)=>window.APServiceModulePages.renderContent(...args);
+    Object.keys(window.APServiceLegacyPages).forEach(name=>{window.APServiceModulePages[name]=(...args)=>window.APServiceLegacyPages[name](...args)});
     window.AppState=AppState;window.Storage=Storage;window.SupabaseSync=SupabaseSync;window.SupabaseAdminSync=SupabaseAdminSync;
     window.Marketplace=Marketplace;window.SupportChat=SupportChat;window.StoreOps=StoreOps;window.CustomerDelivery=CustomerDelivery;window.CategoryUX=CategoryUX;window.UI=UI;
     if(typeof renderHome==='function')window.renderHome=renderHome;
