@@ -84,6 +84,40 @@
       #view-home .hero + .section-head{margin-top:20px}
       #view-home .promo-rail + .section-head{margin-top:18px}
       #view-home .services + .section-head{margin-top:20px}
+
+      /* The admin mobile patch gives every section-head child a 220px flex basis.
+         That is useful for admin toolbars but creates a large blank block in Customer views. */
+      .view:not(#view-admin):not(#view-login):not(#view-register) .section-head>div,
+      .view:not(#view-admin):not(#view-login):not(#view-register) .section-head>.section-head-copy{
+        flex:0 1 auto;
+        min-height:0;
+        height:auto;
+      }
+      .view:not(#view-admin):not(#view-login):not(#view-register) .section-head{
+        margin-top:18px;
+        margin-bottom:10px;
+        gap:8px;
+      }
+      .view:not(#view-admin):not(#view-login):not(#view-register) .section-head h2{margin:0}
+      .view:not(#view-admin):not(#view-login):not(#view-register) .section-head p{margin-top:3px}
+      .view:not(#view-admin):not(#view-login):not(#view-register) .section-head>input,
+      .view:not(#view-admin):not(#view-login):not(#view-register) .section-head>select,
+      .view:not(#view-admin):not(#view-login):not(#view-register) .section-head>.table-input{
+        width:100%!important;
+        max-width:100%;
+        margin-top:0;
+      }
+      .view:not(#view-admin):not(#view-login):not(#view-register)>.grid-2,
+      .view:not(#view-admin):not(#view-login):not(#view-register)>.form-grid{gap:10px}
+      .view:not(#view-admin):not(#view-login):not(#view-register)>.panel{padding:14px}
+      #view-home .section-head{margin-top:18px;margin-bottom:10px}
+      #view-home .services{gap:8px}
+      #view-home .support-center{margin-top:18px}
+      #view-stores .section-head,
+      #view-marketplace .section-head,
+      #view-orders .section-head,
+      #view-errand .section-head{margin-top:18px;margin-bottom:10px}
+      #view-storefront .section-head{margin-top:0;margin-bottom:10px}
     }
   `;
   document.head.appendChild(style);
