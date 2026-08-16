@@ -18,7 +18,11 @@
     .admin-nav-group-body{display:grid;gap:4px;padding:0 8px 9px}.admin-nav-group-body button{margin:0;text-align:left;border-radius:11px;min-height:39px}
     .admin-call-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.admin-call-actions .btn{min-height:32px;padding:6px 9px;font-size:10px;text-decoration:none}.admin-phone-empty{display:block;margin-top:5px;color:var(--muted);font-size:10px}
     .media-source-actions label.btn{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-align:center}.account-recovery-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:7px}.account-recovery-tools .btn{min-height:32px;padding:6px 9px;font-size:10px}.account-recovery-note{display:block;margin-top:6px;font-size:10px;line-height:1.45;color:#786231}.account-temp-status{font-size:10px;font-weight:800;color:#087d68}.promotion-deep-hint{margin:3px 0 0;color:var(--muted);font-size:10px;line-height:1.45}.promotion-image-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}.store-moderation-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.store-moderation-actions .btn{min-height:31px;padding:6px 8px;font-size:10px}.store-moderation-status{display:block;margin-top:5px;font-size:10px;font-weight:850}.store-moderation-status.suspended{color:#b45309}.store-moderation-status.archived{color:#a44343}
-    @media (max-width:720px){.admin-nav-group summary{padding:14px}.admin-nav-group-body{padding-bottom:10px}.admin-nav-group-body button{font-size:12px}.admin-call-actions .btn{flex:1 1 128px}}
+    #view-admin{min-width:0}#view-admin>.section-head{align-items:flex-start;min-height:0}#view-admin>.section-head>div:first-child{min-width:0;flex:1 1 auto}#view-admin>.section-head>div:last-child{display:flex;align-items:flex-start;justify-content:flex-end;gap:8px;flex:0 1 auto;min-width:0;height:auto!important}#view-admin>.section-head>div:last-child .btn{height:auto!important;min-height:40px;white-space:normal;line-height:1.35}#view-admin .admin-layout{grid-template-columns:minmax(210px,260px) minmax(0,1fr);align-items:start}#view-admin .admin-layout>div{min-width:0}#view-admin .admin-section.active>.panel{width:100%;max-width:100%;min-width:0}#view-admin .stats{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}#view-admin .table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}#view-admin .table-wrap table{min-width:680px}
+    #view-home .services{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}#view-home .hero-actions .btn{min-height:44px}#view-login .login-card,#view-register .login-card{width:min(100%,560px);margin:clamp(18px,5vw,50px) auto}#view-login .login-card .btn,#view-register .login-card .btn{min-height:44px}
+    @media (max-width:900px){#view-admin>.section-head{margin-top:10px;margin-bottom:14px}#view-admin>.section-head>div:last-child{width:100%;flex:1 1 100%;justify-content:stretch}#view-admin>.section-head>div:last-child .btn{flex:1 1 160px}#view-admin .admin-layout{grid-template-columns:1fr;gap:12px}#view-admin #adminTabs{order:0}#view-admin .admin-section{order:1}}
+    @media (max-width:720px){.admin-nav-group summary{padding:14px}.admin-nav-group-body{grid-template-columns:repeat(2,minmax(0,1fr));padding-bottom:10px;gap:6px}.admin-nav-group-body button{font-size:12px;min-height:46px;line-height:1.35;white-space:normal;overflow-wrap:anywhere}.admin-call-actions .btn{flex:1 1 128px}#view-admin>.section-head>div:last-child{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}#view-admin>.section-head>div:last-child .btn{width:100%;min-height:44px}#view-admin .stats{grid-template-columns:repeat(2,minmax(0,1fr))}#view-home .services{grid-template-columns:1fr}.topbar{height:68px;padding:0 14px}.top-actions{gap:7px}.profile-button{width:40px;height:40px}}
+    @media (max-width:390px){.admin-nav-group-body{grid-template-columns:1fr}#view-admin>.section-head>div:last-child{grid-template-columns:1fr}.brand-name{font-size:16px}.top-actions{gap:5px}}
   `;
   document.head.appendChild(style);
   const detailStyle = document.createElement('style');
@@ -28,11 +32,12 @@
   document.head.appendChild(detailStyle);
 
   const GROUPS = [
-    ['operations', 'ออร์เดอร์และลูกค้า', 'ติดตามงานและดูแลลูกค้า', ['overview', 'orders', 'customers']],
-    ['catalog', 'ร้านค้า สินค้า และสื่อ', 'ข้อมูลร้าน เมนู และหน้าลูกค้า', ['stores', 'inventory', 'content']],
-    ['finance', 'การเงินและรอบจ่าย', 'เครดิต รายรับ และการจ่ายเงิน', ['finance', 'withdrawals', 'rider-income']],
-    ['people', 'ไรเดอร์และทีมงาน', 'ไรเดอร์ ใบสมัคร และผู้ดูแล', ['riders', 'rider-applications', 'admins']],
-    ['platform', 'ตั้งค่าและเครื่องมือระบบ', 'การเชื่อมต่อ ความปลอดภัย และการตรวจสอบ', ['settings', 'mapping', 'support', 'error-monitor', 'ai-workspace']],
+    ['operations', 'งานและออร์เดอร์', 'ภาพรวม ออร์เดอร์ ลูกค้า และไรเดอร์', ['overview', 'orders', 'customers', 'riders']],
+    ['stores', 'ร้านค้าและเมนู', 'ร้านค้า เมนู ราคา และสต็อก', ['stores', 'inventory']],
+    ['content', 'หน้าแรกและการตลาด', 'แบนเนอร์ โฆษณา และสื่อที่ลูกค้าเห็น', ['content']],
+    ['finance', 'การเงินและการจ่าย', 'เครดิต เงินสด รอบจ่าย และคำขอถอนเงิน', ['finance', 'withdrawals', 'rider-income']],
+    ['platform', 'ระบบ การเชื่อมต่อ และความปลอดภัย', 'การตั้งค่า Data Storage และการตรวจสอบระบบ', ['settings', 'mapping', 'support', 'error-monitor', 'errors']],
+    ['team', 'ทีมงานและ AI Workspace', 'แอดมิน ใบสมัคร และงานร่วมกับ AI', ['admins', 'rider-applications', 'ai-workspace']],
   ];
   function groupFor(name) { return GROUPS.find(([, , , items]) => items.includes(name)) || ['more', 'เครื่องมือเพิ่มเติม', 'ฟังก์ชันจัดการอื่น ๆ', []]; }
   function groupAdminNavigation() {
