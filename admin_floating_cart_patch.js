@@ -362,7 +362,44 @@
     if (window.UI?.toast) UI.toast('เข้าสู่หน้าสรุปรวมบิลเรียบร้อยครับ');
   };
 
+  window.togglePaymentMethod = (method) => {
+    const qrContainer = document.getElementById('transferQrContainer');
+    if (qrContainer) {
+      if (method === 'transfer') {
+        qrContainer.classList.remove('hidden');
+      } else {
+        qrContainer.classList.add('hidden');
+      }
+    }
+  };
+
+  const baseRenderCheckoutSummary = window.renderCheckoutSummary;
+  window.renderCheckoutSummary = () => {
+    if (typeof baseRenderCheckoutSummary === 'function') baseRenderCheckoutSummary();
+    const totEl = document.getElementById('checkoutSummaryTotal');
+    const qrAmt = document.getElementById('qrDynamicAmount');
+    const qrDisp = document.getElementById('qrDynamicDisplay');
+    if (totEl && qrAmt) {
+      const amtText = totEl.textContent || '฿0';
+      qrAmt.textContent = `ยอดชำระ: ${amtText}`;
+      if (qrDisp) {
+        // Generate promptpay QR or dynamic payment mock view
+        qrDisp.innerHTML = `<div style="font-size:11px;font-weight:900;color:var(--brand);padding:10px;text-align:center">📱 PROMPTPAY QR<br><span style="font-size:16px;color:var(--foreground)">${amtText}</span></div>`;
+      }
+    }
+  };
+
   window.confirmCheckoutSummary = () => {
+    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'cod';
+    const riderNote = document.getElementById('checkoutRiderNote')?.value || '';
+    // Store metadata in window.AppState for order creation
+    if (!window.AppState) window.AppState = {};
+    window.AppState.lastCheckoutMeta = {
+      paymentMethod,
+      riderNote,
+      paymentStatus: paymentMethod === 'transfer' ? 'รอตรวจสอบการโอน' : 'ชำระเงินปลายทาง (COD)'
+    };
+
     if (typeof window.checkout === 'function') {
       window.checkout();
     } else {

@@ -133,6 +133,20 @@
           </div>
         </div>
         <aside class="panel">
+          <h3 style="margin-top:0;font-size:16px;border-bottom:1px solid var(--line);padding-bottom:10px">วิธีการชำระเงิน</h3>
+          <div style="display:flex;gap:12px;margin-bottom:14px">
+            <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer"><input type="radio" name="paymentMethod" value="cod" checked onchange="togglePaymentMethod('cod')"> เงินสดปลายทาง (COD)</label>
+            <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer"><input type="radio" name="paymentMethod" value="transfer" onchange="togglePaymentMethod('transfer')"> โอนเงินผ่าน QR Code</label>
+          </div>
+          <div id="transferQrContainer" class="hidden" style="text-align:center;background:var(--surface);padding:14px;border-radius:12px;border:1px solid var(--line);margin-bottom:14px">
+            <div id="qrDynamicDisplay" style="width:140px;height:140px;margin:0 auto 8px;background:#fff;border-radius:8px;display:grid;place-items:center;font-size:36px;border:1px dashed var(--brand)">🧾</div>
+            <strong id="qrDynamicAmount" style="color:var(--brand-deep);font-size:14px">ยอดชำระ: ฿0</strong>
+            <p style="font-size:11px;color:var(--muted);margin:4px 0 0">สแกนผ่านแอปธนาคารเพื่อโอนเงินตามยอดสุทธิ</p>
+          </div>
+          <div class="field full" style="margin-bottom:14px">
+            <label style="font-size:12px;font-weight:700;margin-bottom:4px;display:block">หมายเหตุพิเศษถึง Rider (ถ้ามี)</label>
+            <textarea id="checkoutRiderNote" rows="2" placeholder="เช่น วางไว้หน้าบ้าน, โทรหาก่อนถึง, ระวังแตกง่าย" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:12px"></textarea>
+          </div>
           <h3 style="margin-top:0;font-size:16px;border-bottom:1px solid var(--line);padding-bottom:10px">รายละเอียดค่าใช้จ่าย</h3>
           <div class="summary"><span>ยอดสินค้า</span><span id="checkoutSummarySubtotal">฿0</span></div>
           <div class="summary"><span>ค่าจัดส่ง (คำนวณตามระยะทาง)</span><span id="checkoutSummaryDeliveryFee">฿0</span></div>
