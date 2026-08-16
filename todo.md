@@ -1,0 +1,12 @@
+# AP Service Project TODO
+
+- [x] Modular Architecture Refactor & Legacy Bridge
+- [x] Sanitized LocalStorage Cache for Large Base64 Images
+- [x] Admin-only AI Collaboration Workspace Schema & UI
+- [x] Global Floating Cart (FAB) with Empty State & Popup
+- [x] Mobile UX/UI Redesign for Admin & Compact Spacing
+- [x] Supermarket Dedicated Category & Automated Distance Calculation
+- [x] JWT Auto-Refresh Safeguard for Rider/Store Background Polling
+- [x] Login Geolocation Onboarding & Rating/Proximity Store Sorting
+- [x] Customer Spacing Cascade Fixes & Store Routing Reset to 'all'
+- [x] End-to-End Contract Tests & CDP Layout Audits Verified
