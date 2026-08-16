@@ -3,7 +3,7 @@
   const $ = selector => document.querySelector(selector);
   const money = val => '฿' + Number(val || 0).toLocaleString('th-TH');
 
-  function initFloatingCart() {
+  function initGlobalFloatingCart() {
     if ($('#apFloatingCart')) return;
     const fab = document.createElement('div');
     fab.id = 'apFloatingCart';
@@ -36,7 +36,7 @@
           </div>
           <small class="sub" style="display:block;margin-top:4px">ค่าจัดส่ง ระยะทาง และส่วนลดจะคำนวณในขั้นตอนสรุปบิลถัดไป</small>
         </div>
-        <div style="display:flex;justify-content:flex-end;gap:10px">
+        <div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap">
           <button type="button" class="btn btn-plain" onclick="toggleCartPopup()">เลือกซื้อเพิ่ม</button>
           <button type="button" class="btn btn-main" onclick="proceedToCheckoutSummary()">ไปยืนยันรายการ (สรุปบิล & ค่าส่ง)</button>
         </div>
@@ -54,8 +54,20 @@
       .cart-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
       .qty{display:flex;align-items:center;gap:6px}
       .qty button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer}
-      #view-storefront .grid-2{grid-template-columns:1f!important}
+      #view-storefront .grid-2{grid-template-columns:1fr!important}
       #view-storefront aside.panel.cart{display:none!important}
+      
+      /* Mobile Responsive Enhancements */
+      @media(max-width:768px){
+        body{font-size:14px}
+        .grid-2{grid-template-columns:1fr!important;gap:12px!important}
+        .panel{padding:14px!important;border-radius:14px!important}
+        .modal{padding:16px!important;width:95%!important;max-height:90vh!important;overflow-y:auto!important}
+        input, select, textarea{font-size:16px!important} /* Prevent iOS zoom */
+        .btn{padding:10px 14px!important;font-size:13px!important}
+        .ap-floating-cart-fab{bottom:18px;right:18px}
+        .ap-cart-trigger{width:54px;height:54px;font-size:23px}
+      }
     `;
     document.head.appendChild(style);
   }
@@ -82,7 +94,7 @@
     const badge = $('#apCartBadge');
     if (badge) badge.textContent = totalQty;
     const fab = $('#apFloatingCart');
-    if (fab) fab.style.display = cart.length > 0 ? 'block' : 'none';
+    if (fab) fab.style.display = 'block'; // Always visible globally as requested
 
     const itemsContainer = $('#apCartPopupItems');
     if (itemsContainer) {
@@ -118,11 +130,21 @@
       return;
     }
     toggleCartPopup();
-    const checkoutPanel = document.querySelector('#view-storefront aside.panel.cart');
-    if (checkoutPanel) {
-      checkoutPanel.style.display = 'block';
-      checkoutPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!location.hash.includes('storefront') && AppState.activeStoreId) {
+      openStore(AppState.activeStoreId);
+    } else {
+      const activeStore = AppState.stores.find(s => s.foods?.some(f => cart.some(c => c.foodId === f.id)));
+      if (activeStore && !document.querySelector('#view-storefront.active')) {
+        openStore(activeStore.id);
+      }
     }
+    setTimeout(() => {
+      const checkoutPanel = document.querySelector('#view-storefront aside.panel.cart');
+      if (checkoutPanel) {
+        checkoutPanel.style.display = 'block';
+        checkoutPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 120);
     UI.toast('ตรวจสอบจุดจัดส่งและยืนยันคำสั่งซื้อด้านล่างได้เลยครับ');
   };
 
@@ -132,18 +154,12 @@
     renderCartPopupContent();
   };
 
-  const baseOpenStore = window.openStore;
-  window.openStore = id => {
-    baseOpenStore(id);
-    renderCartPopupContent();
-  };
-
   document.addEventListener('DOMContentLoaded', () => {
-    initFloatingCart();
+    initGlobalFloatingCart();
     renderCartPopupContent();
   });
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    initFloatingCart();
+    initGlobalFloatingCart();
     renderCartPopupContent();
   }
 })();
