@@ -153,7 +153,8 @@
       .qty{display:flex;align-items:center;gap:6px;flex:0 0 auto}
       .qty button{width:28px;height:28px;border-radius:8px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer}
       #view-storefront .grid-2{grid-template-columns:1fr!important}
-      #view-storefront aside.panel.cart{display:none!important}
+      /* Allow cart panel to show when explicitly needed or targeted */
+      #view-storefront aside.panel.cart.force-show{display:block!important}
 
       /* Shared mobile overflow protections for detail pages, admin tables and action rows. */
       html,body{max-width:100%;overflow-x:hidden}
@@ -272,20 +273,28 @@
       return;
     }
     toggleCartPopup();
-    if (!location.hash.includes('storefront') && window.AppState?.activeStoreId && typeof window.openStore === 'function') {
-      openStore(AppState.activeStoreId);
-    } else {
-      const activeStore = (window.AppState?.stores || []).find(store => store.foods?.some(food => cart.some(item => item.foodId === food.id)));
-      if (activeStore && !document.querySelector('#view-storefront.active') && typeof window.openStore === 'function') openStore(activeStore.id);
+    // Ensure we are on storefront view for the store containing items
+    const firstItem = cart[0];
+    const targetStoreId = firstItem?.storeId || window.AppState?.activeStoreId;
+    if (targetStoreId && typeof window.openStore === 'function') {
+      window.openStore(targetStoreId);
+    } else if (typeof window.showView === 'function') {
+      window.showView('stores');
     }
+
     setTimeout(() => {
       const checkoutPanel = document.querySelector('#view-storefront aside.panel.cart');
       if (checkoutPanel) {
-        checkoutPanel.style.display = 'block';
-        checkoutPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        checkoutPanel.classList.add('force-show');
+        checkoutPanel.style.setProperty('display', 'block', 'important');
+        checkoutPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 120);
-    if (window.UI?.toast) UI.toast('ตรวจสอบจุดจัดส่งและยืนยันคำสั่งซื้อด้านล่างได้เลยครับ');
+      if (typeof window.renderCart === 'function') {
+        window.renderCart();
+      }
+    }, 150);
+
+    if (window.UI?.toast) UI.toast('ตรวจสอบจุดจัดส่งและกดปุ่มยืนยันคำสั่งซื้อได้เลยครับ');
   };
 
   const baseRenderCart = window.renderCart;
