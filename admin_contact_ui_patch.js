@@ -32,7 +32,7 @@
     ['catalog', 'ร้านค้า สินค้า และสื่อ', 'ข้อมูลร้าน เมนู และหน้าลูกค้า', ['stores', 'inventory', 'content']],
     ['finance', 'การเงินและรอบจ่าย', 'เครดิต รายรับ และการจ่ายเงิน', ['finance', 'withdrawals', 'rider-income']],
     ['people', 'ไรเดอร์และทีมงาน', 'ไรเดอร์ ใบสมัคร และผู้ดูแล', ['riders', 'rider-applications', 'admins']],
-    ['platform', 'ตั้งค่าและเครื่องมือระบบ', 'การเชื่อมต่อ ความปลอดภัย และการตรวจสอบ', ['settings', 'mapping', 'support', 'error-monitor']],
+    ['platform', 'ตั้งค่าและเครื่องมือระบบ', 'การเชื่อมต่อ ความปลอดภัย และการตรวจสอบ', ['settings', 'mapping', 'support', 'error-monitor', 'ai-workspace']],
   ];
   function groupFor(name) { return GROUPS.find(([, , , items]) => items.includes(name)) || ['more', 'เครื่องมือเพิ่มเติม', 'ฟังก์ชันจัดการอื่น ๆ', []]; }
   function groupAdminNavigation() {
