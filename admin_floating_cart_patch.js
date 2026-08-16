@@ -269,21 +269,70 @@
   window.renderCheckoutSummary = () => {
     const cart = getCart();
     const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
-    const store = (window.AppState?.stores || []).find(s => s.id === (cart[0]?.storeId || window.AppState?.activeStoreId));
-    const delivery = window.AppState?.userLocation || store?.location || {lat:13.7563, lng:100.5018};
-    const quote = typeof window.foodDeliveryQuote === 'function' ? window.foodDeliveryQuote(store, delivery) : {total:35, base:35, distance:0, km:2};
+    const storesList = window.AppState?.stores || [];
+    // Group cart items by storeId
+    const storeMap = {};
+    cart.forEach(item => {
+      const sId = item.storeId || 'default';
+      if (!storeMap[sId]) {
+        const storeObj = storesList.find(s => s.id === sId) || { name: item.storeName || 'ร้านค้า AP Service', location: {lat:13.7563, lng:100.5018} };
+        storeMap[sId] = { store: storeObj, items: [] };
+      }
+      storeMap[sId].items.push(item);
+    });
+
+    const activeStores = Object.values(storeMap);
+    const deliveryLoc = window.AppState?.userLocation || activeStores[0]?.store?.location || {lat:13.7563, lng:100.5018};
+
+    // Calculate multi-stop route distance (Store 1 -> Store 2 -> ... -> Delivery)
+    let totalKm = 0;
+    let prevLoc = null;
+    // Sort stores by distance from user or chain them sequentially
+    activeStores.forEach((entry, idx) => {
+      const loc = entry.store.location || {lat:13.7563, lng:100.5018};
+      if (idx === 0) {
+        // Distance from first store to user (or use distanceKmBetween if available)
+        totalKm += typeof window.distanceKmBetween === 'function' ? window.distanceKmBetween(loc, deliveryLoc) : 3;
+        prevLoc = loc;
+      } else {
+        // Distance from previous store to this store
+        const interKm = typeof window.distanceKmBetween === 'function' ? window.distanceKmBetween(prevLoc, loc) : 1.5;
+        totalKm += interKm;
+        // Distance from this store to delivery
+        const toDelivery = typeof window.distanceKmBetween === 'function' ? window.distanceKmBetween(loc, deliveryLoc) : 2;
+        // Take the max or cumulative step
+        prevLoc = loc;
+      }
+    });
+
+    // Ensure minimum reasonable multi-store distance
+    totalKm = Math.max(2, Number(totalKm.toFixed(1)));
+
+    const rule = typeof window.deliveryRules === 'function' ? window.deliveryRules() : { baseFee: 35, perKm: 12, includedKm: 0, zoneMultiplier: 1 };
+    const base = Number(rule.baseFee || 35);
+    const included = Number(rule.includedKm || 0);
+    const billable = Math.max(0, totalKm - included);
+    const deliveryFee = base + (billable * Number(rule.perKm || 12) * Number(rule.zoneMultiplier || 1));
+
     const useCredit = document.getElementById('checkoutUseCredit')?.checked;
     const creditAvail = Number(window.AppState?.user?.credit || 0);
-    const creditUsed = useCredit ? Math.min(subtotal + quote.total, creditAvail) : 0;
-    const total = Math.max(0, subtotal + quote.total - creditUsed);
+    const creditUsed = useCredit ? Math.min(subtotal + deliveryFee, creditAvail) : 0;
+    const total = Math.max(0, subtotal + deliveryFee - creditUsed);
 
     const itemsEl = document.getElementById('checkoutSummaryItems');
     if (itemsEl) {
-      itemsEl.innerHTML = cart.length ? cart.map(item => `
-        <div class="cart-row">
-          <span style="font-size:24px">${item.emoji || '🍽️'}</span>
-          <div><strong>${esc(item.name)}</strong><small style="display:block;color:var(--muted)">${money(item.price)} × ${item.qty} = ${money(item.price * item.qty)}</small></div>
-          <div style="font-weight:950;color:var(--brand-deep)">${money(item.price * item.qty)}</div>
+      itemsEl.innerHTML = activeStores.length ? activeStores.map((group, gIdx) => `
+        <div style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px dashed var(--line)">
+          <div style="font-weight:950;color:var(--brand-deep);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <span>🏪</span> <span>จุดรับที่ ${gIdx + 1}: ${esc(group.store.name)}</span>
+          </div>
+          ${group.items.map(item => `
+            <div class="cart-row" style="padding:6px 0;border:none">
+              <span style="font-size:20px">${item.emoji || '🍽️'}</span>
+              <div><strong>${esc(item.name)}</strong><small style="display:block;color:var(--muted)">${money(item.price)} × ${item.qty}</small></div>
+              <div style="font-weight:950;color:var(--brand-deep)">${money(item.price * item.qty)}</div>
+            </div>
+          `).join('')}
         </div>
       `).join('') : '<p class="sub">ยังไม่มีสินค้าในตะกร้า</p>';
     }
@@ -294,14 +343,14 @@
       const name = document.getElementById('foodDeliveryRecipientName')?.value || window.AppState?.user?.name || 'ลูกค้าผู้สั่งซื้อ';
       const phone = document.getElementById('foodDeliveryRecipientPhone')?.value || window.AppState?.user?.phone || '-';
       const desc = document.getElementById('foodDeliveryAddress')?.value || (window.AppState?.foodDeliveryLocationName || 'พิกัด GPS ปัจจุบัน');
-      addrEl.innerHTML = `<strong>รูปแบบ:</strong> ${mode}<br><strong>ผู้รับ:</strong> ${name} (${phone})<br><strong>ที่อยู่/จุดส่ง:</strong> ${desc}`;
+      addrEl.innerHTML = `<strong>รูปแบบ:</strong> ${mode}<br><strong>จุดรับสินค้า:</strong> จัดเส้นทางรับ ${activeStores.length} ร้านค้า<br><strong>ผู้รับ:</strong> ${name} (${phone})<br><strong>จุดส่งปลายทาง:</strong> ${desc}`;
     }
 
     const subEl = document.getElementById('checkoutSummarySubtotal');
     if (subEl) subEl.textContent = money(subtotal);
 
     const feeEl = document.getElementById('checkoutSummaryDeliveryFee');
-    if (feeEl) feeEl.textContent = `${money(quote.total)} (${quote.km.toFixed(1)} กม.)`;
+    if (feeEl) feeEl.textContent = `${money(deliveryFee)} (${totalKm.toFixed(1)} กม. - คำนวณหลายร้าน)`;
 
     const crEl = document.getElementById('checkoutSummaryCredit');
     if (crEl) crEl.textContent = `-${money(creditUsed)}`;
