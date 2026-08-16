@@ -5,11 +5,16 @@
   const toast = (message, tone = 'success') => window.UI?.toast ? window.UI.toast(message, tone) : window.alert(message);
   const isPendingLocalId = id => /^(food|menu)-/.test(String(id || ''));
   const safeNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+  const makeUniqueMenuId = () => {
+    const uuid = globalThis.crypto?.randomUUID?.();
+    return uuid ? `menu-${uuid}` : `menu-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  };
+  const isDuplicateKeyError = error => /duplicate key|menu_items_pkey|23505/i.test(String(error?.message || error || ''));
 
   const AdminMenuSync = {
     payload(food, storeId) {
       return {
-        id: String(food.id), store_id: storeId, name: String(food.name || '').trim(), emoji: String(food.emoji || '🍜'),
+        id: String(food.id || makeUniqueMenuId()), store_id: storeId, name: String(food.name || '').trim(), emoji: String(food.emoji || '🍜'),
         image_url: food.imageUrl || null, description: String(food.desc || ''), price: Math.max(0, safeNumber(food.price)),
         cost: Math.max(0, safeNumber(food.cost)), stock: Math.max(0, safeNumber(food.stock)), available: food.available !== false,
         promo: Boolean(food.promo), category_id: food.categoryId || 'menu-other'
@@ -31,24 +36,47 @@
       Storage.save();
       return { remote, pending };
     },
+    async findById(id) {
+      if (!id) return null;
+      const rows = await SupabaseSync.request(`menu_items?id=eq.${encodeURIComponent(id)}&select=id,store_id&limit=1`);
+      return Array.isArray(rows) && rows[0] ? rows[0] : null;
+    },
     async flushPending(store) {
       const pending = (store.foods || []).filter(food => isPendingLocalId(food.id));
       if (!pending.length) return toast('ไม่มีเมนูในเครื่องที่รอซิงก์', 'warning');
-      for (const food of pending) {
-        const payload = this.payload(food, store.id);
-        if (!payload.name) continue;
-        await SupabaseSync.request('menu_items', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) });
+      let synced = 0;
+      for (const original of pending) {
+        if (!String(original.name || '').trim()) continue;
+        const saved = await this.save(store, { ...original }, false);
+        const index = (store.foods || []).findIndex(item => item.id === original.id);
+        if (index >= 0) store.foods[index] = saved;
+        synced += 1;
       }
       await this.load(store);
-      toast(`ซิงก์เมนู ${pending.length} รายการขึ้นระบบกลางแล้ว`, 'success');
+      toast(`ซิงก์เมนู ${synced} รายการขึ้นระบบกลางแล้ว`, 'success');
     },
     async save(store, food, editing) {
-      const payload = this.payload(food, store.id);
+      const candidate = { ...food };
+      let existing = await this.findById(candidate.id);
+      if (existing && String(existing.store_id) !== String(store.id)) {
+        candidate.id = makeUniqueMenuId();
+        existing = null;
+      }
+      const payload = this.payload(candidate, store.id);
       if (!payload.name) throw new Error('กรุณาระบุชื่อเมนู');
+      const shouldPatch = (editing && !isPendingLocalId(candidate.id)) || Boolean(existing && String(existing.store_id) === String(store.id));
       let rows = [];
-      if (editing && !isPendingLocalId(food.id)) rows = await SupabaseSync.request(`menu_items?id=eq.${encodeURIComponent(food.id)}`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) });
-      if (!Array.isArray(rows) || !rows.length) rows = await SupabaseSync.request('menu_items', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) });
-      return this.map(rows?.[0] || payload);
+      if (shouldPatch) rows = await SupabaseSync.request(`menu_items?id=eq.${encodeURIComponent(candidate.id)}&store_id=eq.${encodeURIComponent(store.id)}`, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) });
+      if (!Array.isArray(rows) || !rows.length) {
+        try {
+          rows = await SupabaseSync.request('menu_items', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(payload) });
+        } catch (error) {
+          if (!isDuplicateKeyError(error)) throw error;
+          candidate.id = makeUniqueMenuId();
+          rows = await SupabaseSync.request('menu_items', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify(this.payload(candidate, store.id)) });
+        }
+      }
+      return this.map(rows?.[0] || this.payload(candidate, store.id));
     },
     async remove(food) {
       if (isPendingLocalId(food.id)) return;
