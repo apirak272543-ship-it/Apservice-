@@ -89,9 +89,9 @@
          That is useful for admin toolbars but creates a large blank block in Customer views. */
       .view:not(#view-admin):not(#view-login):not(#view-register) .section-head>div,
       .view:not(#view-admin):not(#view-login):not(#view-register) .section-head>.section-head-copy{
-        flex:0 1 auto;
-        min-height:0;
-        height:auto;
+        flex:0 1 auto!important;
+        min-height:0!important;
+        height:auto!important;
       }
       .view:not(#view-admin):not(#view-login):not(#view-register) .section-head{
         margin-top:18px;
