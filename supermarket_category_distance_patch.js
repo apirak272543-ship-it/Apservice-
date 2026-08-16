@@ -105,13 +105,19 @@
     const field = $('#errandDistance');
     const status = $('#errandDistanceStatus');
     const km = distanceKmBetweenPoints(pickup, delivery);
+    let fieldValueChanged = false;
     if (field) {
-      field.value = km === null ? '' : km.toFixed(2);
+      const nextValue = km === null ? '' : km.toFixed(2);
+      fieldValueChanged = field.value !== nextValue;
+      if (fieldValueChanged) field.value = nextValue;
       field.readOnly = true;
     }
-    if (status) status.textContent = km === null ? 'เลือกพิกัดจุดรับและจุดส่งก่อน ระบบจึงจะคำนวณระยะทาง' : `ระบบคำนวณได้ ${km.toFixed(2)} กม.`;
-    // The original classic script owns updateErrandEstimate; trigger its existing input binding without replacing it.
-    field?.dispatchEvent(new Event('input', { bubbles: true }));
+    if (status) {
+      const nextStatus = km === null ? 'เลือกพิกัดจุดรับและจุดส่งก่อน ระบบจึงจะคำนวณระยะทาง' : `ระบบคำนวณได้ ${km.toFixed(2)} กม.`;
+      if (status.textContent !== nextStatus) status.textContent = nextStatus;
+    }
+    // The original classic script owns updateErrandEstimate; trigger it only when the computed value changed.
+    if (fieldValueChanged) field?.dispatchEvent(new Event('input', { bubbles: true }));
     if (km === null) {
       const ruleCopy = $('#deliveryRuleCopy');
       if (ruleCopy) ruleCopy.textContent = 'รอพิกัดจุดรับและจุดส่งเพื่อคำนวณค่าบริการ';
@@ -247,9 +253,33 @@
     @media(max-width:560px){.supermarket-category-card{align-items:flex-start;flex-wrap:wrap}.supermarket-category-card button{width:100%}}
   `;
   document.head.appendChild(style);
-  const observer = new MutationObserver(observe);
+  let observeScheduled = false;
+  const observer = new MutationObserver(() => {
+    if (observeScheduled) return;
+    observeScheduled = true;
+    setTimeout(() => {
+      observeScheduled = false;
+      observe();
+    }, 0);
+  });
   observer.observe(document.body, { childList: true, subtree: true });
   [0, 250, 900, 1800].forEach((delay) => setTimeout(observe, delay));
+
+  // Keep legacy inline onclick behavior, but turn unexpected render errors into a visible toast instead of a frozen-looking screen.
+  const originalOpenStore = window.openStore;
+  if (typeof originalOpenStore === 'function' && !originalOpenStore.__safeStoreOpen) {
+    const safeOpenStore = function (...args) {
+      try {
+        return originalOpenStore.apply(this, args);
+      } catch (error) {
+        console.error('AP Service store opening failed', error);
+        window.UI?.toast?.('เปิดหน้าร้านไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', 'error');
+        return null;
+      }
+    };
+    safeOpenStore.__safeStoreOpen = true;
+    window.openStore = safeOpenStore;
+  }
 
   window.APServiceSupermarket = { categoryId: SUPERMARKET_CATEGORY, isSupermarket, distanceKmBetweenPoints, updateDistanceAndQuote };
 })();
