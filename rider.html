@@ -153,13 +153,14 @@
         if(State.isSyncing)return;
         const rows=await this.request('delivery_orders?select=*&order=ordered_at.desc&limit=100');
         if(!Array.isArray(rows))return;
-        const orderIds=rows.map(row=>row.id).filter(Boolean);
+        const visibleRows=rows.filter(row=>row.status!=='รอตรวจสอบการชำระเงิน'&&row.status!=='ต้องแนบสลิปใหม่');
+        const orderIds=visibleRows.map(row=>row.id).filter(Boolean);
         const itemRows=orderIds.length?await this.request('delivery_order_items?select=*&order_id=in.('+orderIds.map(id=>encodeURIComponent(id)).join(',')+')&limit=1000').catch(error=>{console.warn('Cloud rider order items pull failed',error);return []}):[];
         const itemsByOrder=(Array.isArray(itemRows)?itemRows:[]).reduce((result,item)=>{
           (result[item.order_id]||(result[item.order_id]=[])).push({id:item.id,itemId:item.item_id,name:item.name,emoji:item.emoji,unitPrice:Number(item.unit_price||0),quantity:Number(item.quantity||0),options:item.options||{}});
           return result;
         },{});
-        State.orders=rows.map(row=>({
+        State.orders=visibleRows.map(row=>({
           id:row.id,storeId:row.store_id,storeName:row.store_name,serviceType:row.service_type||'food',riderId:row.rider_id,riderName:row.rider_name,name:row.customer_name,customerEmail:row.customer_email,
           total:Number(row.total||0),payable:Number(row.payable||0),deliveryFee:Number(row.delivery_fee||0),status:row.status,time:row.ordered_at,orderedAt:row.ordered_at,
           pickupAddress:row.pickup_address,pickupLocation:row.pickup_location,deliveryAddress:row.delivery_address,deliveryLocation:row.delivery_location,

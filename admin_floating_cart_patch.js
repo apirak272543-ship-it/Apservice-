@@ -421,6 +421,147 @@
     }, 1000);
   };
 
+  const getCloud = () => window.SupabaseSync || (typeof SupabaseSync !== 'undefined' ? SupabaseSync : null);
+  const PaymentSlipReview = {
+    current: null,
+    armedAt: 0,
+    isTransferSelected() {
+      return document.querySelector('input[name="paymentMethod"]:checked')?.value === 'transfer';
+    },
+    setStatus(message, tone = 'warning') {
+      const status = $('#checkoutSlipStatus');
+      if (!status) return;
+      const colors = {
+        warning: ['#fff4df', '#9b6812'],
+        success: ['#eaf8f2', '#167b59'],
+        error: ['#fdecee', '#ad3b49'],
+        info: ['#e9f5ff', '#1f6f9e']
+      };
+      const [background, color] = colors[tone] || colors.warning;
+      status.style.background = background;
+      status.style.color = color;
+      status.textContent = message;
+    },
+    async select(input) {
+      const file = input?.files?.[0];
+      if (!file) return;
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        input.value = '';
+        this.current = null;
+        this.setStatus('เลือกได้เฉพาะภาพ JPG, PNG หรือ WEBP', 'error');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        input.value = '';
+        this.current = null;
+        this.setStatus('ไฟล์สลิปมีขนาดเกิน 5 MB กรุณาเลือกรูปใหม่', 'error');
+        return;
+      }
+      try {
+        this.setStatus('กำลังเตรียมสลิปเพื่อส่งเข้าคิวตรวจสอบ…', 'info');
+        const compressed = typeof window.compressImageForUpload === 'function'
+          ? await window.compressImageForUpload(file, { maxBytes: 1000000, maxDimension: 1600 })
+          : { dataUrl: await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }), bytes: file.size };
+        const blob = await fetch(compressed.dataUrl).then(response => response.blob());
+        const extension = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
+        this.current = { blob, extension, bytes: Number(compressed.bytes || blob.size), selectedAt: new Date().toISOString(), fileName: file.name || `slip.${extension}`, previewDataUrl: compressed.dataUrl };
+        const preview = $('#checkoutSlipPreview');
+        if (preview) {
+          preview.style.display = 'block';
+          preview.innerHTML = `<img src="${compressed.dataUrl}" alt="ตัวอย่างสลิปโอนเงิน" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--line);object-fit:contain;background:#fff" />`;
+        }
+        this.setStatus('ตรวจเบื้องต้น: ไฟล์ภาพผ่านและพร้อมส่งให้แอดมินตรวจยอด วันที่ และเวลาโอน', 'success');
+      } catch (error) {
+        input.value = '';
+        this.current = null;
+        this.setStatus(`เตรียมสลิปไม่สำเร็จ: ${error.message || 'กรุณาลองใหม่'}`, 'error');
+      }
+    },
+    arm() {
+      if (!this.current) return false;
+      this.armedAt = Date.now();
+      return true;
+    },
+    shouldAttach(order) {
+      return Boolean(this.current && this.isTransferSelected() && this.armedAt && Date.now() - this.armedAt < 120000 && order?.serviceType === 'food');
+    },
+    async attach(order) {
+      const cloud = getCloud();
+      const session = cloud?.session?.();
+      if (!cloud || !session?.user?.id || !session?.access_token || !this.current) throw new Error('ไม่พบข้อมูลสลิปหรือเซสชันสำหรับบันทึก');
+      const cfg = cloud.config();
+      const item = this.current;
+      const path = `${session.user.id}/${order.id}-${Date.now()}.${item.extension}`;
+      const upload = await fetch(`${cfg.url}/storage/v1/object/payment-slips/${path}`, {
+        method: 'POST',
+        headers: { apikey: cfg.publishableKey, Authorization: `Bearer ${session.access_token}`, 'Content-Type': item.blob.type || 'image/jpeg', 'x-upsert': 'false' },
+        body: item.blob
+      });
+      if (!upload.ok) throw new Error('ไม่สามารถบันทึกรูปสลิปได้');
+      await cloud.request('payment_slip_reviews', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          order_id: order.id,
+          customer_id: session.user.id,
+          slip_path: path,
+          expected_amount: Number(order.payable || 0),
+          status: 'pending',
+          preliminary_status: 'needs_review',
+          preliminary_result: {
+            file_name: item.fileName,
+            file_bytes: item.bytes,
+            uploaded_at: item.selectedAt,
+            note: 'ตรวจรูปแบบไฟล์สำเร็จ ต้องให้แอดมินตรวจยอด วันที่ และเวลาโอนก่อนยืนยันเงินเข้า'
+          }
+        })
+      });
+      this.current = null;
+      this.armedAt = 0;
+      return path;
+    },
+    async markAttachFailure(order, error) {
+      const cloud = getCloud();
+      order.status = 'ต้องแนบสลิปใหม่';
+      order.statusHistory = [...(order.statusHistory || []), { status: order.status, time: new Date().toLocaleString('th-TH'), by: 'ระบบ' }];
+      await cloud?.request?.(`delivery_orders?id=eq.${encodeURIComponent(order.id)}`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: order.status, updated_at: new Date().toISOString() })
+      }).catch(() => {});
+      this.armedAt = 0;
+      this.setStatus(`รับออร์เดอร์แล้ว แต่บันทึกสลิปไม่สำเร็จ: ${error.message || 'กรุณาแนบใหม่จากประวัติออร์เดอร์'}`, 'error');
+    }
+  };
+
+  window.handleCheckoutSlipUpload = input => PaymentSlipReview.select(input);
+
+  function installPaymentSlipOrderGuard() {
+    const cloud = getCloud();
+    if (!cloud?.pushOrder || cloud.__paymentSlipOrderGuardInstalled) return;
+    const basePushOrder = cloud.pushOrder.bind(cloud);
+    cloud.pushOrder = async order => {
+      const requiresReview = PaymentSlipReview.shouldAttach(order);
+      if (requiresReview) {
+        order.paymentMethod = 'โอนเงินผ่าน QR Code';
+        order.status = 'รอตรวจสอบการชำระเงิน';
+        order.note = String(window.AppState?.lastCheckoutMeta?.riderNote || order.note || '').trim();
+        order.statusHistory = [...(order.statusHistory || []), { status: order.status, time: new Date().toLocaleString('th-TH'), by: window.AppState?.user?.email || 'ระบบ' }];
+      }
+      const result = await basePushOrder(order);
+      if (requiresReview) {
+        try {
+          order.paymentSlipPath = await PaymentSlipReview.attach(order);
+          if (window.UI?.toast) UI.toast('รับคำสั่งซื้อแล้ว กำลังตรวจสอบการชำระเงิน');
+        } catch (error) {
+          await PaymentSlipReview.markAttachFailure(order, error);
+        }
+      }
+      return result;
+    };
+    cloud.__paymentSlipOrderGuardInstalled = true;
+  }
+
   const baseRenderCheckoutSummary = window.renderCheckoutSummary;
   window.renderCheckoutSummary = () => {
     if (typeof baseRenderCheckoutSummary === 'function') baseRenderCheckoutSummary();
@@ -446,6 +587,11 @@
   window.confirmCheckoutSummary = () => {
     const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'cod';
     const riderNote = document.getElementById('checkoutRiderNote')?.value || '';
+    if (paymentMethod === 'transfer' && !PaymentSlipReview.arm()) {
+      PaymentSlipReview.setStatus('กรุณาแนบสลิปโอนเงินก่อนส่งคำสั่งซื้อ', 'error');
+      if (window.UI?.toast) UI.toast('กรุณาแนบสลิปโอนเงินก่อนส่งคำสั่งซื้อ', 'warning');
+      return;
+    }
     // Store metadata in window.AppState for order creation
     if (!window.AppState) window.AppState = {};
     window.AppState.lastCheckoutMeta = {
@@ -468,7 +614,80 @@
     renderCartPopupContent();
   };
 
-  const boot = () => { initGlobalFloatingCart(); renderCartPopupContent(); };
+  const PaymentSlipAdminQueue = {
+    isAdmin() {
+      try { return typeof Storage !== 'undefined' && typeof Storage.isAdmin === 'function' && Storage.isAdmin(); } catch (error) { return false; }
+    },
+    async view(path) {
+      try {
+        const cloud = getCloud();
+        const response = await fetch(`${cloud.config().url}/storage/v1/object/payment-slips/${path}`, { headers: cloud.headers(false) });
+        if (!response.ok) throw new Error('ไม่สามารถเปิดรูปสลิปได้');
+        const url = URL.createObjectURL(await response.blob());
+        const viewer = window.open(url, '_blank', 'noopener');
+        if (!viewer) throw new Error('เบราว์เซอร์บล็อกหน้าต่างรูปภาพ');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      } catch (error) {
+        if (window.UI?.toast) UI.toast(error.message || 'เปิดสลิปไม่สำเร็จ', 'error');
+      }
+    },
+    async decide(reviewId, orderId, decision) {
+      if (!this.isAdmin()) return window.UI?.toast?.('เฉพาะแอดมินเท่านั้นที่ตรวจสลิปได้', 'error');
+      const cloud = getCloud();
+      const session = cloud?.session?.();
+      const approved = decision === 'approve';
+      const note = approved ? 'ตรวจสอบโดยแอดมินแล้ว' : (window.prompt('ระบุเหตุผลที่ต้องแนบสลิปใหม่ (จะแจ้งให้ลูกค้าเห็น)') || 'กรุณาแนบสลิปใหม่ให้เห็นยอด วันที่ เวลา และชื่อผู้รับชัดเจน');
+      try {
+        await cloud.request(`payment_slip_reviews?id=eq.${encodeURIComponent(reviewId)}`, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: approved ? 'approved' : 'needs_reupload', reviewed_at: new Date().toISOString(), reviewed_by: session?.user?.id || null, reviewer_note: note })
+        });
+        await cloud.request(`delivery_orders?id=eq.${encodeURIComponent(orderId)}`, {
+          method: 'PATCH',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify(approved ? { status: 'ร้านค้ารับออร์เดอร์', payment_confirmed_at: new Date().toISOString(), updated_at: new Date().toISOString() } : { status: 'ต้องแนบสลิปใหม่', updated_at: new Date().toISOString() })
+        });
+        await cloud.request('order_status_events', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ order_id: orderId, status: approved ? 'ร้านค้ารับออร์เดอร์' : 'ต้องแนบสลิปใหม่', actor_id: session?.user?.id || null, actor_label: 'แอดมินตรวจสลิป' }) }).catch(() => {});
+        if (window.UI?.toast) UI.toast(approved ? 'อนุมัติสลิปแล้ว ระบบปล่อยออร์เดอร์ให้ร้านและ Rider' : 'ส่งคำขอแนบสลิปใหม่ให้ลูกค้าแล้ว');
+        await this.render();
+      } catch (error) {
+        if (window.UI?.toast) UI.toast(`บันทึกผลตรวจสลิปไม่สำเร็จ: ${error.message || ''}`, 'error');
+      }
+    },
+    async render() {
+      const host = $('#paymentSlipQueueRows');
+      if (!host) return;
+      if (!this.isAdmin()) { host.innerHTML = '<tr><td colspan="5">เฉพาะแอดมินเท่านั้นที่เข้าถึงคิวตรวจสลิป</td></tr>'; return; }
+      try {
+        const cloud = getCloud();
+        const rows = await cloud.request('payment_slip_reviews?select=id,order_id,slip_path,expected_amount,status,preliminary_status,preliminary_result,uploaded_at,delivery_orders(customer_name,customer_email,payable,status)&status=eq.pending&order=uploaded_at.desc&limit=100');
+        host.innerHTML = Array.isArray(rows) && rows.length ? rows.map(row => {
+          const order = Array.isArray(row.delivery_orders) ? row.delivery_orders[0] : row.delivery_orders || {};
+          return `<tr><td><b>${esc(row.order_id)}</b><br><small>${esc(order.customer_name || order.customer_email || '-')}</small></td><td><b>${money(row.expected_amount)}</b><br><small>${new Date(row.uploaded_at).toLocaleString('th-TH')}</small></td><td><span class="status">${esc(row.preliminary_status || 'needs_review')}</span><br><small>${esc(row.preliminary_result?.file_name || 'แนบสลิป')}</small></td><td><button class="btn btn-plain btn-small" onclick="viewPaymentSlip('${esc(row.slip_path)}')">ดูสลิป</button></td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-main btn-small" onclick="reviewPaymentSlip('${esc(row.id)}','${esc(row.order_id)}','approve')">อนุมัติ</button><button class="btn btn-plain btn-small" onclick="reviewPaymentSlip('${esc(row.id)}','${esc(row.order_id)}','reject')">ขอแนบใหม่</button></div></td></tr>`;
+        }).join('') : '<tr><td colspan="5">ยังไม่มีสลิปรอตรวจสอบ</td></tr>';
+      } catch (error) {
+        host.innerHTML = `<tr><td colspan="5">โหลดคิวสลิปไม่สำเร็จ: ${esc(error.message || '')}</td></tr>`;
+      }
+    },
+    init() {
+      if ($('#admin-payment-slips')) return;
+      const tabs = $('#adminTabs');
+      const content = tabs?.parentElement?.querySelector(':scope > div');
+      if (!tabs || !content) return;
+      tabs.insertAdjacentHTML('beforeend', '<button data-admin="payment-slips">ตรวจสลิปชำระเงิน</button>');
+      content.insertAdjacentHTML('beforeend', '<section class="admin-section" id="admin-payment-slips"><div class="panel"><div class="section-head" style="margin:0 0 14px"><div><h2 style="font-size:17px">คิวตรวจสลิปชำระเงิน</h2><p>ตรวจรูปสลิปกับยอด เวลา และข้อมูลผู้รับก่อนอนุมัติปล่อยงานให้ร้านและ Rider</p></div><button class="btn btn-plain btn-small" onclick="refreshPaymentSlipQueue()">รีเฟรช</button></div><div class="notice" style="margin:0 0 14px">คำเตือน: ผลตรวจจากรูปเป็นเพียงด่านเบื้องต้น ควรตรวจยอดเงินเข้าจริงก่อนกดอนุมัติทุกครั้ง</div><div class="table-wrap"><table><thead><tr><th>ออร์เดอร์/ลูกค้า</th><th>ยอด/เวลาแนบ</th><th>ผลเบื้องต้น</th><th>หลักฐาน</th><th>จัดการ</th></tr></thead><tbody id="paymentSlipQueueRows"></tbody></table></div></div></section>');
+      const button = $('#adminTabs [data-admin="payment-slips"]');
+      const navigationHost = tabs.querySelector('.admin-nav-group[data-group-id="finance"] .admin-nav-group-body') || tabs;
+      navigationHost.appendChild(button);
+      button.onclick = () => { [...document.querySelectorAll('#adminTabs button')].forEach(item => item.classList.toggle('active', item === button)); [...document.querySelectorAll('.admin-section')].forEach(section => section.classList.toggle('active', section.id === 'admin-payment-slips')); this.render(); };
+    }
+  };
+  window.viewPaymentSlip = path => PaymentSlipAdminQueue.view(path);
+  window.reviewPaymentSlip = (reviewId, orderId, decision) => PaymentSlipAdminQueue.decide(reviewId, orderId, decision);
+  window.refreshPaymentSlipQueue = () => PaymentSlipAdminQueue.render();
+
+  const boot = () => { initGlobalFloatingCart(); renderCartPopupContent(); installPaymentSlipOrderGuard(); PaymentSlipAdminQueue.init(); };
   document.addEventListener('DOMContentLoaded', boot, { once:true });
   if (document.readyState === 'complete' || document.readyState === 'interactive') boot();
 })();

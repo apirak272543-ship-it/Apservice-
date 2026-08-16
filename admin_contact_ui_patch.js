@@ -35,7 +35,7 @@
     ['operations', 'งานและออร์เดอร์', 'ภาพรวม ออร์เดอร์ ลูกค้า และไรเดอร์', ['overview', 'orders', 'customers', 'riders']],
     ['stores', 'ร้านค้าและเมนู', 'ร้านค้า เมนู ราคา และสต็อก', ['stores', 'inventory']],
     ['content', 'หน้าแรกและการตลาด', 'แบนเนอร์ โฆษณา และสื่อที่ลูกค้าเห็น', ['content']],
-    ['finance', 'การเงินและการจ่าย', 'เครดิต เงินสด รอบจ่าย และคำขอถอนเงิน', ['finance', 'withdrawals', 'rider-income']],
+    ['finance', 'การเงินและการจ่าย', 'เครดิต เงินสด สลิปชำระเงิน รอบจ่าย และคำขอถอนเงิน', ['finance', 'payment-slips', 'withdrawals', 'rider-income']],
     ['platform', 'ระบบ การเชื่อมต่อ และความปลอดภัย', 'การตั้งค่า Data Storage และการตรวจสอบระบบ', ['settings', 'mapping', 'support', 'error-monitor', 'errors']],
     ['team', 'ทีมงานและ AI Workspace', 'แอดมิน ใบสมัคร และงานร่วมกับ AI', ['admins', 'rider-applications', 'ai-workspace']],
   ];

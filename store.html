@@ -164,5 +164,9 @@
     /* The support entry is hidden in Store settings, while the modal always has an escape route. */
     (()=>{const baseEnsure=StoreErrorMonitor.ensureModal.bind(StoreErrorMonitor),baseOpen=StoreErrorMonitor.open.bind(StoreErrorMonitor);let opening=false;const bind=()=>{const modal=$('#storeErrorReportModal');if(!modal||modal.dataset.safeDismiss)return;modal.dataset.safeDismiss='true';modal.setAttribute('aria-hidden','true');modal.addEventListener('pointerdown',event=>{if(event.target===modal)StoreErrorMonitor.close()});document.addEventListener('keydown',event=>{if(event.key==='Escape'&&modal.classList.contains('open'))StoreErrorMonitor.close()})};StoreErrorMonitor.ensureModal=function(){baseEnsure();bind()};StoreErrorMonitor.open=function(){if(opening)return;opening=true;try{baseOpen();$('#storeErrorReportModal')?.setAttribute('aria-hidden','false')}finally{requestAnimationFrame(()=>opening=false)}};window.openStoreErrorReport=()=>StoreErrorMonitor.open()})();
   </script>
+  <script>
+    /* Do not release transfer orders to the store before Admin payment review. */
+    (()=>{const baseFetch=window.fetch.bind(window);window.fetch=(input,init)=>{const raw=String(input||'');if(raw.includes('/rest/v1/delivery_orders?')&&raw.includes('store_id=eq.')){try{const url=new URL(raw);url.searchParams.set('status','not.in.("รอตรวจสอบการชำระเงิน","ต้องแนบสลิปใหม่")');return baseFetch(url.toString(),init)}catch(error){console.warn('Store payment-status filter skipped',error)}}return baseFetch(input,init)}})();
+  </script>
 </body>
 </html>

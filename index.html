@@ -147,16 +147,10 @@
               <button type="button" class="btn btn-plain btn-small" style="flex:1;font-size:12px" onclick="copyCheckoutTotal()">📋 คัดลอกยอดโอน</button>
             </div>
             <div style="max-width:340px;margin:0 auto;text-align:left">
-              <label style="font-size:11px;font-weight:800;color:var(--brand-deep);display:block;margin-bottom:5px">🏦 เลือกแอปธนาคารเพื่อเปิดไปสแกนรูป QR:</label>
-              <select id="bankAppSelect" class="table-input" style="width:100%;font-size:12px;padding:9px" onchange="openBankAppDropdown(this.value)">
-                  <option value="">-- แตะเพื่อเลือกแอปธนาคารของคุณ --</option>
-                  <option value="kplus">K PLUS (กสิกรไทย)</option>
-                  <option value="scbeasy">SCB EASY (ไทยพาณิชย์)</option>
-                  <option value="krungsri">KMA (กรุงศรีอยุธยา)</option>
-                  <option value="ktb">Krungthai NEXT (กรุงไทย)</option>
-                  <option value="bbl">Bangkok Bank (กรุงเทพ)</option>
-                  <option value="ttb">ttb touch (ทหารไทยธนชาต)</option>
-              </select>
+              <label style="font-size:12px;font-weight:800;color:var(--brand-deep);display:block;margin-bottom:5px">📎 แนบสลิปโอนเงินเพื่อส่งตรวจสอบ</label>
+              <input id="checkoutSlipFile" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" style="width:100%;font-size:12px;padding:8px;border:1px dashed var(--brand);border-radius:8px;background:#fff" onchange="handleCheckoutSlipUpload(this)" />
+              <div id="checkoutSlipPreview" style="display:none;margin-top:8px;text-align:center"></div>
+              <div id="checkoutSlipStatus" role="status" style="margin-top:8px;padding:8px 10px;border-radius:8px;background:#fff4df;color:#9b6812;font-size:11px;font-weight:800;line-height:1.45">กรุณาแนบสลิปหลังโอนเงิน ระบบจะส่งเข้าคิวตรวจสอบก่อนเปิดงานให้ Rider</div>
             </div>
           </div>
           <div class="field full" style="margin-bottom:14px">
@@ -568,9 +562,9 @@
       AppState.orders.unshift(order);
       AppState.cart=[];
       Storage.save();
-      dispatchExternal(order);
+      if(!['รอตรวจสอบการชำระเงิน','ต้องแนบสลิปใหม่'].includes(order.status))dispatchExternal(order);
       showView('orders');
-      UI.toast('ยืนยันออร์เดอร์และส่งงานเข้าสู่ระบบกลางแล้ว');
+      UI.toast(order.status==='รอตรวจสอบการชำระเงิน'?'รับคำสั่งซื้อแล้ว กำลังตรวจสอบการชำระเงิน':'ยืนยันออร์เดอร์และส่งงานเข้าสู่ระบบกลางแล้ว');
     }
     async function dispatchExternal(order){if(AppState.config.mode==='local')return;const cfg=AppState.config;if(cfg.webhookUrl){try{await fetch(cfg.webhookUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(applyMappings({order,profile:AppState.user}))})}catch(e){console.warn('Webhook could not be reached',e)}}}
     function orderMapLink(location,label){const url=mapUrl(location);return url?`<a class="map-link" href="${url}" target="_blank" rel="noopener">${label}</a>`:`<span class="location-chip">ยังไม่มีพิกัด</span>`}
