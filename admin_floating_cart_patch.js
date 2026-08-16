@@ -383,8 +383,14 @@
       const amtText = totEl.textContent || '฿0';
       qrAmt.textContent = `ยอดชำระ: ${amtText}`;
       if (qrDisp) {
-        // Generate promptpay QR or dynamic payment mock view
-        qrDisp.innerHTML = `<div style="font-size:11px;font-weight:900;color:var(--brand);padding:10px;text-align:center">📱 PROMPTPAY QR<br><span style="font-size:16px;color:var(--foreground)">${amtText}</span></div>`;
+        // Retrieve official platform payment QR from all possible locations including AppState, State, DOM inputs, and localStorage
+        const platformQr = window.AppState?.config?.payment?.qrImageUrl || window.State?.config?.payment?.qrImageUrl || document.getElementById('paymentQrImageUrl')?.value || document.getElementById('adminQrUrl')?.value || localStorage.getItem('apcx_admin_qr') || localStorage.getItem('apcx_platform_qr') || '';
+        const promptPayId = window.AppState?.config?.payment?.promptPayId || window.State?.config?.payment?.promptPayId || document.getElementById('paymentPromptPayId')?.value || '';
+        if (platformQr) {
+          qrDisp.innerHTML = `<img src="${platformQr}" alt="Platform Payment QR" style="width:100%;height:100%;object-fit:contain;border-radius:8px" /><div style="font-size:10px;color:var(--muted);margin-top:4px">${promptPayId ? `PromptPay: ${promptPayId}` : ''}</div>`;
+        } else {
+          qrDisp.innerHTML = `<div style="font-size:11px;font-weight:700;color:var(--danger);padding:12px;text-align:center">⚠️ กรุณาตั้งค่ารูป QR Code รับชำระเงินในหลังบ้านแอดมินก่อน</div>`;
+        }
       }
     }
   };
