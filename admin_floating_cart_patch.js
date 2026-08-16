@@ -266,6 +266,50 @@
     renderCartPopupContent();
   };
 
+  window.renderCheckoutSummary = () => {
+    const cart = getCart();
+    const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 0), 0);
+    const store = (window.AppState?.stores || []).find(s => s.id === (cart[0]?.storeId || window.AppState?.activeStoreId));
+    const delivery = window.AppState?.userLocation || store?.location || {lat:13.7563, lng:100.5018};
+    const quote = typeof window.foodDeliveryQuote === 'function' ? window.foodDeliveryQuote(store, delivery) : {total:35, base:35, distance:0, km:2};
+    const useCredit = document.getElementById('checkoutUseCredit')?.checked;
+    const creditAvail = Number(window.AppState?.user?.credit || 0);
+    const creditUsed = useCredit ? Math.min(subtotal + quote.total, creditAvail) : 0;
+    const total = Math.max(0, subtotal + quote.total - creditUsed);
+
+    const itemsEl = document.getElementById('checkoutSummaryItems');
+    if (itemsEl) {
+      itemsEl.innerHTML = cart.length ? cart.map(item => `
+        <div class="cart-row">
+          <span style="font-size:24px">${item.emoji || '🍽️'}</span>
+          <div><strong>${esc(item.name)}</strong><small style="display:block;color:var(--muted)">${money(item.price)} × ${item.qty} = ${money(item.price * item.qty)}</small></div>
+          <div style="font-weight:950;color:var(--brand-deep)">${money(item.price * item.qty)}</div>
+        </div>
+      `).join('') : '<p class="sub">ยังไม่มีสินค้าในตะกร้า</p>';
+    }
+
+    const addrEl = document.getElementById('checkoutSummaryAddress');
+    if (addrEl) {
+      const mode = window.AppState?.foodDeliveryMode === 'other' ? 'ระบุจุดรับเอง / ส่งให้ผู้อื่น' : 'GPS ปัจจุบันของฉัน';
+      const name = document.getElementById('foodDeliveryRecipientName')?.value || window.AppState?.user?.name || 'ลูกค้าผู้สั่งซื้อ';
+      const phone = document.getElementById('foodDeliveryRecipientPhone')?.value || window.AppState?.user?.phone || '-';
+      const desc = document.getElementById('foodDeliveryAddress')?.value || (window.AppState?.foodDeliveryLocationName || 'พิกัด GPS ปัจจุบัน');
+      addrEl.innerHTML = `<strong>รูปแบบ:</strong> ${mode}<br><strong>ผู้รับ:</strong> ${name} (${phone})<br><strong>ที่อยู่/จุดส่ง:</strong> ${desc}`;
+    }
+
+    const subEl = document.getElementById('checkoutSummarySubtotal');
+    if (subEl) subEl.textContent = money(subtotal);
+
+    const feeEl = document.getElementById('checkoutSummaryDeliveryFee');
+    if (feeEl) feeEl.textContent = `${money(quote.total)} (${quote.km.toFixed(1)} กม.)`;
+
+    const crEl = document.getElementById('checkoutSummaryCredit');
+    if (crEl) crEl.textContent = `-${money(creditUsed)}`;
+
+    const totEl = document.getElementById('checkoutSummaryTotal');
+    if (totEl) totEl.textContent = money(total);
+  };
+
   window.proceedToCheckoutSummary = () => {
     const cart = getCart();
     if (!cart.length) {
@@ -273,28 +317,20 @@
       return;
     }
     toggleCartPopup();
-    // Ensure we are on storefront view for the store containing items
-    const firstItem = cart[0];
-    const targetStoreId = firstItem?.storeId || window.AppState?.activeStoreId;
-    if (targetStoreId && typeof window.openStore === 'function') {
-      window.openStore(targetStoreId);
-    } else if (typeof window.showView === 'function') {
-      window.showView('stores');
+    if (typeof window.showView === 'function') {
+      window.showView('checkout-summary');
     }
+    window.renderCheckoutSummary();
+    if (window.UI?.toast) UI.toast('เข้าสู่หน้าสรุปรวมบิลเรียบร้อยครับ');
+  };
 
-    setTimeout(() => {
-      const checkoutPanel = document.querySelector('#view-storefront aside.panel.cart');
-      if (checkoutPanel) {
-        checkoutPanel.classList.add('force-show');
-        checkoutPanel.style.setProperty('display', 'block', 'important');
-        checkoutPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      if (typeof window.renderCart === 'function') {
-        window.renderCart();
-      }
-    }, 150);
-
-    if (window.UI?.toast) UI.toast('ตรวจสอบจุดจัดส่งและกดปุ่มยืนยันคำสั่งซื้อได้เลยครับ');
+  window.confirmCheckoutSummary = () => {
+    if (typeof window.checkout === 'function') {
+      window.checkout();
+    } else {
+      if (window.UI?.toast) UI.toast('ยืนยันคำสั่งซื้อเรียบร้อยแล้ว');
+      window.showView('home');
+    }
   };
 
   const baseRenderCart = window.renderCart;

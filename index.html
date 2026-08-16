@@ -121,6 +121,29 @@
       <div class="store-grid" id="allStores"></div>
     </section>
 
+    <section class="view" id="view-checkout-summary">
+      <div class="section-head"><div><h2>สรุปรวมบิลคำสั่งซื้อ</h2><p>ตรวจสอบรายการ จุดจัดส่ง และค่าบริการก่อนยืนยัน</p></div></div>
+      <div class="grid-2">
+        <div class="panel">
+          <h3 style="margin-top:0;font-size:16px;border-bottom:1px solid var(--line);padding-bottom:10px">รายการสินค้าในบิลนี้</h3>
+          <div id="checkoutSummaryItems" style="max-height:36vh;overflow-y:auto;margin-bottom:14px"></div>
+          <div style="background:var(--brand-soft);border:1px solid color-mix(in srgb, var(--brand) 28%, #e5eeec);border-radius:14px;padding:12px;margin-top:12px">
+            <strong style="display:block;color:var(--brand-deep);font-size:13px;margin-bottom:6px">📍 จุดจัดส่งและผู้รับ</strong>
+            <div id="checkoutSummaryAddress" style="font-size:11.5px;color:#102524;line-height:1.5">ยังไม่ได้ระบุจุดจัดส่ง</div>
+          </div>
+        </div>
+        <aside class="panel">
+          <h3 style="margin-top:0;font-size:16px;border-bottom:1px solid var(--line);padding-bottom:10px">รายละเอียดค่าใช้จ่าย</h3>
+          <div class="summary"><span>ยอดสินค้า</span><span id="checkoutSummarySubtotal">฿0</span></div>
+          <div class="summary"><span>ค่าจัดส่ง (คำนวณตามระยะทาง)</span><span id="checkoutSummaryDeliveryFee">฿0</span></div>
+          <div class="summary"><span>ส่วนลดเครดิต</span><span id="checkoutSummaryCredit">฿0</span></div>
+          <div class="summary total"><span>ยอดชำระสุทธิ</span><strong id="checkoutSummaryTotal" style="color:var(--brand)">฿0</strong></div>
+          <button type="button" class="btn btn-main" style="width:100%;margin-top:16px;min-height:50px;font-size:15px;font-weight:950" onclick="confirmCheckoutSummary()">✅ ยืนยันคำสั่งซื้อทันที</button>
+          <button type="button" class="btn btn-plain" style="width:100%;margin-top:8px" onclick="NavigationUX.goBack()">← กลับไปแก้ไขรายการ</button>
+        </aside>
+      </div>
+    </section>
+
     <section class="view" id="view-storefront">
       <div class="panel" style="padding:25px;background:linear-gradient(135deg,#073f3b,#08776c);color:#fff;margin-bottom:18px">
         <button class="btn btn-small" style="background:rgba(255,255,255,.12);color:#fff;margin-bottom:10px" onclick="showView('stores')">← กลับไปร้านค้าทั้งหมด</button>
