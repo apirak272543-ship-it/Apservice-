@@ -13,20 +13,84 @@ export const WEB_STORAGE_KEYS = Object.freeze([
   'apcx_store_settlements', 'apcx_store_withdrawals', 'apcx_store_form_drafts_v1',
 ]);
 
+const INLINE_IMAGE_RE = /^data:image\//i;
+
+export function isInlineImage(value) {
+  return typeof value === 'string' && INLINE_IMAGE_RE.test(value.trim());
+}
+
+/**
+ * Remove only inline image payloads from a cache copy. The live state object is
+ * never mutated, and Supabase remains the source of truth for uploaded media.
+ */
+export function stripInlineImages(value, seen = new WeakSet()) {
+  if (isInlineImage(value)) return '';
+  if (!value || typeof value !== 'object') return value;
+  if (seen.has(value)) return null;
+  seen.add(value);
+  if (Array.isArray(value)) return value.map(item => stripInlineImages(item, seen));
+  const copy = {};
+  Object.entries(value).forEach(([key, item]) => {
+    copy[key] = stripInlineImages(item, seen);
+  });
+  return copy;
+}
+
+export function isQuotaError(error) {
+  const name = String(error?.name || '').toLowerCase();
+  const message = String(error?.message || error || '').toLowerCase();
+  return name.includes('quota') || message.includes('quota') || message.includes('exceeded the quota');
+}
+
+export function safeSetItem(key, value, localStore = globalThis.localStorage) {
+  const serialized = JSON.stringify(value);
+  try {
+    localStore.setItem(key, serialized);
+    return { ok: true, sanitized: false };
+  } catch (error) {
+    if (!isQuotaError(error)) {
+      console.warn(`AP Service storage skipped ${key}`, error);
+      return { ok: false, sanitized: false, error };
+    }
+    const previous = (() => {
+      try { return localStore.getItem(key); } catch { return null; }
+    })();
+    try {
+      localStore.removeItem(key);
+      localStore.setItem(key, JSON.stringify(stripInlineImages(value)));
+      console.warn(`AP Service storage sanitized inline images for ${key}`);
+      return { ok: true, sanitized: true };
+    } catch (fallbackError) {
+      try {
+        if (previous !== null) localStore.setItem(key, previous);
+      } catch (restoreError) {
+        console.warn(`AP Service could not restore ${key} after quota fallback`, restoreError);
+      }
+      console.warn(`AP Service storage skipped ${key} after quota fallback`, fallbackError);
+      return { ok: false, sanitized: true, error: fallbackError };
+    }
+  }
+}
+
 export function persistAppState(state, localStore = globalThis.localStorage) {
-  localStore.setItem('apcx_user', JSON.stringify(state.user));
-  localStore.setItem('apcx_cart', JSON.stringify(state.cart));
-  localStore.setItem('apcx_stores', JSON.stringify(state.stores));
-  localStore.setItem('apcx_orders', JSON.stringify(state.orders));
-  localStore.setItem('apcx_config', JSON.stringify(state.config));
-  localStore.setItem('apcx_target', JSON.stringify(state.storageTarget));
-  localStore.setItem('apcx_mappings', JSON.stringify(state.mappings));
-  localStore.setItem('apcx_admins', JSON.stringify(state.admins));
-  localStore.setItem('apcx_riders', JSON.stringify(state.riders));
-  localStore.setItem('apcx_customers', JSON.stringify(state.customers));
-  localStore.setItem('apcx_transactions', JSON.stringify(state.transactions));
-  localStore.setItem('apcx_cash_ledger', JSON.stringify(state.cashLedger));
-  localStore.setItem('apcx_draft_locations', JSON.stringify(state.draftLocations));
+  const entries = [
+    ['apcx_user', state.user],
+    ['apcx_cart', state.cart],
+    ['apcx_stores', state.stores],
+    ['apcx_orders', state.orders],
+    ['apcx_config', state.config],
+    ['apcx_target', state.storageTarget],
+    ['apcx_mappings', state.mappings],
+    ['apcx_admins', state.admins],
+    ['apcx_riders', state.riders],
+    ['apcx_customers', state.customers],
+    ['apcx_transactions', state.transactions],
+    ['apcx_cash_ledger', state.cashLedger],
+    ['apcx_draft_locations', state.draftLocations],
+  ];
+  const report = {};
+  entries.forEach(([key, value]) => { report[key] = safeSetItem(key, value, localStore); });
+  return report;
 }
 
 export function isAdminState(state) {
