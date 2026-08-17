@@ -6,14 +6,22 @@
   root.__apAdminPerformanceAuditInstalled = true;
 
   const inflight = new Map();
+  const completed = new Map();
+  const CACHE_TTL_MS = 8000;
   const run = (key, task) => {
     const active = inflight.get(key);
     if (active) return active;
-    const pending = Promise.resolve().then(task).finally(() => inflight.delete(key));
+    const cached = completed.get(key);
+    if (cached && cached.expiresAt > Date.now()) return Promise.resolve(cached.value);
+    const pending = Promise.resolve().then(task).then(value => {
+      completed.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+      return value;
+    }).finally(() => inflight.delete(key));
     inflight.set(key, pending);
     return pending;
   };
   const call = (key, task) => run(key, task).catch(error => {
+    completed.delete(key);
     console.warn(`Admin performance loader ${key} failed`, error);
     return null;
   });
@@ -51,7 +59,9 @@
 
   root.AdminPerformance = Object.freeze({
     loadFor,
-    snapshot() { return { inflight: inflight.size, keys: [...inflight.keys()] }; },
+    cacheTtlMs: CACHE_TTL_MS,
+    clearCache() { completed.clear(); },
+    snapshot() { return { inflight: inflight.size, cached: completed.size, keys: [...inflight.keys()] }; },
   });
   root.APPerformanceCatalog = root.APPerformanceCatalog || null;
 })();

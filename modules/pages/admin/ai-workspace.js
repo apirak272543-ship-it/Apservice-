@@ -57,8 +57,8 @@ const Workspace = {
   async load() {
     this.ensureSection();
     const [threads, agents] = await Promise.all([
-      this.request('ai_workspace_threads?select=*&order=updated_at.desc&limit=60'),
-      this.request('ai_workspace_agents?select=*&order=agent_key.asc&limit=30'),
+      this.request('ai_workspace_threads?select=id,title,description,status,created_at,updated_at&order=updated_at.desc&limit=60'),
+      this.request('ai_workspace_agents?select=agent_key,display_name,agent_kind,responsibility,enabled,created_at,updated_at&order=agent_key.asc&limit=30'),
     ]);
     this.threads = Array.isArray(threads) ? threads : []; this.agents = Array.isArray(agents) ? agents : [];
     this.renderThreads(); this.renderAgents();
@@ -79,11 +79,11 @@ const Workspace = {
   async loadThread(threadId) {
     this.selectedThreadId = threadId; this.renderThreads();
     const [threadRows, tasks, messages, artifacts, commits] = await Promise.all([
-      this.request(`ai_workspace_threads?id=eq.${encodeURIComponent(threadId)}&select=*&limit=1`),
-      this.request(`ai_workspace_tasks?thread_id=eq.${encodeURIComponent(threadId)}&select=*&order=updated_at.desc&limit=100`),
-      this.request(`ai_workspace_messages?thread_id=eq.${encodeURIComponent(threadId)}&select=*&order=created_at.asc&limit=200`),
-      this.request(`ai_workspace_artifacts?thread_id=eq.${encodeURIComponent(threadId)}&select=*&order=created_at.desc&limit=100`),
-      this.request(`ai_workspace_commits?thread_id=eq.${encodeURIComponent(threadId)}&select=*&order=created_at.desc&limit=100`),
+      this.request(`ai_workspace_threads?id=eq.${encodeURIComponent(threadId)}&select=id,title,description,status,created_at,updated_at&limit=1`),
+      this.request(`ai_workspace_tasks?thread_id=eq.${encodeURIComponent(threadId)}&select=id,thread_id,title,description,status,owner_agent_key,commit_sha,created_at,updated_at,completed_at&order=updated_at.desc&limit=100`),
+      this.request(`ai_workspace_messages?thread_id=eq.${encodeURIComponent(threadId)}&select=id,thread_id,sender_agent_key,recipient_agent_key,message_type,body,created_at&order=created_at.asc&limit=200`),
+      this.request(`ai_workspace_artifacts?thread_id=eq.${encodeURIComponent(threadId)}&select=id,thread_id,artifact_kind,name,storage_path,external_url,mime_type,byte_size,created_at&order=created_at.desc&limit=100`),
+      this.request(`ai_workspace_commits?thread_id=eq.${encodeURIComponent(threadId)}&select=id,thread_id,provider,repository,branch,commit_sha,commit_message,commit_url,created_at&order=created_at.desc&limit=100`),
     ]);
     const thread = threadRows?.[0] || this.threads.find(item => item.id === threadId); this.renderMain(thread, tasks || [], messages || [], artifacts || [], commits || []);
   },

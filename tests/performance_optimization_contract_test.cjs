@@ -29,9 +29,9 @@ assert.match(patch, /setTimeout\(flush, 140\)/, 'ต้องหน่วงก�
 assert.match(html, /catalog_stores\?select=id,name,emoji,image_url/, 'catalog ต้องจำกัดฟิลด์ที่โหลด');
 assert.match(html, /catalog_menu_items\?select=id,store_id,name,emoji,image_url/, 'เมนูต้องจำกัดฟิลด์ที่โหลด');
 assert.doesNotMatch(html, /\n\s*Marketplace\.refresh\(\);\n\s*updateFoodDeliveryUI/, 'หน้าแรกต้องไม่โหลดตลาดทันทีตอนบูต');
-assert.match(html, /if\(name==='marketplace'\)\{renderMarketplace\(\);if\(!Marketplace\.listings\.length\)Marketplace\.refresh\(\)/, 'ตลาดต้องโหลดเมื่อเปิดหน้าจริง');
+assert.match(html, /if\(name==='marketplace'\)\{renderMarketplace\(\);if\(!Marketplace\.listings\.length\)setTimeout\(\(\)=>Marketplace\.refresh\(\)/, 'ตลาดต้องโหลดแบบ background หลังเปิดหน้าจริง');
 const boot = fs.readFileSync('modules/boot.js', 'utf8');
 assert.match(boot, /performance_optimization_patch\.js\?v=performance-v4-media-preserve/, 'ต้องโหลด performance patch หลัง bridge พร้อม');
-assert.match(html, /apservice:performance-ready/, 'catalog boot ต้องรอ performance patch พร้อม');
+assert.doesNotMatch(html, /apservice:performance-ready[\s\S]*runInitialCatalog/, 'performance-ready ต้องไม่ผูกกับ eager catalog boot');
 assert.match(html, /modules\/boot\.js\?v=admin-media-preserve-v3/, 'ต้อง cache bust module boot');
 console.log('performance optimization contract: PASS');

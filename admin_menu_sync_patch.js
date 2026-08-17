@@ -28,12 +28,11 @@
       };
     },
     async load(store) {
-      const rows = await SupabaseSync.request(`menu_items?store_id=eq.${encodeURIComponent(store.id)}&select=*&order=updated_at.desc&limit=500`);
+      const rows = await SupabaseSync.request(`menu_items?store_id=eq.${encodeURIComponent(store.id)}&select=id,store_id,name,emoji,image_url,description,price,cost,stock,available,promo,category_id,updated_at&order=updated_at.desc&limit=500`);
       const remote = (Array.isArray(rows) ? rows : []).map(row => this.map(row));
       const remoteIds = new Set(remote.map(row => String(row.id)));
       const pending = (store.foods || []).filter(food => isPendingLocalId(food.id) && !remoteIds.has(String(food.id)));
       store.foods = [...remote, ...pending];
-      Storage.save();
       return { remote, pending };
     },
     async findById(id) {

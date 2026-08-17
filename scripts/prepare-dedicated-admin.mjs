@@ -26,6 +26,24 @@ const scopeStyle = `
     html[data-app-scope="admin"] .brand { cursor: pointer; }
     html[data-app-scope="admin"] #view-admin { min-height: calc(100dvh - 160px); }
     html[data-app-scope="admin"] #adminButton { display: grid !important; }
+    html[data-app-scope="admin"] #view-login[data-dedicated-admin-login="true"] .login-card {
+      max-width: 460px;
+      border: 1px solid #bce8e0;
+      box-shadow: 0 18px 48px rgba(5, 83, 74, .12);
+    }
+    html[data-app-scope="admin"] #view-login[data-dedicated-admin-login="true"] .login-card::before {
+      content: 'AP SERVICE · ADMIN CONSOLE';
+      display: block;
+      margin-bottom: 12px;
+      color: #087368;
+      font-size: 10px;
+      font-weight: 950;
+      letter-spacing: .12em;
+    }
+    html[data-app-scope="admin"] #view-login[data-dedicated-admin-login="true"] #loginSubmit {
+      min-height: 48px;
+      margin-top: 18px !important;
+    }
     @media (max-width: 720px) {
       html[data-app-scope="admin"] .topbar { position: sticky; }
       html[data-app-scope="admin"] #view-admin .section-head > div:last-child { width: 100%; }

@@ -9,8 +9,12 @@ const storage = fs.readFileSync('modules/core/storage.js', 'utf8');
 const supabase = fs.readFileSync('modules/api/supabase-client.js', 'utf8');
 const bridge = fs.readFileSync('modules/legacy-bridge.js', 'utf8');
 const boot = fs.readFileSync('modules/boot.js', 'utf8');
+const menuSync = fs.readFileSync('admin_menu_sync_patch.js', 'utf8');
+const aiWorkspace = fs.readFileSync('modules/pages/admin/ai-workspace.js', 'utf8');
 
-assert.match(html, /SupabaseSync\.refreshCatalog\(\{ summary: true \}\)/, 'boot ต้องโหลด catalog แบบ summary');
+assert.match(html, /ensureCatalogSummaryForStores/, 'หน้าร้านต้องมี lazy summary loader');
+assert.doesNotMatch(html, /runInitialCatalog/, 'boot ต้องไม่เรียก catalog summary แบบ eager');
+assert.match(html, /if\(name==='stores'\)\{renderStores\(\);window\.ensureCatalogSummaryForStores/, 'ต้อง render หน้า Stores ก่อนค่อยโหลด catalog');
 assert.match(html, /catalog_stores\?select=id,name,emoji,image_url,icon_url,background_url/, 'summary ต้องเลือกเฉพาะฟิลด์ร้านที่ใช้');
 assert.match(html, /APPerformanceCatalog=\{detailInflight:new Map\(\)/, 'ต้องมี in-flight map สำหรับรายละเอียดร้าน');
 assert.match(html, /loadStoreDetail\?\.\(id\)/, 'ต้องโหลดรายละเอียดร้านเมื่อเปิดร้าน');
@@ -22,6 +26,10 @@ assert.doesNotMatch(html, /const settlementBaseRenderAdmin=renderAdmin;renderAdm
 assert.doesNotMatch(html, /const campaignBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{campaignBaseRenderAdmin\(\);CampaignAdmin\.ensure\(\);CampaignAdmin\.load\(\)/, 'renderAdmin ห้ามดึง campaign ทันที');
 assert.doesNotMatch(html, /const customerDirectoryBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{customerDirectoryBaseRenderAdmin\(\);CustomerDirectory\.ensure\(\);CustomerDirectory\.load/, 'renderAdmin ห้ามดึง customer directory ทันที');
 assert.match(adminPatch, /const inflight = new Map/, 'Admin loader ต้อง dedupe in-flight');
+assert.match(adminPatch, /CACHE_TTL_MS = 8000/, 'Admin loader ต้องมี short-lived cache');
+assert.match(menuSync, /menu_items\?store_id=.*select=id,store_id,name,emoji/, 'menu sync ต้องเลือกฟิลด์ที่ใช้เท่านั้น');
+assert.doesNotMatch(menuSync, /menu_items\?store_id=.*select=\*/, 'menu sync ห้ามใช้ select=*');
+assert.doesNotMatch(aiWorkspace, /ai_workspace_[a-z_]+[^'`]*select=\*/, 'AI Workspace ห้ามใช้ select=*');
 assert.match(adminPatch, /page === 'customers'/, 'ต้องมี lazy loader ลูกค้า');
 assert.match(adminPatch, /page === 'stores' \|\| page === 'inventory'/, 'ต้องมี lazy loader ร้าน/สต็อก');
 assert.match(adminPatch, /page === 'ai-workspace'/, 'ต้องคง loader AI Workspace');

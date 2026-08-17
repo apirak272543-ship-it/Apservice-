@@ -15,7 +15,7 @@ assert.doesNotMatch(slip, /reader\.readAsDataURL\(file\)/, 'ห้ามมี f
 console.log('admin image 1 MB hard-cap contract: PASS');
 const bridge = fs.readFileSync('modules/legacy-bridge.js', 'utf8');
 assert.match(bridge, /media\.js\?v=img-hardcap-v1/, 'ต้อง cache-bust โมดูล media เพื่อไม่ให้ runtime ใช้เพดานเก่าจาก cache');
-assert.match(page, /modules\/boot\.js\?v=performance-storage-v2/, 'ต้อง cache-bust boot module เพื่อให้โหลด bridge เวอร์ชันใหม่');
+assert.match(page, /modules\/boot\.js\?v=admin-media-preserve-v3/, 'ต้อง cache-bust boot module เพื่อให้โหลด bridge เวอร์ชันใหม่');
 const boot = fs.readFileSync('modules/boot.js', 'utf8');
-assert.match(boot, /legacy-bridge\.js\?v=performance-storage-v2/, 'ต้อง cache-bust legacy bridge เพื่อให้ media module ใหม่ทำงานที่ runtime');
-assert.match(page, /modules\/boot\.js\?v=performance-storage-v2/, 'ต้อง cache-bust boot อีกครั้งหลังแก้ import chain');
+assert.match(boot, /legacy-bridge\.js\?v=admin-media-preserve-v3/, 'ต้อง cache-bust legacy bridge เพื่อให้ media module ใหม่ทำงานที่ runtime');
+assert.match(page, /modules\/boot\.js\?v=admin-media-preserve-v3/, 'ต้อง cache-bust boot อีกครั้งหลังแก้ import chain');

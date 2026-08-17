@@ -251,3 +251,9 @@
 - [x] นำ Admin views, forms, dynamic sections และ event handlers ของระบบเดิมมาใช้งานใน Dedicated Admin App ครบทุกหมวด
 - [x] รักษา Supabase/Auth/RLS/Storage เดิมและห้ามนำ Customer UI หรือ flow มาปะปนใน Dedicated Admin App
 - [x] ทดสอบ Admin functions, navigation, notification, upload และ fallback กับ Monolith Admin ก่อนเผยแพร่
+
+## Dedicated Admin Login and Dashboard Entry
+- [x] ทำหน้า Admin Login เป็นหน้าแรกของ Dedicated Admin App โดยใช้ Supabase Auth เดิม
+- [x] route แอดมินที่ผ่านสิทธิ์เข้าสู่ Dashboard/ศูนย์ควบคุมและงานค้างทันที
+- [x] ซ่อนปุ่มและเส้นทาง Customer ออกจาก Dedicated Admin App พร้อมคง Customer App เดิมไม่เปลี่ยนแปลง
+- [x] ทดสอบ Admin login, auth guard, dashboard entry และหน้าจอมือถือก่อนเผยแพร่
