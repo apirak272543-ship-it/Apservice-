@@ -36,7 +36,7 @@
 
   const GROUPS = [
     ['operations', 'งานและออร์เดอร์', 'ภาพรวม งานเข้า งานกำลังทำ งานเสร็จ และตรวจสลิป', ['overview', 'new-orders', 'active-orders', 'completed-orders', 'orders', 'payment-slips']],
-    ['accounts', 'จัดการบัญชีและโปรไฟล์', 'ลูกค้า แชต แอดมิน ร้านค้า Rider ใบสมัคร และ AI', ['customers', 'support', 'admins', 'stores', 'inventory', 'riders', 'rider-applications', 'ai-workspace']],
+    ['accounts', 'จัดการบัญชีและโปรไฟล์', 'ลูกค้า แชต แอดมิน ร้านค้า Rider Creator ใบสมัคร และ AI', ['customers', 'support', 'admins', 'stores', 'inventory', 'riders', 'rider-applications', 'creator-affiliates', 'ai-workspace']],
     ['finance', 'เงินสดและรายการจ่ายเงิน', 'เงินสด ปิดยอด รอบจ่าย คำขอถอน และรายได้ Rider', ['finance', 'settlements', 'withdrawals', 'rider-income']],
     ['settings', 'ตั้งค่าเว็บไซต์และสื่อ', 'หน้าเว็บ สื่อ แพลตฟอร์ม Data Mapping และข้อผิดพลาด', ['content', 'settings', 'mapping', 'errors']],
   ];
@@ -73,6 +73,7 @@
   }
 
   const ADMIN_PAGE_LABELS = { overview: ['ภาพรวมระบบ', 'ภาพรวมตัวเลขและรายการล่าสุด'], orders: ['ออร์เดอร์ทั้งหมด', 'จัดการสถานะและมอบหมาย Rider'], 'new-orders': ['ออเดอร์เข้าใหม่', 'รายการที่เพิ่งเข้าระบบและต้องตรวจรับ'], 'active-orders': ['ออเดอร์ที่กำลังดำเนินการ', 'งานที่ยังไม่ปิดสำเร็จและต้องติดตาม'], 'completed-orders': ['ออเดอร์ที่เสร็จสิ้นแล้ว', 'รายการที่ส่งสำเร็จหรือปิดงานแล้ว'], 'payment-slips': ['ตรวจสลิป ชำระเงิน', 'ตรวจยอดและหลักฐานก่อนปล่อยงานให้ร้านและ Rider'], customers: ['ลูกค้าและเครดิต', 'ข้อมูลลูกค้า กระเป๋าเครดิต และประวัติธุรกรรม'], support: ['แชตกับลูกค้า', 'ติดตามและตอบคำถามจากลูกค้า'], admins: ['จัดการ Admin', 'สิทธิ์และบัญชีผู้ดูแลระบบ'], stores: ['จัดการร้านค้า', 'บัญชีร้าน สถานะร้าน และข้อมูลหน้าร้าน'], inventory: ['เมนู สินค้า ราคา และสต็อก', 'จัดการรายการขายภายในร้านค้า'], riders: ['จัดการ Rider', 'บัญชี สถานะ และคุณสมบัติ Rider'], 'rider-applications': ['ใบสมัคร Rider', 'ตรวจเอกสารและอนุมัติผู้สมัคร'], 'ai-workspace': ['AI Workspace', 'ทำงานร่วมกับ AI ภายใต้สิทธิ์ Admin'], finance: ['เงินสดและปิดยอด', 'รายรับ รายจ่าย และสรุปยอดประจำวัน'], settlements: ['รอบจ่ายเงิน', 'สร้างรอบจ่ายร้านค้าและ Rider พร้อมหลักฐาน'], withdrawals: ['คำขอถอนเงิน', 'ตรวจ อนุมัติ หรือปฏิเสธคำขอถอนเงิน'], 'rider-income': ['รายได้ Rider', 'ตรวจส่วนแบ่ง Rider และรายได้แพลตฟอร์ม'], content: ['จัดการหน้าเว็บและสื่อ', 'แก้ข้อความ แบนเนอร์ และสื่อที่ลูกค้าเห็น'], settings: ['ตั้งค่าแพลตฟอร์ม', 'กำหนดแบรนด์ บริการ และค่าระบบ'], mapping: ['Data Storage & Mapping', 'ตรวจจุดเชื่อมต่อและโครงสร้างข้อมูล'], errors: ['ศูนย์ติดตามข้อผิดพลาด', 'ตรวจเคสระบบและประวัติการแก้ไข'] };
+  ADMIN_PAGE_LABELS['creator-affiliates'] = ['Creator Affiliate และ Referral', 'ติดตาม Creator รหัสแนะนำ คอนเทนต์ ยอดออร์เดอร์ และค่าคอมมิชชัน'];
   const ORDER_FILTER_LABELS = { all: 'ออร์เดอร์ทั้งหมด', new: 'ออเดอร์เข้าใหม่', active: 'ออเดอร์ที่กำลังดำเนินการ', completed: 'ออเดอร์ที่เสร็จสิ้นแล้ว' };
   window.AdminOrderFilter = window.AdminOrderFilter || { current: 'all' };
   const ADMIN_PAGE_TARGETS_LOCAL = { 'new-orders': 'orders', 'active-orders': 'orders', 'completed-orders': 'orders', withdrawals: 'settlements' };
@@ -152,23 +153,26 @@
       this.refreshing = true;
       const order = this.orderCounts();
       const hasSession = Boolean(SupabaseSync.session?.()?.access_token);
-      let slips = 0, chats = 0, applications = 0, settlements = 0, withdrawals = 0, errors = 0, aiTasks = 0;
+      let slips = 0, chats = 0, applications = 0, settlements = 0, withdrawals = 0, errors = 0, aiTasks = 0, creatorProfiles = 0, creatorCommissions = 0, creatorRights = 0;
       if (hasSession) {
-        [slips, chats, applications, settlements, withdrawals, errors, aiTasks] = await Promise.all([
+        [slips, chats, applications, settlements, withdrawals, errors, aiTasks, creatorProfiles, creatorCommissions, creatorRights] = await Promise.all([
           this.listCount('payment_slip_reviews?select=id&status=eq.pending&limit=500'),
           this.listCount('support_conversations?select=id&status=eq.open&admin_seen_at=is.null&limit=500'),
           this.listCount('rider_applications?select=id&status=in.(pending,under_review)&limit=500'),
           this.listCount('settlements?select=id&status=eq.pending&limit=500'),
           this.listCount('withdrawal_requests?select=id&status=in.(requested,approved)&limit=500'),
           this.listCount('error_reports?select=id&status=in.(new,triaged)&limit=500'),
-          this.listCount('ai_workspace_tasks?select=id&status=in.(queued,blocked,review)&limit=500')
+          this.listCount('ai_workspace_tasks?select=id&status=in.(queued,blocked,review)&limit=500'),
+          this.listCount('creators?select=id&status=eq.pending&limit=500'),
+          this.listCount('creator_commissions?select=id&status=in.(qualified,approved)&limit=500'),
+          this.listCount('creator_content_rights?select=id&consent_status=eq.pending&limit=500')
         ]);
       }
       this.counts = {
         overview: order.operational + slips, orders: order.operational, 'new-orders': order.incoming, 'active-orders': order.active,
-        'payment-slips': slips, support: chats, 'rider-applications': applications, 'ai-workspace': aiTasks,
+        'payment-slips': slips, support: chats, 'rider-applications': applications, 'creator-affiliates': creatorProfiles + creatorCommissions + creatorRights, 'ai-workspace': aiTasks,
         finance: settlements + withdrawals, settlements, withdrawals, errors,
-        operations: order.operational + slips, accounts: chats + applications + aiTasks, settings: errors
+        operations: order.operational + slips, accounts: chats + applications + creatorProfiles + creatorCommissions + creatorRights + aiTasks, settings: errors
       };
       this.render();
       this.refreshing = false;

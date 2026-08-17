@@ -37,3 +37,13 @@
 - [x] Commit and publish withdrawal-payment flow reliability fix to GitHub Pages
 - [x] Identify and eliminate Android Chrome crash risks in withdrawal-proof image handling and payment completion
 - [x] Add Android-safe image-size, memory, and error-recovery guards for payout proof uploads
+
+- [x] Design Creator Affiliate structure under Admin บัญชีและโปรไฟล์
+- [x] Add Creator profile, approval status, contact, area, platform, and payout settings
+- [x] Add unique referral code and referral link management with campaign attribution
+- [x] Track creator clicks, referred customers, qualified orders, cancellations, and net commissionable sales
+- [x] Add content-rights records for creator videos, usage channels, approval, expiry, and source links
+- [x] Add Creator performance dashboard and commission ledger without hardcoding financial results
+- [x] Add Creator Affiliate pending-work badges and settlement workflow
+- [x] Add mobile next-page Creator Affiliate Admin navigation and tests
+- [ ] Commit and publish Creator Affiliate Admin structure to GitHub Pages
