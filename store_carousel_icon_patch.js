@@ -90,6 +90,7 @@
     const fallback = card.querySelector('.store-card-icon-fallback');
     const iconUrl = mediaUrl(store.iconUrl || store.icon_url || store.imageUrl || store.image_url);
     const backgroundUrl = mediaUrl(store.backgroundUrl || store.background_url);
+    if (fallback && mediaUrl(fallback.textContent)) fallback.textContent = store.emoji || store.categoryIcon || '🏪';
     if (backgroundUrl && visual) {
       visual.classList.add('has-background');
       visual.style.backgroundImage = `linear-gradient(135deg,rgba(4,55,51,.12),rgba(4,55,51,.38)),${safeCssImage(backgroundUrl)}`;
@@ -173,7 +174,8 @@
     storeOps.storeCard = store => {
       const state = storeOps.state(store);
       const reviewCount = Number((store.reviewCount ?? store.review_count) || 0);
-      const fallback = store.emoji || store.categoryIcon || '🏪';
+      const fallbackCandidate = store.emoji || store.categoryIcon || '🏪';
+      const fallback = mediaUrl(fallbackCandidate) ? '🏪' : fallbackCandidate;
       return `<button class="store ap-store-card" data-store-id="${escapeHtml(store.id)}" onclick="openStore('${escapeHtml(store.id)}')"><div class="store-visual"><span class="store-card-icon-fallback">${escapeHtml(fallback)}</span><img class="store-icon-image" alt="ไอคอนร้าน" decoding="async" referrerpolicy="no-referrer" /><div class="store-visual-overlay"><strong>${escapeHtml(store.name)}</strong><span>${escapeHtml(store.categoryName || 'ร้านค้า')}</span></div></div><div class="store-copy"><p>${escapeHtml(store.desc || store.description || '')}</p><div class="store-meta"><span>⭐ <b>${Number(store.rating || 0).toFixed(1)}</b>${reviewCount ? ` (${reviewCount} รีวิว)` : ''}</span><span>🛵 ${escapeHtml(typeof root.storeDeliveryEstimate === 'function' ? root.storeDeliveryEstimate(store) : 'ตั้งตำแหน่งเพื่อดูค่าส่ง')}</span></div><div class="store-meta" style="border-top:0;padding-top:6px"><span>🟢 ${escapeHtml(state.label)}</span></div></div></button>`;
     };
   }

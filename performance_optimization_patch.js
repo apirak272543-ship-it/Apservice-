@@ -55,6 +55,9 @@
       if (!force && catalogState.lastSuccess && Date.now() - catalogState.lastSuccess < CACHE_TTL_MS) return Promise.resolve(true);
       catalogState.inflight = Promise.resolve(originalCatalog(options)).then(result => {
         catalogState.lastSuccess = Date.now();
+        const stores = Array.isArray(root.AppState?.stores) ? root.AppState.stores : [];
+        const hasStoreMedia = stores.some(store => [store?.imageUrl, store?.image_url, store?.iconUrl, store?.icon_url, store?.backgroundUrl, store?.background_url].some(value => typeof value === 'string' && value.length > 0));
+        if (hasStoreMedia) storage?.save?.();
         return result;
       }).finally(() => { catalogState.inflight = null; });
       return catalogState.inflight;
@@ -100,7 +103,6 @@
         flush();
       }
     }, { passive: true });
-    storage.save();
   }
 
   root.__apPerformance = {

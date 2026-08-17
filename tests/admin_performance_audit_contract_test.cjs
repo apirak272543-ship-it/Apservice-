@@ -15,7 +15,7 @@ assert.match(html, /catalog_stores\?select=id,name,emoji,image_url,icon_url,back
 assert.match(html, /APPerformanceCatalog=\{detailInflight:new Map\(\)/, 'ต้องมี in-flight map สำหรับรายละเอียดร้าน');
 assert.match(html, /loadStoreDetail\?\.\(id\)/, 'ต้องโหลดรายละเอียดร้านเมื่อเปิดร้าน');
 assert.match(html, /admin_performance_audit_patch\.js\?v=admin-performance-v1/, 'ต้องโหลด Admin performance audit patch');
-assert.match(html, /modules\/boot\.js\?v=admin-performance-v1/, 'ต้อง cache bust module boot');
+assert.match(html, /modules\/boot\.js\?v=admin-media-preserve-v3/, 'ต้อง cache bust module boot');
 assert.doesNotMatch(html, /const categoryBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{categoryBaseRenderAdmin\(\);AdminOrderSync\.pull\(\)/, 'renderAdmin ห้ามดึงออร์เดอร์จาก network ทันที');
 assert.doesNotMatch(html, /const registrationBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{registrationBaseRenderAdmin\(\);RiderApplicationsAdmin\.ensure\(\);RiderApplicationsAdmin\.load\(\)/, 'renderAdmin ห้ามดึงใบสมัครทันที');
 assert.doesNotMatch(html, /const settlementBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{settlementBaseRenderAdmin\(\);SettlementAdmin\.ensure\(\);SettlementAdmin\.load\(\)/, 'renderAdmin ห้ามดึง settlement ทันที');
@@ -34,8 +34,8 @@ assert.match(storage, /previous\?\.revision === revision/, 'storage ต้อง
 assert.match(storage, /safeSetItem\(key, value, localStore, \{ cache: true \}\)/, 'persist ต้องเปิด selective cache');
 assert.match(supabase, /status === 401 && isPublicRead\(path, options\)/, 'public read ต้องไม่ refresh session เมื่อ 401');
 assert.match(supabase, /publicHeaders\(client, options\)/, 'public read ต้อง retry ด้วย apikey อย่างเดียว');
-assert.match(bridge, /core\/storage\.js\?v=performance-v2/, 'ต้อง cache bust storage module');
+assert.match(bridge, /core\/storage\.js\?v=performance-v5-media-preserve/, 'ต้อง cache bust storage module');
 assert.match(bridge, /api\/supabase-client\.js\?v=admin-performance-v1/, 'ต้อง cache bust Supabase module');
-assert.match(boot, /legacy-bridge\.js\?v=admin-performance-v1/, 'ต้อง cache bust legacy bridge');
+assert.match(boot, /legacy-bridge\.js\?v=admin-media-preserve-v3/, 'ต้อง cache bust legacy bridge');
 
 console.log('admin performance audit contract: PASS');

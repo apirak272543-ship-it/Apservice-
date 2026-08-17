@@ -7,7 +7,7 @@ const carousel = fs.readFileSync(path.join(root, 'store_carousel_icon_patch.js')
 const admin = fs.readFileSync(path.join(root, 'admin_contact_ui_patch.js'), 'utf8');
 
 const checks = [
-  ["carousel patch is loaded after mobile layout patch", html.indexOf("admin_mobile_layout_patch.js") < html.indexOf("store_carousel_icon_patch.js?v=store-carousel-icon-v3")],
+  ["carousel patch is loaded after mobile layout patch", html.indexOf("admin_mobile_layout_patch.js") < html.indexOf("store_carousel_icon_patch.js?v=store-carousel-icon-v4-media-safe")],
   ["catalog migration exposes explicit icon_url alias", fs.existsSync(path.join(root, 'supabase/migrations/20260817_store_icon_alias.sql')) && fs.readFileSync(path.join(root, 'supabase/migrations/20260817_store_icon_alias.sql'), 'utf8').includes('s.image_url AS icon_url')],
   ["store cards retain the existing openStore action", carousel.includes('onclick="openStore(\'')],
   ["store rail scrolls horizontally with snap behavior", carousel.includes("overflow-x: auto") && carousel.includes("scroll-snap-type: x mandatory")],
@@ -15,6 +15,8 @@ const checks = [
   ["auto-slide reaches the end before looping", carousel.includes("const atEnd = target.scrollLeft >= max - 4") && carousel.includes("Math.min(max, target.scrollLeft + step)")],
   ["media is loaded by intersection observer", carousel.includes("IntersectionObserver") && carousel.includes("rootMargin: '0px 90% 0px 90%'")],
   ["media keeps the existing image_url as icon fallback", carousel.includes("store.iconUrl || store.icon_url || store.imageUrl || store.image_url")],
+  ["fallback never renders data:image as text", carousel.includes("mediaUrl(fallbackCandidate) ? '🏪' : fallbackCandidate")],
+  ["media-safe carousel patch is cache-busted", html.includes("store_carousel_icon_patch.js?v=store-carousel-icon-v4-media-safe")],
   ["background media is applied only when near the viewport", carousel.includes("store.backgroundUrl || store.background_url") && carousel.includes("visual.classList.add('has-background')")],
   ["admin appearance tab labels image as store icon", admin.includes("ไอคอนร้าน / ภาพสัญลักษณ์")],
   ["admin appearance tab keeps a compressed background picker", admin.includes("detailImagePicker('background_url'") && admin.includes("compressImageForUpload(file)")],

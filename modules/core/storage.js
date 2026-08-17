@@ -1,4 +1,5 @@
 import { requireLegacyValue } from './runtime.js';
+import { compressImageForUpload } from '../utils/media.js';
 
 export const WEB_STORAGE_KEYS = Object.freeze([
   'apcx_user', 'apcx_cart', 'apcx_stores', 'apcx_orders', 'apcx_config',
@@ -15,14 +16,18 @@ export const WEB_STORAGE_KEYS = Object.freeze([
 
 const INLINE_IMAGE_RE = /^data:image\//i;
 const cacheByStorage = new WeakMap();
+const mediaCompactionByStorage = new WeakMap();
+const STORE_CACHE_MEDIA_MAX_CHARS = 900000;
+const STORE_CACHE_IMAGE_MAX_BYTES = 120000;
+const STORE_CACHE_IMAGE_MAX_DIMENSION = 960;
 
 export function isInlineImage(value) {
   return typeof value === 'string' && INLINE_IMAGE_RE.test(value.trim());
 }
 
 /**
- * Remove only inline image payloads from a cache copy. The live state object is
- * never mutated, and Supabase remains the source of truth for uploaded media.
+ * Legacy helper retained for callers that explicitly need a media-free copy.
+ * The persistence path no longer calls this helper: UI media must remain visible.
  */
 export function stripInlineImages(value, seen = new WeakSet()) {
   if (isInlineImage(value)) return '';
@@ -38,13 +43,16 @@ export function stripInlineImages(value, seen = new WeakSet()) {
 }
 
 /**
- * Build a small, media-safe revision key. It walks object metadata but never
- * copies or stringifies an inline image. This lets repeated Storage.save calls
- * skip both JSON.stringify and localStorage.setItem when the cached slice did
- * not change.
+ * Build a small media-safe revision key without copying or stringifying image
+ * bytes. This lets repeated saves skip work when the cached slice is unchanged,
+ * while the first save keeps the runtime value untouched and an asynchronous
+ * cache pass later stores compressed copies of inline UI media.
  */
 export function cacheRevision(value, seen = new WeakSet()) {
-  if (isInlineImage(value)) return 'inline-image';
+  if (isInlineImage(value)) {
+    const text = value.trim();
+    return `inline-image:${text.length}:${text.slice(0, 24)}:${text.slice(-24)}`;
+  }
   if (value === null) return 'null';
   if (value === undefined) return 'undefined';
   if (typeof value !== 'object') return `${typeof value}:${String(value)}`;
@@ -60,6 +68,66 @@ export function isQuotaError(error) {
   return name.includes('quota') || message.includes('quota') || message.includes('exceeded the quota');
 }
 
+async function compactMediaForCache(value, seen = new WeakMap()) {
+  if (isInlineImage(value)) {
+    try {
+      if (typeof fetch !== 'function' || typeof File !== 'function') return value;
+      const response = await fetch(value);
+      const blob = await response.blob();
+      const file = new File([blob], 'apservice-cache-image', { type: blob.type || 'image/jpeg' });
+      const reduced = await compressImageForUpload(file, {
+        maxBytes: STORE_CACHE_IMAGE_MAX_BYTES,
+        maxDimension: STORE_CACHE_IMAGE_MAX_DIMENSION,
+      });
+      return reduced?.dataUrl || value;
+    } catch (error) {
+      console.warn('AP Service cache image compression skipped', error);
+      return value;
+    }
+  }
+  if (!value || typeof value !== 'object') return value;
+  if (seen.has(value)) return seen.get(value);
+  if (Array.isArray(value)) {
+    const copy = [];
+    seen.set(value, copy);
+    for (const item of value) copy.push(await compactMediaForCache(item, seen));
+    return copy;
+  }
+  const copy = {};
+  seen.set(value, copy);
+  for (const [key, item] of Object.entries(value)) copy[key] = await compactMediaForCache(item, seen);
+  return copy;
+}
+
+export function persistMediaCache(state, localStore = globalThis.localStorage) {
+  if (!state || !localStore || !Array.isArray(state.stores)) return Promise.resolve({ ok: false, skipped: true });
+  const active = mediaCompactionByStorage.get(localStore);
+  if (active) {
+    active.state = state;
+    return active.promise;
+  }
+  const job = { state, promise: null };
+  job.promise = (async () => {
+    try {
+      while (job.state) {
+        const nextState = job.state;
+        job.state = null;
+        const compactedStores = await compactMediaForCache(nextState.stores);
+        safeSetItem('apcx_stores', compactedStores, localStore, { cache: true });
+        if (nextState.config && typeof nextState.config === 'object') {
+          const compactedConfig = await compactMediaForCache(nextState.config);
+          safeSetItem('apcx_config', compactedConfig, localStore, { cache: true });
+        }
+      }
+      return { ok: true, skipped: false };
+    } finally {
+      mediaCompactionByStorage.delete(localStore);
+    }
+  })();
+  mediaCompactionByStorage.set(localStore, job);
+  return job.promise;
+}
+
 function getCache(localStore) {
   if (!localStore || (typeof localStore !== 'object' && typeof localStore !== 'function')) return null;
   let cache = cacheByStorage.get(localStore);
@@ -71,42 +139,33 @@ function getCache(localStore) {
 }
 
 export function safeSetItem(key, value, localStore = globalThis.localStorage, options = {}) {
-  const shouldSanitize = key === 'apcx_stores' || key === 'apcx_config';
+  const isMediaState = key === 'apcx_stores' || key === 'apcx_config';
   const cache = options.cache ? getCache(localStore) : null;
   const revision = cache ? cacheRevision(value) : null;
   const previous = cache?.get(key);
-  if (cache && previous?.revision === revision) return { ok: true, sanitized: shouldSanitize, skipped: true };
+  if (cache && previous?.revision === revision) return { ok: true, sanitized: false, skipped: true };
 
-  const cacheValue = shouldSanitize ? stripInlineImages(value) : value;
-  const serialized = JSON.stringify(cacheValue);
+  // Preserve compressed media in the cache. Image upload code is responsible for
+  // compression before persistence; storage must not blank a valid UI asset.
+  const serialized = JSON.stringify(value);
   try {
     localStore.setItem(key, serialized);
     if (cache) cache.set(key, { revision, serialized });
-    return { ok: true, sanitized: shouldSanitize, skipped: false };
+    return { ok: true, sanitized: false, skipped: false, preservedMedia: isMediaState };
   } catch (error) {
     if (!isQuotaError(error)) {
       console.warn(`AP Service storage skipped ${key}`, error);
       return { ok: false, sanitized: false, error };
     }
-    const oldValue = (() => {
-      try { return localStore.getItem(key); } catch { return null; }
-    })();
+    // Do not remove existing media on quota pressure. Keeping the previous
+    // image-bearing value is safer for the UI than replacing it with blanks.
     try {
-      localStore.removeItem(key);
-      const sanitizedSerialized = JSON.stringify(stripInlineImages(value));
-      localStore.setItem(key, sanitizedSerialized);
-      if (cache) cache.set(key, { revision, serialized: sanitizedSerialized });
-      console.warn(`AP Service storage sanitized inline images for ${key}`);
-      return { ok: true, sanitized: true, skipped: false };
-    } catch (fallbackError) {
-      try {
-        if (oldValue !== null) localStore.setItem(key, oldValue);
-      } catch (restoreError) {
-        console.warn(`AP Service could not restore ${key} after quota fallback`, restoreError);
-      }
-      console.warn(`AP Service storage skipped ${key} after quota fallback`, fallbackError);
-      return { ok: false, sanitized: true, error: fallbackError };
+      if (cache) cache.set(key, { revision, serialized: null, quotaBlocked: true });
+    } catch (cacheError) {
+      console.warn(`AP Service could not record storage quota for ${key}`, cacheError);
     }
+    console.warn(`AP Service storage quota reached for ${key}; preserving existing media`);
+    return { ok: false, sanitized: false, preservedMedia: isMediaState, quota: true, error };
   }
 }
 
@@ -128,6 +187,7 @@ export function persistAppState(state, localStore = globalThis.localStorage) {
   ];
   const report = {};
   entries.forEach(([key, value]) => { report[key] = safeSetItem(key, value, localStore, { cache: true }); });
+  report.apcx_stores_media = persistMediaCache(state, localStore);
   return report;
 }
 
