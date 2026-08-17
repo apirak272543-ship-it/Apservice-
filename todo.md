@@ -46,4 +46,4 @@
 - [x] Add Creator performance dashboard and commission ledger without hardcoding financial results
 - [x] Add Creator Affiliate pending-work badges and settlement workflow
 - [x] Add mobile next-page Creator Affiliate Admin navigation and tests
-- [ ] Commit and publish Creator Affiliate Admin structure to GitHub Pages
+- [x] Commit and publish Creator Affiliate Admin structure to GitHub Pages
