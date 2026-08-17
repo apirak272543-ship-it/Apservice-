@@ -175,11 +175,11 @@
 - [ ] เผยแพร่การปรับปรุงขึ้น GitHub Pages และสรุปผล
 
 ## AI Collaboration Workspace: Admin Performance Audit (ChatGPT Task)
-- [ ] อ่านรายละเอียดงาน “แก้ Admin โหลดช้า / Performance Audit” และ Task “แก้ Performance หน้า Admin” จาก Workspace
-- [ ] ตรวจโค้ดและวัดสาเหตุความช้า (Network/data loading, Supabase queries, localStorage serialization, polling, duplicate requests, lazy loading)
-- [ ] แก้ไขปัญหา performance โดยคงฟังก์ชัน Admin เดิมอย่างครบถ้วน
-- [ ] ทดสอบความเร็วและเปรียบเทียบผลลัพธ์
-- [ ] บันทึก Commit SHA และรายงานผลกลับเข้า AI Collaboration Workspace
+- [x] อ่านรายละเอียดงาน “แก้ Admin โหลดช้า / Performance Audit” และ Task “แก้ Performance หน้า Admin” จาก Workspace
+- [x] ตรวจโค้ดและวัดสาเหตุความช้า (Network/data loading, Supabase queries, localStorage serialization, polling, duplicate requests, lazy loading)
+- [x] แก้ไขปัญหา performance โดยคงฟังก์ชัน Admin เดิมอย่างครบถ้วน
+- [x] ทดสอบความเร็วและเปรียบเทียบผลลัพธ์
+- [x] บันทึก Commit SHA และรายงานผลกลับเข้า AI Collaboration Workspace
 
 - [x] กู้คืนรูปภาพและองค์ประกอบภาพใน UI ที่ถูกตัดออกจากการปรับแต่ง Performance ให้กลับมาครบถ้วนโดยใช้การบีบอัดภาพ (Compressed Images) แทนการลบ
 - [x] ตรวจสอบการแสดงผลร้านค้า คารูเซล ไอคอน และภาพพื้นหลังให้มีความสวยงาม ไม่จืดชืด และคงฟังก์ชันเดิมครบถ้วน
@@ -196,3 +196,33 @@
 - [x] ป้องกันไม่ให้ Supabase count requests ขัดขวางหรือชะลอการสลับหน้า Admin
 - [x] เพิ่ม Performance Timing log (click → navigation/render vs network request) เพื่อพิสูจน์ว่า navigation ไม่ถูก block
 - [x] ทดสอบความทนทาน (Fallback & Resilience) เมื่อ Supabase ช้าหรือล้มเหลว หน้า Admin ยังใช้งานได้ปกติ
+
+## AI Collaboration Workspace: Round 2 Root Cause Audit Task
+- [x] ค้นหาและตรวจสอบ Task “ตรวจ Root Cause Admin Navigation Delay รอบ 2” ใน AI Workspace
+- [x] ยืนยัน Root Cause ทางเทคนิค (การเรียก Supabase badge count requests พร้อมกัน 10 คำขอใน critical path ก่อนที่ DOM render จะเสร็จสมบูรณ์)
+- [x] ตรวจสอบไฟล์ที่แก้ไข (`admin_contact_ui_patch.js`, `tests/admin_pending_badges_contract_test.cjs`) และ Commit SHA (`66bd3ee`)
+- [x] อัปเดต Task ใน AI Workspace เป็น completed พร้อมโพสต์รายงาน Root Cause ผลทดสอบก่อน/หลัง และ Commit SHA
+
+## AI Workspace GPT Directives Compliance Task
+- [x] ดึงข้อมูล threads, tasks และ messages ล่าสุดทั้งหมดจาก AI Collaboration Workspace ผ่าน Supabase MCP
+- [x] ตรวจสอบข้อเสนอแนะและข้อกำหนดเชิงลึกของ GPT (เช่น deduplication ของ requests, การเลือก select fields เฉพาะที่จำเป็น, การลด serialization ซ้ำซ้อน และการรักษาสัญญา legacy contract)
+- [x] ตรวจสอบโค้ดปัจจุบันใน `admin_contact_ui_patch.js`, `performance_optimization_patch.js` และโมดูลที่เกี่ยวข้องเทียบกับข้อกำหนดของ GPT
+- [x] ยืนยันว่าการทำงานสอดคล้องกับรายงานของ GPT ทุกประการ และรายงานผลกลับเข้า AI Workspace อย่างสมบูรณ์
+
+## AI Workspace GPT Migration Plan Task
+- [x] อ่านข้อความและข้อกำหนดของ ChatGPT ใน AI Workspace (Thread: วางแผน + เตรียม Migration แยก Admin Application แบบ Zero/Low-Risk)
+- [x] ดำเนินการตามข้อกำหนดทั้ง 9 Phase (Safety baseline, Audit entry points/modules/patches/assets/shared dependencies, Auth/RLS/Supabase/localStorage, Architecture evaluation, Migration/Rollback plan, Performance/Regression test, และ Workspace reporting)
+- [x] จัดทำรายงาน Audit และ Migration Plan แบบ Zero/Low-Risk โดยไม่ทำลายฟังก์ชันเดิมของ Customer, Merchant หรือ Rider
+- [x] อัปเดตสถานะ Task ใน AI Workspace เป็น completed และบันทึกผลงานลงใน Supabase พร้อมส่งมอบรายงานให้ผู้ใช้
+
+## AI Workspace Zero/Low-Risk Admin Standalone Migration Execution Task
+- [x] ยืนยัน Baseline, Git status, และเตรียม Rollback Point
+- [x] สร้างโครงสร้าง Admin Standalone Shell ควบคู่แบบ Feature Flag โดยไม่ลบ Admin เดิม
+- [x] เชื่อมต่อ Shared Core (Storage, Supabase Client, Auth, RLS) และแยก Admin Bundle
+- [x] รันการทดสอบครบทุก Acceptance Criteria (Auth, Performance, Navigation, Media, Regression)
+- [x] ทำ Staged Rollout Readiness และอัปเดต AI Workspace พร้อมรายงานผลสมบูรณ์
+
+## Standalone Admin Public Link Verification
+- [ ] ตรวจ runtime ของ admin-standalone.html และสาเหตุที่ GitHub Pages ยังตอบ 404
+- [ ] แก้เฉพาะจุดที่จำเป็นและเพิ่ม regression check สำหรับ public entry
+- [ ] commit/push ไฟล์ Standalone Admin และตรวจ URL จริงบน GitHub Pages
