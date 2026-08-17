@@ -1,6 +1,7 @@
 /* Rider payout proof viewer: fetches a small metadata list and opens private proof files only on demand. */
 (() => {
   'use strict';
+  const esc = value => typeof window.escapeHtml === 'function' ? window.escapeHtml(value) : String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const pathEncode = value => String(value || '').split('/').map(encodeURIComponent).join('/');
   RiderWallet.load = async function loadWithdrawalMetadata(riderId) {
     if (!riderId) return;

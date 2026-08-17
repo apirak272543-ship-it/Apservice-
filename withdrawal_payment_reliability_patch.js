@@ -1,6 +1,7 @@
 /* Android-safe withdrawal proof upload: file storage instead of Base64 inside RPC/database payloads. */
 (() => {
   'use strict';
+  const esc = value => typeof window.escapeHtml === 'function' ? window.escapeHtml(value) : String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const MAX_SOURCE_BYTES = 5 * 1024 * 1024;
   const MAX_PROOF_BYTES = 420 * 1024;
   const BUCKET = 'withdrawal-proofs';
