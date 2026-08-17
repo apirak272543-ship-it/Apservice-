@@ -223,6 +223,25 @@
 - [x] ทำ Staged Rollout Readiness และอัปเดต AI Workspace พร้อมรายงานผลสมบูรณ์
 
 ## Standalone Admin Public Link Verification
-- [ ] ตรวจ runtime ของ admin-standalone.html และสาเหตุที่ GitHub Pages ยังตอบ 404
-- [ ] แก้เฉพาะจุดที่จำเป็นและเพิ่ม regression check สำหรับ public entry
-- [ ] commit/push ไฟล์ Standalone Admin และตรวจ URL จริงบน GitHub Pages
+- [x] ตรวจ runtime ของ admin-standalone.html และสาเหตุที่ GitHub Pages ยังตอบ 404
+- [x] แก้เฉพาะจุดที่จำเป็นและเพิ่ม regression check สำหรับ public entry
+- [x] commit/push ไฟล์ Standalone Admin และตรวจ URL จริงบน GitHub Pages
+
+## AI Workspace Latest GPT Task Tracking
+- [x] ดึงข้อมูล Task และ Messages ล่าสุดทั้งหมดจาก AI Workspace ผ่าน Supabase MCP
+- [x] ตรวจสอบหัวข้อและข้อกำหนดใหม่จาก GPT ทันที
+- [x] ดำเนินการตามข้อกำหนด ทดสอบ และรายงานผลกลับ Workspace อย่างครบถ้วน
+
+## AI Workspace Comprehensive Admin Redesign Execution Task
+- [x] ดึง Task และข้อความล่าสุดจาก AI Workspace เพื่อยืนยัน Acceptance Criteria ทั้งหมด
+- [x] ตรวจสอบระบบเดิม, ตรวจความเสี่ยงของ Dependency, และรักษาระบบ Admin เดิมไว้เป็น Fallback
+- [x] ออกแบบและพัฒนา Admin ใหม่ (Mobile-first & Desktop Sidebar) พร้อมฟังก์ชันครบถ้วน, Search, Quick Actions, States และ Confirmations
+- [x] ตรวจสอบ Supabase Auth + RLS, Notification/Badge, Upload + 1MB Compression, และ Customer/Merchant/Rider Regression
+- [x] ทดสอบ Responsive และ Performance ก่อน/หลัง พร้อมทำ Final Report + Commit SHA ลง AI Workspace
+
+## Two-App Architecture Separation: Customer App vs Admin App
+- [ ] แยกโครงสร้างไฟล์และ entry point เป็นสองแอปเด็ดขาด (Customer Monolith `index.html` และ Admin Standalone App `admin.html`)
+- [ ] แชร์ Supabase connection, Auth, RLS และ Core Storage โดยไม่มีการสร้างฐานข้อมูลใหม่
+- [ ] ตัด Admin bundles และ modules ทั้งหมดออกจาก Customer App เพื่อลด Initial Load และ Bundle Size
+- [ ] กำหนด Auth Guard และ Supabase Session/Role verification ที่เข้มงวดใน Admin App
+- [ ] ทดสอบสองแอปแยกกันและยืนยันว่า Customer, Merchant, Rider และ Admin ทำงานได้ปกติ พร้อม deploy และรายงานผล

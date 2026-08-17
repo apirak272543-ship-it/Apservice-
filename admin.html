@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#073f3b" />
+  <title>AP Service | Dedicated Admin Application</title>
+  <link rel="stylesheet" href="./global.css" />
+  <style>
+    :root{--brand:#0B8C7C;--brand-deep:#073f3b;--brand-soft:#e6f6f3;--mint:#6be0cc;--ink:#102524;--muted:#71817f;--line:#e5eeec;--paper:#fff;--canvas:#f4f8f7;--danger:#d75e65;--warning:#ef9c3b;--r:22px}
+    body{margin:0;background:var(--canvas);color:var(--ink);font-family:Inter,"Noto Sans Thai",system-ui,sans-serif}
+    .admin-app-shell{max-width:1440px;margin:0 auto;padding:24px}
+    .admin-app-header{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px 24px;margin-bottom:20px;box-shadow:0 10px 30px rgba(0,0,0,.04)}
+    .admin-app-brand{display:flex;align-items:center;gap:12px;font-weight:950;font-size:18px;color:var(--brand-deep)}
+    .admin-app-badge{background:var(--brand-soft);color:var(--brand);padding:6px 12px;border-radius:10px;font-size:11px;font-weight:850}
+    .fallback-banner{background:#e8f5e9;border:1px solid #c8e6c9;color:#2e7d32;padding:12px 18px;border-radius:14px;margin-bottom:20px;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;border:0;text-decoration:none}
+    .btn-main{background:var(--brand);color:#fff}
+    .btn-plain{background:transparent;color:var(--brand-deep);border:1px solid var(--line)}
+  </style>
+</head>
+<body>
+  <div class="admin-app-shell">
+    <div class="fallback-banner">
+      <span>🚀 Dedicated Admin App (Two-App Architecture): แยกโค้ดออกจาก Customer Monolith 100% แต่ใช้ฐานข้อมูล Supabase และ Auth ร่วมกัน</span>
+      <a href="./index.html" class="btn btn-plain" style="padding:6px 12px;font-size:11px">กลับสู่ Customer App</a>
+    </div>
+    <div class="admin-app-header">
+      <div class="admin-app-brand">
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--brand-deep);color:#fff;display:grid;place-items:center;font-weight:950">AP</div>
+        <div>
+          <div>AP Service Admin Console (Dedicated App)</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:500">Shared Supabase Backend & RLS Runtime</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="admin-app-badge" id="adminAppAuthStatus">กำลังตรวจสอบสิทธิ์...</span>
+        <a href="./index.html#admin" class="btn btn-plain">Legacy Monolith View</a>
+      </div>
+    </div>
+    <div id="adminAppRoot" style="background:#fff;border:1px solid var(--line);border-radius:24px;padding:24px;min-height:550px">
+      <p style="text-align:center;color:var(--muted);padding:60px 0">กำลังตรวจสอบสิทธิ์ผู้ดูแลระบบและโหลดโมดูลหลังบ้าน...</p>
+    </div>
+  </div>
+
+  <!-- Shared core runtime & admin patches (Customer app code is completely excluded) -->
+  <script type="module" src="./modules/boot.js?v=admin-app-v1"></script>
+  <script src="./admin_contact_ui_patch.js?v=admin-app-v1"></script>
+  <script src="./admin_performance_audit_patch.js?v=admin-app-v1"></script>
+  <script src="./admin_menu_sync_patch.js?v=admin-app-v1"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const user = JSON.parse(localStorage.getItem('apcx_user') || 'null');
+      const admins = JSON.parse(localStorage.getItem('apcx_admins') || '["apirak272543@gmail.com","admin@apservice.local"]');
+      const statusEl = document.getElementById('adminAppAuthStatus');
+      const rootEl = document.getElementById('adminAppRoot');
+      
+      const isAdmin = user && user.email && admins.includes(String(user.email).toLowerCase());
+      if (!isAdmin) {
+        statusEl.textContent = 'ต้องเข้าสู่ระบบแอดมินก่อน';
+        statusEl.style.background = '#ffebee';
+        statusEl.style.color = '#c62828';
+        rootEl.innerHTML = `
+          <div style="text-align:center;padding:60px 20px">
+            <h2 style="color:var(--danger);margin-top:0">🔒 Dedicated Admin Console — ป้องกันด้วยสิทธิ์แอดมิน</h2>
+            <p style="color:var(--muted);max-width:520px;margin:0 auto 24px">แอปพลิเคชันหลังบ้านแยกอิสระจากแอปพลิเคชันลูกค้า เพื่อความปลอดภัยสูงสุด กรุณาเข้าสู่ระบบด้วยบัญชีผู้ดูแลระบบผ่านหน้าหลักก่อน</p>
+            <a href="./index.html" class="btn btn-main">ไปที่หน้าเข้าสู่ระบบหลัก</a>
+          </div>
+        `;
+        return;
+      }
+
+      statusEl.textContent = `แอดมิน: ${user.email}`;
+      statusEl.style.background = '#e8f5e9';
+      statusEl.style.color = '#2e7d32';
+
+      rootEl.innerHTML = `
+        <div id="adminViewContainer">
+          <div class="section-head" style="margin-top:0;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <div>
+              <h2 style="margin:0 0 6px 0">ระบบจัดการหลังบ้าน (Dedicated Admin App)</h2>
+              <p style="margin:0;color:var(--muted);font-size:13px">จัดการออร์เดอร์ ร้านค้า ลูกค้า ไรเดอร์ การเงิน และ AI Workspace ด้วยชุดข้อมูลเดียวกันกับ Supabase Backend</p>
+            </div>
+            <div>
+              <button type="button" class="btn btn-main" onclick="if(typeof renderAdmin==='function')renderAdmin(); else location.reload();">รีเฟรชข้อมูลแดชบอร์ด</button>
+            </div>
+          </div>
+          <div id="adminTabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px"></div>
+          <div id="adminContentBody"></div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        if (typeof window.renderAdmin === 'function') {
+          window.renderAdmin();
+        } else {
+          rootEl.innerHTML += '<p style="color:var(--danger)">ไม่พบฟังก์ชัน renderAdmin กรุณาตรวจสอบการโหลดโมดูล</p>';
+        }
+      }, 50);
+    });
+  </script>
+</body>
+</html>
