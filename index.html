@@ -386,7 +386,7 @@
         if(name==='marketplace-profile') renderMarketplaceProfile();
         if(name==='marketplace-chat') renderMarketplaceChat();
         NavigationUX.render();
-        window.scrollTo({top:0,behavior:'smooth'});
+        window.scrollTo({top:0,behavior:options.back?'auto':'smooth'});
       }
     };
     const showView = UI.showView;
@@ -1374,6 +1374,7 @@
   <script src="./creator_affiliate_patch.js?v=creator-affiliate-v1"></script>
   <script src="./unified_admin_brand_logo_patch.js?v=admin-brand-v1"></script>
   <script src="./admin_today_history_patch.js?v=admin-today-history-v3"></script>
+  <script src="./back_navigation_reliability_patch.js?v=back-nav-reliability-v1"></script>
   <script src="./referral_guest_login_gate_patch.js?v=guest-login-gate-v1"></script>
   <script type="module" src="./modules/boot.js?v=compat-utilities-v3"></script>
   <script type="module" src="./modules/pages/admin/ai-workspace.js?v=ai-workspace-v1"></script>

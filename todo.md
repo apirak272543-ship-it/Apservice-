@@ -143,3 +143,10 @@
 - [x] ทำให้ป้าย Admin นับเฉพาะงานที่ยังต้องดำเนินการ ไม่รวมประวัติ
 - [x] เพิ่ม contract tests สำหรับการคัดกรองตามวันและ regression ของข้อมูลเก่า
 - [x] ทดสอบและเผยแพร่ Admin Today and History Workspace
+
+## Back Navigation Reliability Fix
+
+- [x] ตรวจเส้นทางปุ่มกลับหน้าก่อนหน้าและกลับเมนู Admin ที่ทำให้ Android Chrome ค้าง
+- [x] จำกัดการบันทึก draft ระหว่างนำทางให้ไม่อ่านค่า Admin หรือข้อมูลขนาดใหญ่
+- [x] ป้องกันการกดกลับซ้ำ ล้างสถานะเมนูย่อย Admin และปิด smooth scroll ระหว่างย้อนกลับ
+- [x] เพิ่ม contract test และทดสอบการกลับหน้าจาก Admin โดยไม่มี JavaScript error
