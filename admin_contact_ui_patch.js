@@ -10,19 +10,21 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    #adminTabs.admin-grouped{display:flex;flex-direction:column;gap:9px;background:transparent;padding:0;border:0}
+    #adminTabs.admin-grouped{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;background:transparent;padding:0;border:0}
     .admin-nav-group{margin:0;border:1px solid var(--line);border-radius:16px;background:#fff;box-shadow:0 5px 16px rgba(4,55,50,.05);overflow:hidden}
-    .admin-nav-group summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;padding:13px 14px;color:var(--ink);font-size:12px;font-weight:900}
-    .admin-nav-group summary::-webkit-details-marker{display:none}.admin-nav-group summary::after{content:'⌄';font-size:16px;color:var(--muted);transition:transform .18s cubic-bezier(.23,1,.32,1)}
-    .admin-nav-group[open] summary::after{transform:rotate(180deg)}.admin-nav-group-note{display:block;margin-top:3px;color:var(--muted);font-size:9px;font-weight:700}
-    .admin-nav-group-body{display:grid;gap:4px;padding:0 8px 9px}.admin-nav-group-body button{margin:0;text-align:left;border-radius:11px;min-height:39px}
+    .admin-nav-group-head{padding:13px 14px 8px;color:var(--ink);font-size:12px;font-weight:900}.admin-nav-group-note{display:block;margin-top:3px;color:var(--muted);font-size:9px;font-weight:700;line-height:1.45}
+    .admin-nav-group-body{display:grid;gap:5px;padding:0 8px 9px}.admin-nav-group-body button{margin:0;text-align:left;border-radius:11px;min-height:42px;line-height:1.35;white-space:normal}.admin-commerce-subgroup{display:grid;gap:5px;margin-top:2px;padding:9px;border:1px solid #d9ece8;border-radius:12px;background:#f7fcfa}.admin-commerce-subgroup>strong{font-size:11px}.admin-commerce-subgroup>small{color:var(--muted);font-size:9px;line-height:1.4}.admin-commerce-subgroup-body{display:grid;gap:5px}
+    #view-admin.admin-page-open .admin-layout{display:block}#view-admin.admin-page-open #adminTabs{display:none}#view-admin.admin-page-open .admin-section.active{min-height:calc(100dvh - 170px)}
+    .admin-page-back{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:10px 12px;border:1px solid #cde5df;border-radius:13px;background:#f5fcfa}.admin-page-back strong{font-size:13px}.admin-page-back span{display:block;margin-top:3px;color:var(--muted);font-size:10px}.admin-page-back button{min-height:38px;white-space:nowrap}
+    .admin-order-filter-note{margin:0 0 13px;padding:9px 11px;border-radius:11px;background:#edf9f6;color:#21675d;font-size:11px;font-weight:800}
     .admin-call-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.admin-call-actions .btn{min-height:32px;padding:6px 9px;font-size:10px;text-decoration:none}.admin-phone-empty{display:block;margin-top:5px;color:var(--muted);font-size:10px}
     .media-source-actions label.btn{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-align:center}.account-recovery-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:7px}.account-recovery-tools .btn{min-height:32px;padding:6px 9px;font-size:10px}.account-recovery-note{display:block;margin-top:6px;font-size:10px;line-height:1.45;color:#786231}.account-temp-status{font-size:10px;font-weight:800;color:#087d68}.promotion-deep-hint{margin:3px 0 0;color:var(--muted);font-size:10px;line-height:1.45}.promotion-image-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}.store-moderation-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.store-moderation-actions .btn{min-height:31px;padding:6px 8px;font-size:10px}.store-moderation-status{display:block;margin-top:5px;font-size:10px;font-weight:850}.store-moderation-status.suspended{color:#b45309}.store-moderation-status.archived{color:#a44343}
     #view-admin{min-width:0}#view-admin>.section-head{align-items:flex-start;min-height:0}#view-admin>.section-head>div:first-child{min-width:0;flex:1 1 auto}#view-admin>.section-head>div:last-child{display:flex;align-items:flex-start;justify-content:flex-end;gap:8px;flex:0 1 auto;min-width:0;height:auto!important}#view-admin>.section-head>div:last-child .btn{height:auto!important;min-height:40px;white-space:normal;line-height:1.35}#view-admin .admin-layout{grid-template-columns:minmax(210px,260px) minmax(0,1fr);align-items:start}#view-admin .admin-layout>div{min-width:0}#view-admin .admin-section.active>.panel{width:100%;max-width:100%;min-width:0}#view-admin .stats{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}#view-admin .table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}#view-admin .table-wrap table{min-width:680px}
     #view-home .services{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}#view-home .hero-actions .btn{min-height:44px}#view-login .login-card,#view-register .login-card{width:min(100%,560px);margin:clamp(18px,5vw,50px) auto}#view-login .login-card .btn,#view-register .login-card .btn{min-height:44px}
     @media (max-width:900px){#view-admin>.section-head{margin-top:10px;margin-bottom:14px}#view-admin>.section-head>div:last-child{width:100%;flex:1 1 100%;justify-content:stretch}#view-admin>.section-head>div:last-child .btn{flex:1 1 160px}#view-admin .admin-layout{grid-template-columns:1fr;gap:12px}#view-admin #adminTabs{order:0}#view-admin .admin-section{order:1}}
-    @media (max-width:720px){.admin-nav-group summary{padding:14px}.admin-nav-group-body{grid-template-columns:repeat(2,minmax(0,1fr));padding-bottom:10px;gap:6px}.admin-nav-group-body button{font-size:12px;min-height:46px;line-height:1.35;white-space:normal;overflow-wrap:anywhere}.admin-call-actions .btn{flex:1 1 128px}#view-admin>.section-head>div:last-child{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}#view-admin>.section-head>div:last-child .btn{width:100%;min-height:44px}#view-admin .stats{grid-template-columns:repeat(2,minmax(0,1fr))}#view-home .services{grid-template-columns:1fr}.topbar{height:68px;padding:0 14px}.top-actions{gap:7px}.profile-button{width:40px;height:40px}}
-    @media (max-width:390px){.admin-nav-group-body{grid-template-columns:1fr}#view-admin>.section-head>div:last-child{grid-template-columns:1fr}.brand-name{font-size:16px}.top-actions{gap:5px}}
+    @media (max-width:900px){#adminTabs.admin-grouped{grid-template-columns:1fr 1fr}}
+    @media (max-width:720px){#adminTabs.admin-grouped{grid-template-columns:1fr}.admin-nav-group-body{grid-template-columns:1fr;padding-bottom:10px;gap:6px}.admin-nav-group-body button{font-size:12px;min-height:46px;line-height:1.35;white-space:normal;overflow-wrap:anywhere}.admin-call-actions .btn{flex:1 1 128px}#view-admin>.section-head>div:last-child{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}#view-admin>.section-head>div:last-child .btn{width:100%;min-height:44px}#view-admin .stats{grid-template-columns:repeat(2,minmax(0,1fr))}#view-home .services{grid-template-columns:1fr}.admin-page-back{align-items:stretch;flex-direction:column}.admin-page-back button{width:100%}.topbar{height:68px;padding:0 14px}.top-actions{gap:7px}.profile-button{width:40px;height:40px}}
+    @media (max-width:390px){#view-admin>.section-head>div:last-child{grid-template-columns:1fr}.brand-name{font-size:16px}.top-actions{gap:5px}}
   `;
   document.head.appendChild(style);
   const detailStyle = document.createElement('style');
@@ -32,37 +34,103 @@
   document.head.appendChild(detailStyle);
 
   const GROUPS = [
-    ['operations', 'งานและออร์เดอร์', 'ภาพรวม ออร์เดอร์ ลูกค้า และไรเดอร์', ['overview', 'orders', 'customers', 'riders']],
-    ['stores', 'ร้านค้าและเมนู', 'ร้านค้า เมนู ราคา และสต็อก', ['stores', 'inventory']],
-    ['content', 'หน้าแรกและการตลาด', 'แบนเนอร์ โฆษณา และสื่อที่ลูกค้าเห็น', ['content']],
-    ['finance', 'การเงินและการจ่าย', 'เครดิต เงินสด สลิปชำระเงิน รอบจ่าย และคำขอถอนเงิน', ['finance', 'payment-slips', 'withdrawals', 'rider-income']],
-    ['platform', 'ระบบ การเชื่อมต่อ และความปลอดภัย', 'การตั้งค่า Data Storage และการตรวจสอบระบบ', ['settings', 'mapping', 'support', 'error-monitor', 'errors']],
-    ['team', 'ทีมงานและ AI Workspace', 'แอดมิน ใบสมัคร และงานร่วมกับ AI', ['admins', 'rider-applications', 'ai-workspace']],
+    ['operations', 'งานและออร์เดอร์', 'ภาพรวม งานเข้า งานกำลังทำ งานเสร็จ และตรวจสลิป', ['overview', 'new-orders', 'active-orders', 'completed-orders', 'orders', 'payment-slips']],
+    ['accounts', 'จัดการบัญชีและโปรไฟล์', 'ลูกค้า แชต แอดมิน ร้านค้า Rider ใบสมัคร และ AI', ['customers', 'support', 'admins', 'stores', 'inventory', 'riders', 'rider-applications', 'ai-workspace']],
+    ['finance', 'เงินสดและรายการจ่ายเงิน', 'เงินสด ปิดยอด รอบจ่าย คำขอถอน และรายได้ Rider', ['finance', 'settlements', 'withdrawals', 'rider-income']],
+    ['settings', 'ตั้งค่าเว็บไซต์และสื่อ', 'หน้าเว็บ สื่อ แพลตฟอร์ม Data Mapping และข้อผิดพลาด', ['content', 'settings', 'mapping', 'errors']],
   ];
-  function groupFor(name) { return GROUPS.find(([, , , items]) => items.includes(name)) || ['more', 'เครื่องมือเพิ่มเติม', 'ฟังก์ชันจัดการอื่น ๆ', []]; }
+  const EXTRA_ADMIN_BUTTONS = [
+    ['new-orders', 'ออเดอร์เข้าใหม่'], ['active-orders', 'ออเดอร์ที่กำลังดำเนินการ'], ['completed-orders', 'ออเดอร์ที่เสร็จสิ้นแล้ว'], ['withdrawals', 'คำขอถอนเงิน']
+  ];
+  const ADMIN_PAGE_TARGETS = { 'new-orders': 'orders', 'active-orders': 'orders', 'completed-orders': 'orders', withdrawals: 'settlements' };
+  function groupFor(name) { return GROUPS.find(([, , , items]) => items.includes(name)) || ['settings', 'ตั้งค่าเว็บไซต์และสื่อ', 'เครื่องมือระบบและการตรวจสอบ', []]; }
+  function ensureAdminNavigationButtons() {
+    const tabs = q('#adminTabs'); if (!tabs) return;
+    EXTRA_ADMIN_BUTTONS.forEach(([id, label]) => { if (tabs.querySelector(`button[data-admin="${id}"]`)) return; const button = document.createElement('button'); button.dataset.admin = id; button.textContent = label; tabs.appendChild(button); });
+  }
   function groupAdminNavigation() {
-    const tabs = q('#adminTabs');
-    if (!tabs) return;
+    const tabs = q('#adminTabs'); if (!tabs) return;
+    ensureAdminNavigationButtons();
     const loose = [...tabs.children].filter(node => node.matches?.('button[data-admin]'));
-    if (!loose.length && tabs.classList.contains('admin-grouped')) return;
     tabs.classList.add('admin-grouped');
     const known = new Map([...tabs.querySelectorAll('.admin-nav-group')].map(group => [group.dataset.groupId, group]));
     loose.forEach(button => {
       const [id, title, note] = groupFor(button.dataset.admin || '');
       let group = known.get(id);
       if (!group) {
-        group = document.createElement('details');
-        group.className = 'admin-nav-group'; group.dataset.groupId = id; group.open = id === 'operations';
-        group.innerHTML = `<summary><span>${esc(title)}<small class="admin-nav-group-note">${esc(note)}</small></span></summary><div class="admin-nav-group-body"></div>`;
+        group = document.createElement('div'); group.className = 'admin-nav-group'; group.dataset.groupId = id;
+        group.innerHTML = `<div class="admin-nav-group-head"><strong>${esc(title)}</strong><small class="admin-nav-group-note">${esc(note)}</small></div><div class="admin-nav-group-body"></div>`;
         tabs.appendChild(group); known.set(id, group);
       }
-      group.querySelector('.admin-nav-group-body')?.appendChild(button);
+      const body = group.querySelector('.admin-nav-group-body'); if (body && button.parentElement !== body) body.appendChild(button);
     });
-    tabs.querySelectorAll('button[data-admin].active').forEach(button => { const group = button.closest('.admin-nav-group'); if (group) group.open = true; });
-    if (!tabs.dataset.groupListener) {
-      tabs.dataset.groupListener = 'true';
-      tabs.addEventListener('click', event => { const group = event.target.closest('button[data-admin]')?.closest('.admin-nav-group'); if (group) group.open = true; });
+    const accounts = known.get('accounts');
+    if (accounts && !accounts.querySelector('.admin-commerce-subgroup')) {
+      const body = accounts.querySelector('.admin-nav-group-body'); const storeButton = body?.querySelector('[data-admin="stores"]'); const inventoryButton = body?.querySelector('[data-admin="inventory"]');
+      if (body && storeButton && inventoryButton) { const subgroup = document.createElement('div'); subgroup.className = 'admin-commerce-subgroup'; subgroup.innerHTML = '<strong>ร้านค้าและเมนู</strong><small>จัดการร้านค้า แล้วเข้าไปแก้เมนู ราคา และสต็อก</small><div class="admin-commerce-subgroup-body"></div>'; subgroup.querySelector('.admin-commerce-subgroup-body').append(storeButton, inventoryButton); body.appendChild(subgroup); }
     }
+  }
+
+  const ADMIN_PAGE_LABELS = { overview: ['ภาพรวมระบบ', 'ภาพรวมตัวเลขและรายการล่าสุด'], orders: ['ออร์เดอร์ทั้งหมด', 'จัดการสถานะและมอบหมาย Rider'], 'new-orders': ['ออเดอร์เข้าใหม่', 'รายการที่เพิ่งเข้าระบบและต้องตรวจรับ'], 'active-orders': ['ออเดอร์ที่กำลังดำเนินการ', 'งานที่ยังไม่ปิดสำเร็จและต้องติดตาม'], 'completed-orders': ['ออเดอร์ที่เสร็จสิ้นแล้ว', 'รายการที่ส่งสำเร็จหรือปิดงานแล้ว'], 'payment-slips': ['ตรวจสลิป ชำระเงิน', 'ตรวจยอดและหลักฐานก่อนปล่อยงานให้ร้านและ Rider'], customers: ['ลูกค้าและเครดิต', 'ข้อมูลลูกค้า กระเป๋าเครดิต และประวัติธุรกรรม'], support: ['แชตกับลูกค้า', 'ติดตามและตอบคำถามจากลูกค้า'], admins: ['จัดการ Admin', 'สิทธิ์และบัญชีผู้ดูแลระบบ'], stores: ['จัดการร้านค้า', 'บัญชีร้าน สถานะร้าน และข้อมูลหน้าร้าน'], inventory: ['เมนู สินค้า ราคา และสต็อก', 'จัดการรายการขายภายในร้านค้า'], riders: ['จัดการ Rider', 'บัญชี สถานะ และคุณสมบัติ Rider'], 'rider-applications': ['ใบสมัคร Rider', 'ตรวจเอกสารและอนุมัติผู้สมัคร'], 'ai-workspace': ['AI Workspace', 'ทำงานร่วมกับ AI ภายใต้สิทธิ์ Admin'], finance: ['เงินสดและปิดยอด', 'รายรับ รายจ่าย และสรุปยอดประจำวัน'], settlements: ['รอบจ่ายเงิน', 'สร้างรอบจ่ายร้านค้าและ Rider พร้อมหลักฐาน'], withdrawals: ['คำขอถอนเงิน', 'ตรวจ อนุมัติ หรือปฏิเสธคำขอถอนเงิน'], 'rider-income': ['รายได้ Rider', 'ตรวจส่วนแบ่ง Rider และรายได้แพลตฟอร์ม'], content: ['จัดการหน้าเว็บและสื่อ', 'แก้ข้อความ แบนเนอร์ และสื่อที่ลูกค้าเห็น'], settings: ['ตั้งค่าแพลตฟอร์ม', 'กำหนดแบรนด์ บริการ และค่าระบบ'], mapping: ['Data Storage & Mapping', 'ตรวจจุดเชื่อมต่อและโครงสร้างข้อมูล'], errors: ['ศูนย์ติดตามข้อผิดพลาด', 'ตรวจเคสระบบและประวัติการแก้ไข'] };
+  const ORDER_FILTER_LABELS = { all: 'ออร์เดอร์ทั้งหมด', new: 'ออเดอร์เข้าใหม่', active: 'ออเดอร์ที่กำลังดำเนินการ', completed: 'ออเดอร์ที่เสร็จสิ้นแล้ว' };
+  window.AdminOrderFilter = window.AdminOrderFilter || { current: 'all' };
+  const ADMIN_PAGE_TARGETS_LOCAL = { 'new-orders': 'orders', 'active-orders': 'orders', 'completed-orders': 'orders', withdrawals: 'settlements' };
+  const ADMIN_FILTER_BY_PAGE = { 'new-orders': 'new', 'active-orders': 'active', 'completed-orders': 'completed' };
+  const legacyAdminSwitch = window.switchAdmin;
+  const adminFilterMatch = (order, filter) => {
+    const status = String(order?.status || '');
+    if (filter === 'new') return ['รอตรวจสอบการชำระเงิน', 'ต้องแนบสลิปใหม่', 'รอเลือก Rider', 'รอ Rider ยืนยันรับงาน', 'ร้านค้ารับออร์เดอร์'].includes(status);
+    if (filter === 'completed') return ['สำเร็จแล้ว', 'เสร็จสิ้นแล้ว', 'completed', 'delivered'].includes(status) || Boolean(order?.completedAt);
+    if (filter === 'active') return !adminFilterMatch(order, 'new') && !adminFilterMatch(order, 'completed');
+    return true;
+  };
+  function updateAdminOrderFilterNote() {
+    const note = q('#adminOrderFilterNote'); if (!note) return;
+    const filter = window.AdminOrderFilter.current || 'all'; const count = (AppState.orders || []).filter(order => adminFilterMatch(order, filter)).length;
+    note.textContent = `${ORDER_FILTER_LABELS[filter] || ORDER_FILTER_LABELS.all} · ${count.toLocaleString('th-TH')} รายการ`;
+  }
+  function filterRenderedAdminOrders() {
+    const table = q('#operationsOrderTable'); if (!table) return;
+    [...table.rows].forEach((row, index) => { row.style.display = adminFilterMatch(AppState.orders?.[index], window.AdminOrderFilter.current || 'all') ? '' : 'none'; });
+    updateAdminOrderFilterNote();
+  }
+  function addAdminPageHeader(name, target) {
+    const section = q(`#admin-${target}`); if (!section) return;
+    const [title, description] = ADMIN_PAGE_LABELS[name] || ADMIN_PAGE_LABELS[target] || [name, 'จัดการข้อมูลในศูนย์ควบคุม'];
+    let header = section.querySelector(':scope > .admin-page-back');
+    if (!header) { header = document.createElement('div'); header.className = 'admin-page-back'; section.prepend(header); }
+    header.innerHTML = `<div><strong>${esc(title)}</strong><span>${esc(description)}</span></div><button type="button" class="btn btn-plain btn-small" onclick="closeAdminSubpage()">← กลับเมนู Admin</button>`;
+    if (target === 'orders') {
+      let note = section.querySelector('#adminOrderFilterNote');
+      if (!note) { note = document.createElement('div'); note.id = 'adminOrderFilterNote'; note.className = 'admin-order-filter-note'; header.insertAdjacentElement('afterend', note); }
+      updateAdminOrderFilterNote();
+    }
+  }
+  function openAdminSubpage(name) {
+    if (!Storage.isAdmin()) return showView('home');
+    const target = ADMIN_PAGE_TARGETS_LOCAL[name] || name;
+    const filter = ADMIN_FILTER_BY_PAGE[name] || (target === 'orders' ? 'all' : 'all');
+    window.AdminOrderFilter.current = filter;
+    const finish = () => {
+      if (!q(`#admin-${target}`)) { UI.toast('กำลังเตรียมหน้าจัดการ โปรดลองอีกครั้ง', 'warning'); return; }
+      try { legacyAdminSwitch(target); } catch (error) { console.warn('Admin page navigation fallback', error); return; }
+      q('#view-admin')?.classList.add('admin-page-open');
+      addAdminPageHeader(name, target);
+      if (target === 'orders') { filterRenderedAdminOrders(); }
+      if (name === 'payment-slips') window.refreshPaymentSlipQueue?.();
+      if (name === 'withdrawals') q('#withdrawalRequestList')?.scrollIntoView({ block: 'start' });
+    };
+    if (!q(`#admin-${target}`) && target === 'settlements' && window.refreshSettlementAdmin) { Promise.resolve(window.refreshSettlementAdmin()).then(finish).catch(finish); } else finish();
+  }
+  window.closeAdminSubpage = () => { q('#view-admin')?.classList.remove('admin-page-open'); window.AdminOrderFilter.current = 'all'; try { legacyAdminSwitch('overview'); } catch (_) {} };
+  window.setAdminOrderFilter = filter => { window.AdminOrderFilter.current = ORDER_FILTER_LABELS[filter] ? filter : 'all'; filterRenderedAdminOrders(); };
+  window.switchAdmin = name => openAdminSubpage(name);
+  function installAdminNextPageNavigation() {
+    const tabs = q('#adminTabs'); if (!tabs || tabs.dataset.nextPageNavigation) return;
+    tabs.dataset.nextPageNavigation = 'true';
+    tabs.addEventListener('click', event => { const button = event.target.closest('button[data-admin]'); if (!button) return; event.preventDefault(); event.stopImmediatePropagation(); openAdminSubpage(button.dataset.admin); }, true);
+    const orderTable = q('#operationsOrderTable');
+    if (orderTable && !orderTable.dataset.filterObserver) { orderTable.dataset.filterObserver = 'true'; new MutationObserver(() => { if ((window.AdminOrderFilter?.current || 'all') !== 'all') filterRenderedAdminOrders(); }).observe(orderTable, { childList: true }); }
   }
 
   function repairImageSourceButtons(root = document) {
@@ -349,12 +417,12 @@
   const storeDetailRenderer = renderAdminStores;
   renderAdminStores = () => { storeDetailRenderer(); [...(q('#adminStoreTable')?.rows || [])].forEach((row, index) => { const store = AppState.stores[index]; const cell = row.cells?.[row.cells.length - 1]; if (!store || !cell || cell.querySelector('.store-detail-entry')) return; cell.insertAdjacentHTML('afterbegin', `<button type="button" class="btn btn-main btn-small store-detail-entry" onclick="openStoreDetail('${esc(store.id)}')">รายละเอียด</button>`); }); };
   const priorOrderRenderer = renderOperationsOrders;
-  renderOperationsOrders = () => { priorOrderRenderer(); [...(q('#operationsOrderTable')?.rows || [])].forEach((row, index) => { const order = AppState.orders[index]; const cell = row.cells?.[1]; if (!order || !cell || cell.querySelector('.admin-call-actions')) return; const customer = AppState.customers.find(item => String(item.email || '').toLowerCase() === String(order.customerEmail || '').toLowerCase()); const store = AppState.stores.find(item => item.id === order.storeId); cell.insertAdjacentHTML('beforeend', `<div class="admin-call-actions">${customer?.phone ? `<a class="btn btn-plain btn-small" href="${esc(phoneHref(customer.phone))}">☎ โทรลูกค้า</a>` : '<span class="admin-phone-empty">ยังไม่มีเบอร์ลูกค้า</span>'}${store?.phone ? `<a class="btn btn-main btn-small" href="${esc(phoneHref(store.phone))}">☎ โทรร้าน</a>` : '<span class="admin-phone-empty">ยังไม่มีเบอร์ร้าน</span>'}</div>`); }); };
+  renderOperationsOrders = () => { priorOrderRenderer(); filterRenderedAdminOrders(); [...(q('#operationsOrderTable')?.rows || [])].forEach((row, index) => { const order = AppState.orders[index]; const cell = row.cells?.[1]; if (!order || !cell || cell.querySelector('.admin-call-actions')) return; const customer = AppState.customers.find(item => String(item.email || '').toLowerCase() === String(order.customerEmail || '').toLowerCase()); const store = AppState.stores.find(item => item.id === order.storeId); cell.insertAdjacentHTML('beforeend', `<div class="admin-call-actions">${customer?.phone ? `<a class="btn btn-plain btn-small" href="${esc(phoneHref(customer.phone))}">☎ โทรลูกค้า</a>` : '<span class="admin-phone-empty">ยังไม่มีเบอร์ลูกค้า</span>'}${store?.phone ? `<a class="btn btn-main btn-small" href="${esc(phoneHref(store.phone))}">☎ โทรร้าน</a>` : '<span class="admin-phone-empty">ยังไม่มีเบอร์ร้าน</span>'}</div>`); }); };
   const priorCustomerLoad = CustomerDirectory.load.bind(CustomerDirectory);
   CustomerDirectory.load = async options => { const result = await priorCustomerLoad(options); renderOperationsOrders(); return result; };
   const priorAdminRender = renderAdmin;
   renderAdmin = () => { priorAdminRender(); groupAdminNavigation(); ContactDirectory.refresh().catch(error => console.warn('โหลดข้อมูลติดต่อร้านค้าไม่สำเร็จ', error)); StoreModeration.refresh().catch(error => console.warn('โหลดสถานะกำกับร้านไม่สำเร็จ', error)); };
   repairImageSourceButtons(); new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => { if (node.nodeType === 1) repairImageSourceButtons(node); }))).observe(document.body, { childList: true, subtree: true });
   new MutationObserver(() => groupAdminNavigation()).observe(q('#adminTabs'), { childList: true });
-  ensureStoreContactFields(); groupAdminNavigation(); if (Storage.isAdmin()) { ContactDirectory.refresh().catch(() => {}); CustomerDirectory.load({ quiet: true }).catch(() => {}); }
+  ensureStoreContactFields(); groupAdminNavigation(); installAdminNextPageNavigation(); if (Storage.isAdmin()) { ContactDirectory.refresh().catch(() => {}); CustomerDirectory.load({ quiet: true }).catch(() => {}); }
 })();

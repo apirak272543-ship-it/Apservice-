@@ -15,3 +15,13 @@
 - [ ] Connect a trusted transaction-verification provider before allowing automatic payment approval and order confirmation
 - [x] Create payment-pending orders after preliminary slip validation and surface them in an Admin verification queue
 - [ ] Validate slip amount, date, time, recipient, and transaction reference with a trusted provider before automatic approval
+
+- [x] Re-group Admin navigation into four user-approved work categories
+- [x] Move payment-slip verification into งานและออร์เดอร์ and separate incoming, in-progress, completed order views
+- [x] Move customer chat, admin management, store/menu management, rider management, rider applications, and AI Workspace into บัญชีและโปรไฟล์
+- [x] Keep cash closing and settlement cycles together under เงินสดและรายการจ่ายเงิน
+- [x] Group website/media, platform settings, data storage/mapping, and error center under ตั้งค่าเว็บไซต์และสื่อ
+- [x] Add mobile next-page navigation so Admin menu items do not expand content downward
+- [x] Add missing Admin menu shortcuts for withdrawal requests, rider income, order status views, and store menu management
+- [x] Verify Admin navigation grouping and mobile layout with browser/CDP tests
+- [x] Commit and publish the Admin navigation redesign to GitHub Pages

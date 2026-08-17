@@ -678,9 +678,8 @@
       tabs.insertAdjacentHTML('beforeend', '<button data-admin="payment-slips">ตรวจสลิปชำระเงิน</button>');
       content.insertAdjacentHTML('beforeend', '<section class="admin-section" id="admin-payment-slips"><div class="panel"><div class="section-head" style="margin:0 0 14px"><div><h2 style="font-size:17px">คิวตรวจสลิปชำระเงิน</h2><p>ตรวจรูปสลิปกับยอด เวลา และข้อมูลผู้รับก่อนอนุมัติปล่อยงานให้ร้านและ Rider</p></div><button class="btn btn-plain btn-small" onclick="refreshPaymentSlipQueue()">รีเฟรช</button></div><div class="notice" style="margin:0 0 14px">คำเตือน: ผลตรวจจากรูปเป็นเพียงด่านเบื้องต้น ควรตรวจยอดเงินเข้าจริงก่อนกดอนุมัติทุกครั้ง</div><div class="table-wrap"><table><thead><tr><th>ออร์เดอร์/ลูกค้า</th><th>ยอด/เวลาแนบ</th><th>ผลเบื้องต้น</th><th>หลักฐาน</th><th>จัดการ</th></tr></thead><tbody id="paymentSlipQueueRows"></tbody></table></div></div></section>');
       const button = $('#adminTabs [data-admin="payment-slips"]');
-      const navigationHost = tabs.querySelector('.admin-nav-group[data-group-id="finance"] .admin-nav-group-body') || tabs;
-      navigationHost.appendChild(button);
-      button.onclick = () => { [...document.querySelectorAll('#adminTabs button')].forEach(item => item.classList.toggle('active', item === button)); [...document.querySelectorAll('.admin-section')].forEach(section => section.classList.toggle('active', section.id === 'admin-payment-slips')); this.render(); };
+      tabs.appendChild(button);
+      button.onclick = () => window.switchAdmin?.('payment-slips');
     }
   };
   window.viewPaymentSlip = path => PaymentSlipAdminQueue.view(path);
