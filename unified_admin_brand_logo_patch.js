@@ -67,8 +67,15 @@
   }
 
   async function loadPublicBrand() {
+    const cfg = window.AppState?.config?.supabase || {};
+    if (!cfg.url || !cfg.publishableKey) return false;
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    const timeout = setTimeout(() => controller?.abort(), 1200);
     try {
-      const rows = await window.SupabaseSync?.request?.(`platform_configs?select=value&key=eq.${PUBLIC_KEY}&limit=1`);
+      // Public branding must never use SupabaseSync.request(): a 401 there can refresh or clear an Admin session on the customer page.
+      const response = await fetch(`${cfg.url}/rest/v1/platform_configs?select=value&key=eq.${PUBLIC_KEY}&limit=1`, { headers: { apikey: cfg.publishableKey, Accept: 'application/json' }, signal: controller?.signal });
+      if (!response.ok) return false;
+      const rows = await response.json();
       const value = Array.isArray(rows) ? rows[0]?.value : null;
       if (!value || typeof value !== 'object') return false;
       const config = window.AppState?.config;
@@ -78,8 +85,10 @@
       applyBrandEverywhere();
       return true;
     } catch (error) {
-      console.warn('ไม่สามารถโหลดโลโก้แบรนด์สาธารณะ', error);
+      console.debug('ข้ามการโหลดโลโก้แบรนด์สาธารณะ', error?.name === 'AbortError' ? 'หมดเวลาการเชื่อมต่อ' : error);
       return false;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -113,10 +122,6 @@
   applyBrandEverywhere();
   loadPublicBrand();
 
-  ['brandMark', 'loginBrandMark'].forEach(id => {
-    const target = $(id);
-    if (!target) return;
-    const observer = new MutationObserver(() => applyLogo(target, localBrand().logoUrl));
-    observer.observe(target, { childList: true, subtree: true });
-  });
+  // Do not observe these nodes: applyLogo intentionally changes their children, and observing them creates a mutation loop that can freeze the page.
+  // renderBrand() and applyBrandEverywhere() are the controlled refresh points for these two elements.
 })();

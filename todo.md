@@ -107,3 +107,9 @@
 - [x] แยกการโหลด Creator Affiliate หลังบ้านออกจากหน้าลูกค้า
 - [x] ป้องกัน session หมดอายุของ Admin ไม่ให้สร้าง error overlay ค้างบนหน้าเว็บ
 - [x] เพิ่ม regression test หน้าแรกเมื่อ Affiliate โหลดไม่สำเร็จ และเผยแพร่บั๊กฟิก
+
+## Brand Logo Image Loading Regression Fix
+
+- [x] ตรวจ request โลโก้ Admin ที่อาจบล็อกการโหลดหน้าเว็บและ Storage assets
+- [x] แยกการโหลดโลโก้แบบไม่บล็อกหน้าเว็บและคืนการแสดงภาพร้าน/โฆษณา
+- [ ] เพิ่ม regression test การโหลดภาพและกดเมนูโดยไม่ค้าง พร้อมทดสอบและเผยแพร่
