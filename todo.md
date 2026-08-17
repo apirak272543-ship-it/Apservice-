@@ -62,3 +62,10 @@
 - [x] ตรวจ flow ปัจจุบันของการสร้างแคมเปญและ Referral
 - [x] ปรับหน้า Admin ให้แสดงรหัส ลิงก์ และปุ่มคัดลอกหรือแชร์พร้อมใช้
 - [x] ทดสอบ flow และเผยแพร่การแก้ไขขึ้น GitHub Pages
+
+## Creator Affiliate Save Error Fix
+
+- [x] ตรวจเส้นทางการบันทึก Creator แคมเปญ และสิทธิ์คอนเทนต์ที่เรียก reset ฟอร์ม
+- [x] แก้ Cannot read properties of null หลังบันทึก และคงข้อมูลที่บันทึกสำเร็จไว้
+- [x] เพิ่ม regression test สำหรับการ reset ฟอร์มที่มีหรือไม่มี element
+- [ ] ทดสอบและเผยแพร่บั๊กฟิกขึ้น GitHub Pages

@@ -28,6 +28,9 @@ assert.match(patch, /copyCreatorReferralCode/, 'Admin must be able to copy the r
 assert.match(patch, /copyCreatorReferralLink/, 'Admin must be able to copy the ready-made referral link');
 assert.match(patch, /shareCreatorReferralLink/, 'Admin must be able to share the referral link to Creator');
 assert.match(patch, /navigator\.share/, 'Mobile share sheet must be supported when available');
+assert.match(patch, /const form = event\.currentTarget/, 'Save handlers must capture the form before awaiting Supabase');
+assert.match(patch, /form\?\.reset\(\)/, 'Save handlers must reset a captured form safely');
+assert.doesNotMatch(patch, /event\.currentTarget\.reset\(\)/, 'Save handlers must not read currentTarget after await');
 assert.match(patch, /rpc\/start_creator_referral/, 'Referral link/code must create a referral session');
 assert.match(patch, /rpc\/attribute_creator_order/, 'Placed orders must be attributed through the secure RPC');
 assert.match(patch, /order_total_excluding_delivery/, 'Commission basis excluding delivery must be supported');

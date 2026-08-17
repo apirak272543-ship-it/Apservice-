@@ -189,23 +189,23 @@
       event.preventDefault(); if (!this.isAdmin()) return this.toast('เฉพาะแอดมินเท่านั้นที่สร้างแคมเปญได้', 'error');
       const creatorId = $('#creatorCampaignCreator').value, code = this.normalizeCode($('#creatorCampaignCode').value), rate = Number($('#creatorCampaignRate').value);
       if (!creatorId || !code || !Number.isFinite(rate) || rate < 0 || rate > 100) return this.toast('กรุณาเลือก Creator ระบุรหัส และค่าคอมมิชชัน 0–100% ให้ถูกต้อง', 'warning');
-      const button = event.submitter; button.disabled = true;
+      const form = event.currentTarget; const button = event.submitter; button.disabled = true;
       try {
         const session = this.session();
         const rows = await this.request('creator_campaigns', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ creator_id: creatorId, title: $('#creatorCampaignTitle').value.trim(), description: $('#creatorCampaignDescription').value.trim(), referral_code: code, landing_path: $('#creatorCampaignLanding').value.trim() || '/', commission_rate: rate, commission_basis: $('#creatorCampaignBasis').value, attribution_window_days: Number($('#creatorCampaignWindow').value || 30), status: $('#creatorCampaignStatus').value, created_by: session?.user?.id || null }) });
         const campaign = rows?.[0]; const storeIds = [...$('#creatorCampaignStores').selectedOptions].map(option => option.value);
         if (campaign && storeIds.length) await this.request('creator_campaign_stores', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(storeIds.map(store_id => ({ campaign_id: campaign.id, store_id }))) });
-        this.toast(`สร้างแคมเปญ ${code} แล้ว`, 'success'); event.currentTarget.reset(); $('#creatorCampaignWindow').value = '30'; await this.load({ quiet: true });
+        this.toast(`สร้างแคมเปญ ${code} แล้ว`, 'success'); form?.reset(); $('#creatorCampaignWindow').value = '30'; await this.load({ quiet: true });
       } catch (error) { this.toast(`สร้างแคมเปญไม่สำเร็จ: ${error.message || 'ตรวจว่ารหัสซ้ำหรือไม่'}`, 'error'); } finally { button.disabled = false; }
     },
     async saveContentRight(event) {
       event.preventDefault(); if (!this.isAdmin()) return this.toast('เฉพาะแอดมินเท่านั้นที่บันทึกสิทธิ์คอนเทนต์ได้', 'error');
       const creatorId = $('#creatorRightCreator').value; if (!creatorId) return this.toast('กรุณาเลือก Creator เจ้าของคอนเทนต์', 'warning');
-      const button = event.submitter; button.disabled = true;
+      const form = event.currentTarget; const button = event.submitter; button.disabled = true;
       try {
         const session = this.session(); const channels = $('#creatorRightChannels').value.split(',').map(value => value.trim()).filter(Boolean);
         await this.request('creator_content_rights', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ creator_id: creatorId, title: $('#creatorRightTitle').value.trim(), content_url: $('#creatorRightUrl').value.trim(), consent_status: $('#creatorRightStatus').value, usage_scope: $('#creatorRightScope').value, allowed_channels: channels, consent_proof_url: $('#creatorRightProof').value.trim() || null, expires_at: $('#creatorRightExpiry').value ? new Date($('#creatorRightExpiry').value).toISOString() : null, reviewed_by: $('#creatorRightStatus').value === 'approved' ? session?.user?.id || null : null, reviewed_at: $('#creatorRightStatus').value === 'approved' ? new Date().toISOString() : null }) });
-        this.toast('บันทึกทะเบียนสิทธิ์คอนเทนต์แล้ว', 'success'); event.currentTarget.reset(); await this.load({ quiet: true }); window.refreshAdminPendingBadges?.();
+        this.toast('บันทึกทะเบียนสิทธิ์คอนเทนต์แล้ว', 'success'); form?.reset(); await this.load({ quiet: true }); window.refreshAdminPendingBadges?.();
       } catch (error) { this.toast(`บันทึกสิทธิ์คอนเทนต์ไม่สำเร็จ: ${error.message || ''}`, 'error'); } finally { button.disabled = false; }
     },
     editCreator(id) {
