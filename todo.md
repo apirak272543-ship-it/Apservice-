@@ -106,4 +106,4 @@
 
 - [x] แยกการโหลด Creator Affiliate หลังบ้านออกจากหน้าลูกค้า
 - [x] ป้องกัน session หมดอายุของ Admin ไม่ให้สร้าง error overlay ค้างบนหน้าเว็บ
-- [ ] เพิ่ม regression test หน้าแรกเมื่อ Affiliate โหลดไม่สำเร็จ และเผยแพร่บั๊กฟิก
+- [x] เพิ่ม regression test หน้าแรกเมื่อ Affiliate โหลดไม่สำเร็จ และเผยแพร่บั๊กฟิก
