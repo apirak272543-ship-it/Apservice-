@@ -22,6 +22,12 @@ assert.match(patch, /creator_order_attributions\?select=/, 'Creator dashboard mu
 assert.match(patch, /creator-performance/, 'Creator dashboard must display real performance metrics');
 assert.match(patch, /ยอดขายสุทธิ/, 'Creator dashboard must show net commissionable sales');
 assert.match(patch, /creatorReferralCode/, 'Checkout must support a Creator referral code');
+assert.match(patch, /getReferralUrl\(code\)/, 'Referral URL must be generated automatically from the campaign code');
+assert.match(patch, /creator-link-input/, 'Each campaign must show a ready-to-copy referral URL');
+assert.match(patch, /copyCreatorReferralCode/, 'Admin must be able to copy the referral code directly');
+assert.match(patch, /copyCreatorReferralLink/, 'Admin must be able to copy the ready-made referral link');
+assert.match(patch, /shareCreatorReferralLink/, 'Admin must be able to share the referral link to Creator');
+assert.match(patch, /navigator\.share/, 'Mobile share sheet must be supported when available');
 assert.match(patch, /rpc\/start_creator_referral/, 'Referral link/code must create a referral session');
 assert.match(patch, /rpc\/attribute_creator_order/, 'Placed orders must be attributed through the secure RPC');
 assert.match(patch, /order_total_excluding_delivery/, 'Commission basis excluding delivery must be supported');

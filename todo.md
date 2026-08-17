@@ -47,3 +47,18 @@
 - [x] Add Creator Affiliate pending-work badges and settlement workflow
 - [x] Add mobile next-page Creator Affiliate Admin navigation and tests
 - [x] Commit and publish Creator Affiliate Admin structure to GitHub Pages
+
+## Creator Referral Link UX Update
+
+- [x] สร้างลิงก์ Referral อัตโนมัติทันทีหลังสร้างแคมเปญ
+- [x] แสดงคอลัมน์รหัส Referral และลิงก์พร้อมใช้ในตารางแคมเปญ
+- [x] เพิ่มปุ่มคัดลอกรหัส คัดลอกลิงก์ และแชร์ลิงก์ให้ Creator
+- [x] เพิ่มข้อความอธิบายวิธีส่งลิงก์ให้ Creator และวิธีที่ลูกค้าใช้งาน
+- [x] เพิ่ม contract test สำหรับลิงก์ Referral อัตโนมัติและปุ่มคัดลอก
+- [ ] Commit และเผยแพร่การปรับปรุงลิงก์ Referral ขึ้น GitHub Pages
+
+## Creator Affiliate Admin Structure
+
+- [x] ตรวจ flow ปัจจุบันของการสร้างแคมเปญและ Referral
+- [x] ปรับหน้า Admin ให้แสดงรหัส ลิงก์ และปุ่มคัดลอกหรือแชร์พร้อมใช้
+- [ ] ทดสอบ flow และเผยแพร่การแก้ไขขึ้น GitHub Pages
