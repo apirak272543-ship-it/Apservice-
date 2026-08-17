@@ -30,3 +30,10 @@
 - [x] Refresh Admin badge counts when queue data or task statuses change
 - [x] Test that badges remain until actual action resolves the underlying task
 - [x] Commit and publish Admin pending-work badge system to GitHub Pages
+- [x] Diagnose Admin withdrawal-payment flow that exits the page or loses session after slip confirmation
+- [x] Preserve Admin session and Finance subpage context while uploading withdrawal-payment proof
+- [x] Persist withdrawal proof, payment reference, and paid status so Rider can view payout confirmation
+- [x] Add regression tests for withdrawal payment completion, upload failure recovery, and session continuity
+- [x] Commit and publish withdrawal-payment flow reliability fix to GitHub Pages
+- [x] Identify and eliminate Android Chrome crash risks in withdrawal-proof image handling and payment completion
+- [x] Add Android-safe image-size, memory, and error-recovery guards for payout proof uploads
