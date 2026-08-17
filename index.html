@@ -89,7 +89,7 @@
     <!-- LOGIN: DO NOT DISCLOSE ADMIN EMAIL -->
     <section class="view" id="view-login">
       <div class="panel login-card">
-        <div class="brand-mark">AP</div>
+        <div class="brand-mark" id="loginBrandMark">AP</div>
         <h2>เข้าสู่ระบบ</h2>
         <p>สำหรับสมาชิกที่ลงทะเบียนแล้ว ใช้อีเมลและรหัสผ่านเพื่อสั่งบริการ ติดตามออร์เดอร์ และใช้งานข้อมูลของคุณอย่างปลอดภัย</p>
         <div class="field" style="text-align:left"><label>อีเมลที่ใช้สมัครสมาชิก</label><input id="loginEmail" type="email" placeholder="เช่น name@example.com" autocomplete="email" /></div>
@@ -1371,7 +1371,7 @@
     if(typeof renderContent==='function')window.renderContent=renderContent;
   </script>
   <script src="./creator_affiliate_patch.js?v=creator-affiliate-v1"></script>
-  <script src="./header_brand_logo_patch.js?v=ap-logo-v1"></script>
+  <script src="./login_brand_logo_dynamic_patch.js?v=login-brand-dynamic-v1"></script>
   <script src="./referral_guest_login_gate_patch.js?v=guest-login-gate-v1"></script>
   <script type="module" src="./modules/boot.js?v=compat-utilities-v1"></script>
   <script type="module" src="./modules/pages/admin/ai-workspace.js?v=ai-workspace-v1"></script>
