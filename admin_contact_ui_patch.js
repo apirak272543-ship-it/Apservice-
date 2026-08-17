@@ -17,6 +17,7 @@
     #view-admin.admin-page-open .admin-layout{display:block}#view-admin.admin-page-open #adminTabs{display:none}#view-admin.admin-page-open .admin-section.active{min-height:calc(100dvh - 170px)}
     .admin-page-back{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;padding:10px 12px;border:1px solid #cde5df;border-radius:13px;background:#f5fcfa}.admin-page-back strong{font-size:13px}.admin-page-back span{display:block;margin-top:3px;color:var(--muted);font-size:10px}.admin-page-back button{min-height:38px;white-space:nowrap}
     .admin-order-filter-note{margin:0 0 13px;padding:9px 11px;border-radius:11px;background:#edf9f6;color:#21675d;font-size:11px;font-weight:800}
+    .admin-nav-group-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.admin-nav-group-head>strong{min-width:0}.admin-nav-group-body button[data-admin]{display:flex;align-items:center;justify-content:space-between;gap:8px}.admin-pending-badge{display:inline-grid;place-items:center;flex:0 0 auto;min-width:19px;height:19px;padding:0 5px;border:2px solid #fff;border-radius:999px;background:#e5484d;color:#fff;font-size:10px;font-weight:950;line-height:1;box-shadow:0 2px 7px rgba(186,34,45,.34)}.admin-nav-group-head .admin-pending-badge{margin-top:-3px}.admin-pending-badge.is-many{min-width:24px}.admin-nav-group.has-pending{border-color:#f0b6b8;box-shadow:0 5px 17px rgba(205,56,66,.10)}
     .admin-call-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}.admin-call-actions .btn{min-height:32px;padding:6px 9px;font-size:10px;text-decoration:none}.admin-phone-empty{display:block;margin-top:5px;color:var(--muted);font-size:10px}
     .media-source-actions label.btn{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-align:center}.account-recovery-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:7px}.account-recovery-tools .btn{min-height:32px;padding:6px 9px;font-size:10px}.account-recovery-note{display:block;margin-top:6px;font-size:10px;line-height:1.45;color:#786231}.account-temp-status{font-size:10px;font-weight:800;color:#087d68}.promotion-deep-hint{margin:3px 0 0;color:var(--muted);font-size:10px;line-height:1.45}.promotion-image-input{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}.store-moderation-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.store-moderation-actions .btn{min-height:31px;padding:6px 8px;font-size:10px}.store-moderation-status{display:block;margin-top:5px;font-size:10px;font-weight:850}.store-moderation-status.suspended{color:#b45309}.store-moderation-status.archived{color:#a44343}
     #view-admin{min-width:0}#view-admin>.section-head{align-items:flex-start;min-height:0}#view-admin>.section-head>div:first-child{min-width:0;flex:1 1 auto}#view-admin>.section-head>div:last-child{display:flex;align-items:flex-start;justify-content:flex-end;gap:8px;flex:0 1 auto;min-width:0;height:auto!important}#view-admin>.section-head>div:last-child .btn{height:auto!important;min-height:40px;white-space:normal;line-height:1.35}#view-admin .admin-layout{grid-template-columns:minmax(210px,260px) minmax(0,1fr);align-items:start}#view-admin .admin-layout>div{min-width:0}#view-admin .admin-section.active>.panel{width:100%;max-width:100%;min-width:0}#view-admin .stats{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}#view-admin .table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}#view-admin .table-wrap table{min-width:680px}
@@ -132,6 +133,74 @@
     const orderTable = q('#operationsOrderTable');
     if (orderTable && !orderTable.dataset.filterObserver) { orderTable.dataset.filterObserver = 'true'; new MutationObserver(() => { if ((window.AdminOrderFilter?.current || 'all') !== 'all') filterRenderedAdminOrders(); }).observe(orderTable, { childList: true }); }
   }
+
+  const AdminPendingBadges = {
+    counts: {}, refreshing: false, timer: null, refreshTimer: null,
+    limit(value) { const count = Math.max(0, Number(value) || 0); return count > 99 ? '99+' : String(count); },
+    orderCounts() {
+      const orders = Array.isArray(AppState.orders) ? AppState.orders : [];
+      const incoming = orders.filter(order => adminFilterMatch(order, 'new')).length;
+      const active = orders.filter(order => adminFilterMatch(order, 'active')).length;
+      return { incoming, active, operational: incoming + active };
+    },
+    async listCount(path) {
+      try { const rows = await SupabaseSync.request(path); return Array.isArray(rows) ? rows.length : 0; }
+      catch (error) { console.warn(`ไม่สามารถโหลดจำนวนงานค้างจาก ${path}`, error); return 0; }
+    },
+    async refresh({ quiet = false } = {}) {
+      if (!Storage.isAdmin() || this.refreshing) return;
+      this.refreshing = true;
+      const order = this.orderCounts();
+      const hasSession = Boolean(SupabaseSync.session?.()?.access_token);
+      let slips = 0, chats = 0, applications = 0, settlements = 0, withdrawals = 0, errors = 0, aiTasks = 0;
+      if (hasSession) {
+        [slips, chats, applications, settlements, withdrawals, errors, aiTasks] = await Promise.all([
+          this.listCount('payment_slip_reviews?select=id&status=eq.pending&limit=500'),
+          this.listCount('support_conversations?select=id&status=eq.open&admin_seen_at=is.null&limit=500'),
+          this.listCount('rider_applications?select=id&status=in.(pending,under_review)&limit=500'),
+          this.listCount('settlements?select=id&status=eq.pending&limit=500'),
+          this.listCount('withdrawal_requests?select=id&status=in.(requested,approved)&limit=500'),
+          this.listCount('error_reports?select=id&status=in.(new,triaged)&limit=500'),
+          this.listCount('ai_workspace_tasks?select=id&status=in.(queued,blocked,review)&limit=500')
+        ]);
+      }
+      this.counts = {
+        overview: order.operational + slips, orders: order.operational, 'new-orders': order.incoming, 'active-orders': order.active,
+        'payment-slips': slips, support: chats, 'rider-applications': applications, 'ai-workspace': aiTasks,
+        finance: settlements + withdrawals, settlements, withdrawals, errors,
+        operations: order.operational + slips, accounts: chats + applications + aiTasks, settings: errors
+      };
+      this.render();
+      this.refreshing = false;
+    },
+    render() {
+      const tabs = q('#adminTabs'); if (!tabs) return;
+      tabs.querySelectorAll('.admin-pending-badge').forEach(node => node.remove());
+      tabs.querySelectorAll('.admin-nav-group').forEach(group => group.classList.remove('has-pending'));
+      const put = (target, count) => {
+        if (!target || !(Number(count) > 0)) return;
+        const badge = document.createElement('span'); badge.className = `admin-pending-badge${Number(count) > 9 ? ' is-many' : ''}`; badge.textContent = this.limit(count); badge.title = `มีงานค้าง ${this.limit(count)} รายการ`; badge.setAttribute('aria-label', badge.title); target.appendChild(badge);
+      };
+      Object.entries(this.counts).forEach(([key, count]) => {
+        if (!(Number(count) > 0)) return;
+        const button = tabs.querySelector(`button[data-admin="${key}"]`);
+        if (button) put(button, count);
+        const group = tabs.querySelector(`.admin-nav-group[data-group-id="${key}"]`);
+        if (group) { group.classList.add('has-pending'); put(group.querySelector('.admin-nav-group-head'), count); }
+      });
+    },
+    schedule(delay = 1200) { clearTimeout(this.timer); this.timer = setTimeout(() => this.refresh({ quiet: true }), delay); },
+    start() {
+      if (this.refreshTimer) return this.schedule(0);
+      this.refreshTimer = setInterval(() => this.refresh({ quiet: true }), 20000);
+      document.addEventListener('click', event => {
+        const button = event.target.closest('button'); const action = button?.getAttribute('onclick') || '';
+        if (/(reviewPaymentSlip|approveRiderApplication|rejectRiderApplication|reviewWithdrawalRequest|openSettlementPayment|resolveErrorReport|queueErrorReview|approveErrorReview)/.test(action)) this.schedule(3500);
+      });
+      this.schedule(0);
+    }
+  };
+  window.refreshAdminPendingBadges = () => AdminPendingBadges.refresh({ quiet: true });
 
   function repairImageSourceButtons(root = document) {
     root.querySelectorAll?.('.media-source-actions').forEach(actions => {
@@ -421,8 +490,8 @@
   const priorCustomerLoad = CustomerDirectory.load.bind(CustomerDirectory);
   CustomerDirectory.load = async options => { const result = await priorCustomerLoad(options); renderOperationsOrders(); return result; };
   const priorAdminRender = renderAdmin;
-  renderAdmin = () => { priorAdminRender(); groupAdminNavigation(); ContactDirectory.refresh().catch(error => console.warn('โหลดข้อมูลติดต่อร้านค้าไม่สำเร็จ', error)); StoreModeration.refresh().catch(error => console.warn('โหลดสถานะกำกับร้านไม่สำเร็จ', error)); };
+  renderAdmin = () => { priorAdminRender(); groupAdminNavigation(); AdminPendingBadges.start(); ContactDirectory.refresh().catch(error => console.warn('โหลดข้อมูลติดต่อร้านค้าไม่สำเร็จ', error)); StoreModeration.refresh().catch(error => console.warn('โหลดสถานะกำกับร้านไม่สำเร็จ', error)); };
   repairImageSourceButtons(); new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => { if (node.nodeType === 1) repairImageSourceButtons(node); }))).observe(document.body, { childList: true, subtree: true });
-  new MutationObserver(() => groupAdminNavigation()).observe(q('#adminTabs'), { childList: true });
-  ensureStoreContactFields(); groupAdminNavigation(); installAdminNextPageNavigation(); if (Storage.isAdmin()) { ContactDirectory.refresh().catch(() => {}); CustomerDirectory.load({ quiet: true }).catch(() => {}); }
+  new MutationObserver(() => { groupAdminNavigation(); AdminPendingBadges.render(); }).observe(q('#adminTabs'), { childList: true });
+  ensureStoreContactFields(); groupAdminNavigation(); installAdminNextPageNavigation(); if (Storage.isAdmin()) { AdminPendingBadges.start(); ContactDirectory.refresh().catch(() => {}); CustomerDirectory.load({ quiet: true }).catch(() => {}); }
 })();

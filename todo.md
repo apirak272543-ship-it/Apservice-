@@ -25,3 +25,8 @@
 - [x] Add missing Admin menu shortcuts for withdrawal requests, rider income, order status views, and store menu management
 - [x] Verify Admin navigation grouping and mobile layout with browser/CDP tests
 - [x] Commit and publish the Admin navigation redesign to GitHub Pages
+- [x] Define persistent pending-work badge rules for all Admin menu functions
+- [x] Add red count badges for pending orders, payment slips, chats, Rider applications, payouts, withdrawals, and error cases
+- [x] Refresh Admin badge counts when queue data or task statuses change
+- [x] Test that badges remain until actual action resolves the underlying task
+- [x] Commit and publish Admin pending-work badge system to GitHub Pages

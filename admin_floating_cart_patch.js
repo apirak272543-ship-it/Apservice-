@@ -651,6 +651,7 @@
         await cloud.request('order_status_events', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ order_id: orderId, status: approved ? 'ร้านค้ารับออร์เดอร์' : 'ต้องแนบสลิปใหม่', actor_id: session?.user?.id || null, actor_label: 'แอดมินตรวจสลิป' }) }).catch(() => {});
         if (window.UI?.toast) UI.toast(approved ? 'อนุมัติสลิปแล้ว ระบบปล่อยออร์เดอร์ให้ร้านและ Rider' : 'ส่งคำขอแนบสลิปใหม่ให้ลูกค้าแล้ว');
         await this.render();
+        window.refreshAdminPendingBadges?.();
       } catch (error) {
         if (window.UI?.toast) UI.toast(`บันทึกผลตรวจสลิปไม่สำเร็จ: ${error.message || ''}`, 'error');
       }
