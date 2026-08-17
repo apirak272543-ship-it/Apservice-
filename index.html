@@ -311,7 +311,7 @@
     AppState.orders.forEach(order=>{order.status=order.status||'รอตรวจสอบเครดิต';order.statusHistory=order.statusHistory||[{status:order.status,time:order.time||'เมื่อสักครู่',by:'ระบบ'}];order.creditUsed=Number(order.creditUsed||0);order.orderedAt=order.orderedAt||order.time||new Date().toLocaleString('th-TH');order.deliveryLocation=order.deliveryLocation||order.location||null;order.pickupLocation=order.pickupLocation||null});
 
     window.APServiceModuleCore=window.APServiceModuleCore||{};
-    const isInlineImageValue=value=>typeof value==='string'&&/^data:image\\//i.test(value.trim());
+    const isInlineImageValue=value=>typeof value==='string'&&/^data:image\//i.test(value.trim());
     const stripInlineImagesForCache=(value,seen=new WeakSet())=>{if(isInlineImageValue(value))return '';if(!value||typeof value!=='object')return value;if(seen.has(value))return null;seen.add(value);if(Array.isArray(value))return value.map(item=>stripInlineImagesForCache(item,seen));const copy={};Object.entries(value).forEach(([key,item])=>{copy[key]=stripInlineImagesForCache(item,seen)});return copy};
     const isStorageQuotaError=error=>{const name=String(error?.name||'').toLowerCase(),message=String(error?.message||error||'').toLowerCase();return name.includes('quota')||message.includes('quota')||message.includes('exceeded the quota')};
     const safeCacheSet=(key,value)=>{const serialized=JSON.stringify(value);try{localStorage.setItem(key,serialized);return{ok:true,sanitized:false}}catch(error){if(!isStorageQuotaError(error)){console.warn('AP Service storage skipped '+key,error);return{ok:false,sanitized:false}}const previous=(()=>{try{return localStorage.getItem(key)}catch{return null}})();try{localStorage.removeItem(key);localStorage.setItem(key,JSON.stringify(stripInlineImagesForCache(value)));console.warn('AP Service storage sanitized inline images for '+key);return{ok:true,sanitized:true}}catch(fallbackError){try{if(previous!==null)localStorage.setItem(key,previous)}catch(restoreError){console.warn('AP Service storage could not restore '+key,restoreError)}console.warn('AP Service storage skipped '+key+' after quota fallback',fallbackError);return{ok:false,sanitized:true}}}};
@@ -1331,7 +1331,7 @@
       });
     })();
   </script>
-  <script src="./admin_contact_ui_patch.js?v=admin-mobile-layout-v3"></script>
+  <script src="./admin_contact_ui_patch.js?v=admin-mobile-layout-v4"></script>
   <script src="./admin_menu_sync_patch.js?v=menu-sync-v1"></script>
   <script src="./admin_floating_cart_patch.js?v=floating-cart-v2"></script>
   <script src="./errand_ux_and_jwt_patch.js?v=errand-ux-v1"></script>
@@ -1375,6 +1375,7 @@
   <script src="./unified_admin_brand_logo_patch.js?v=admin-brand-v1"></script>
   <script src="./admin_today_history_patch.js?v=admin-today-history-v3"></script>
   <script src="./back_navigation_reliability_patch.js?v=back-nav-reliability-v1"></script>
+  <script src="./admin_mobile_layout_patch.js?v=admin-mobile-layout-v1"></script>
   <script src="./referral_guest_login_gate_patch.js?v=guest-login-gate-v1"></script>
   <script type="module" src="./modules/boot.js?v=compat-utilities-v3"></script>
   <script type="module" src="./modules/pages/admin/ai-workspace.js?v=ai-workspace-v1"></script>
