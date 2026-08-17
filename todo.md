@@ -173,3 +173,10 @@
 - [x] เพิ่มฟอร์มและโมเดลข้อมูลร้านให้รองรับไอคอนร้านและภาพพื้นหลัง (Background) แบบบีบอัด
 - [x] ทดสอบการสไลด์ การโหลดภาพตามคิว และการบันทึกข้อมูลร้านในหลังบ้าน
 - [ ] เผยแพร่การปรับปรุงขึ้น GitHub Pages และสรุปผล
+
+## AI Collaboration Workspace: Admin Performance Audit (ChatGPT Task)
+- [ ] อ่านรายละเอียดงาน “แก้ Admin โหลดช้า / Performance Audit” และ Task “แก้ Performance หน้า Admin” จาก Workspace
+- [ ] ตรวจโค้ดและวัดสาเหตุความช้า (Network/data loading, Supabase queries, localStorage serialization, polling, duplicate requests, lazy loading)
+- [ ] แก้ไขปัญหา performance โดยคงฟังก์ชัน Admin เดิมอย่างครบถ้วน
+- [ ] ทดสอบความเร็วและเปรียบเทียบผลลัพธ์
+- [ ] บันทึก Commit SHA และรายงานผลกลับเข้า AI Collaboration Workspace

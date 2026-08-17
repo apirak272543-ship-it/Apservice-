@@ -1,0 +1,41 @@
+const assert = require('assert');
+const fs = require('fs');
+
+const html = fs.readFileSync('index.html', 'utf8');
+const adminPatch = fs.readFileSync('admin_performance_audit_patch.js', 'utf8');
+const contactPatch = fs.readFileSync('admin_contact_ui_patch.js', 'utf8');
+const performancePatch = fs.readFileSync('performance_optimization_patch.js', 'utf8');
+const storage = fs.readFileSync('modules/core/storage.js', 'utf8');
+const supabase = fs.readFileSync('modules/api/supabase-client.js', 'utf8');
+const bridge = fs.readFileSync('modules/legacy-bridge.js', 'utf8');
+const boot = fs.readFileSync('modules/boot.js', 'utf8');
+
+assert.match(html, /SupabaseSync\.refreshCatalog\(\{ summary: true \}\)/, 'boot ต้องโหลด catalog แบบ summary');
+assert.match(html, /catalog_stores\?select=id,name,emoji,image_url,icon_url,background_url/, 'summary ต้องเลือกเฉพาะฟิลด์ร้านที่ใช้');
+assert.match(html, /APPerformanceCatalog=\{detailInflight:new Map\(\)/, 'ต้องมี in-flight map สำหรับรายละเอียดร้าน');
+assert.match(html, /loadStoreDetail\?\.\(id\)/, 'ต้องโหลดรายละเอียดร้านเมื่อเปิดร้าน');
+assert.match(html, /admin_performance_audit_patch\.js\?v=admin-performance-v1/, 'ต้องโหลด Admin performance audit patch');
+assert.match(html, /modules\/boot\.js\?v=admin-performance-v1/, 'ต้อง cache bust module boot');
+assert.doesNotMatch(html, /const categoryBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{categoryBaseRenderAdmin\(\);AdminOrderSync\.pull\(\)/, 'renderAdmin ห้ามดึงออร์เดอร์จาก network ทันที');
+assert.doesNotMatch(html, /const registrationBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{registrationBaseRenderAdmin\(\);RiderApplicationsAdmin\.ensure\(\);RiderApplicationsAdmin\.load\(\)/, 'renderAdmin ห้ามดึงใบสมัครทันที');
+assert.doesNotMatch(html, /const settlementBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{settlementBaseRenderAdmin\(\);SettlementAdmin\.ensure\(\);SettlementAdmin\.load\(\)/, 'renderAdmin ห้ามดึง settlement ทันที');
+assert.doesNotMatch(html, /const campaignBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{campaignBaseRenderAdmin\(\);CampaignAdmin\.ensure\(\);CampaignAdmin\.load\(\)/, 'renderAdmin ห้ามดึง campaign ทันที');
+assert.doesNotMatch(html, /const customerDirectoryBaseRenderAdmin=renderAdmin;renderAdmin=\(\)=>\{customerDirectoryBaseRenderAdmin\(\);CustomerDirectory\.ensure\(\);CustomerDirectory\.load/, 'renderAdmin ห้ามดึง customer directory ทันที');
+assert.match(adminPatch, /const inflight = new Map/, 'Admin loader ต้อง dedupe in-flight');
+assert.match(adminPatch, /page === 'customers'/, 'ต้องมี lazy loader ลูกค้า');
+assert.match(adminPatch, /page === 'stores' \|\| page === 'inventory'/, 'ต้องมี lazy loader ร้าน/สต็อก');
+assert.match(adminPatch, /page === 'ai-workspace'/, 'ต้องคง loader AI Workspace');
+assert.match(contactPatch, /window\.AdminPerformance\?\.loadFor\?\.\(name\)/, 'เปิดเมนูต้องเรียก lazy loader ตามชื่อเมนู');
+assert.match(contactPatch, /setInterval\(\(\) => this\.refresh\(\{ quiet: true \}\), 60000\)/, 'badge polling ต้องลดจาก 20 วินาที');
+assert.match(contactPatch, /!this\.isAdminViewOpen\(\)/, 'badge query ต้องไม่ยิงเมื่ออยู่นอกหน้า Admin');
+assert.doesNotMatch(performancePatch, /\n\s*storage\.save\(\);\n\s*\}/, 'performance patch ห้าม stringify state ใหญ่เพิ่มตอนติดตั้ง');
+assert.match(storage, /cacheRevision\(/, 'storage ต้องสร้าง revision ก่อน stringify');
+assert.match(storage, /previous\?\.revision === revision/, 'storage ต้องข้าม write เมื่อ slice ไม่เปลี่ยน');
+assert.match(storage, /safeSetItem\(key, value, localStore, \{ cache: true \}\)/, 'persist ต้องเปิด selective cache');
+assert.match(supabase, /status === 401 && isPublicRead\(path, options\)/, 'public read ต้องไม่ refresh session เมื่อ 401');
+assert.match(supabase, /publicHeaders\(client, options\)/, 'public read ต้อง retry ด้วย apikey อย่างเดียว');
+assert.match(bridge, /core\/storage\.js\?v=performance-v2/, 'ต้อง cache bust storage module');
+assert.match(bridge, /api\/supabase-client\.js\?v=admin-performance-v1/, 'ต้อง cache bust Supabase module');
+assert.match(boot, /legacy-bridge\.js\?v=admin-performance-v1/, 'ต้อง cache bust legacy bridge');
+
+console.log('admin performance audit contract: PASS');

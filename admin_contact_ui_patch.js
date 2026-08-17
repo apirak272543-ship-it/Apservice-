@@ -119,7 +119,7 @@
       q('#view-admin')?.classList.add('admin-page-open');
       addAdminPageHeader(name, target);
       if (target === 'orders') { filterRenderedAdminOrders(); }
-      if (name === 'payment-slips') window.refreshPaymentSlipQueue?.();
+      window.AdminPerformance?.loadFor?.(name);
       if (name === 'creator-affiliates') window.CreatorAffiliate?.activate?.();
       if (name === 'withdrawals') q('#withdrawalRequestList')?.scrollIntoView({ block: 'start' });
     };
@@ -137,7 +137,8 @@
   }
 
   const AdminPendingBadges = {
-    counts: {}, refreshing: false, timer: null, refreshTimer: null,
+    counts: {}, refreshing: false, timer: null, refreshTimer: null, visibilityBound: false,
+    isAdminViewOpen() { const view = q('#view-admin'); if (!view) return false; return getComputedStyle(view).display !== 'none' || view.classList.contains('admin-page-open'); },
     limit(value) { const count = Math.max(0, Number(value) || 0); return count > 99 ? '99+' : String(count); },
     orderCounts() {
       const orders = Array.isArray(AppState.orders) ? AppState.orders : [];
@@ -150,7 +151,7 @@
       catch (error) { console.warn(`ไม่สามารถโหลดจำนวนงานค้างจาก ${path}`, error); return 0; }
     },
     async refresh({ quiet = false } = {}) {
-      if (!Storage.isAdmin() || this.refreshing) return;
+      if (!Storage.isAdmin() || !this.isAdminViewOpen() || this.refreshing) return;
       this.refreshing = true;
       const order = this.orderCounts();
       const hasSession = Boolean(SupabaseSync.session?.()?.access_token);
@@ -197,7 +198,8 @@
     schedule(delay = 1200) { clearTimeout(this.timer); this.timer = setTimeout(() => this.refresh({ quiet: true }), delay); },
     start() {
       if (this.refreshTimer) return this.schedule(0);
-      this.refreshTimer = setInterval(() => this.refresh({ quiet: true }), 20000);
+      this.refreshTimer = setInterval(() => this.refresh({ quiet: true }), 60000);
+      if (!this.visibilityBound) { this.visibilityBound = true; document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.isAdminViewOpen()) this.schedule(0); }); }
       document.addEventListener('click', event => {
         const button = event.target.closest('button'); const action = button?.getAttribute('onclick') || '';
         if (/(reviewPaymentSlip|approveRiderApplication|rejectRiderApplication|reviewWithdrawalRequest|openSettlementPayment|resolveErrorReport|queueErrorReview|approveErrorReview)/.test(action)) this.schedule(3500);
@@ -507,8 +509,8 @@
   const priorCustomerLoad = CustomerDirectory.load.bind(CustomerDirectory);
   CustomerDirectory.load = async options => { const result = await priorCustomerLoad(options); renderOperationsOrders(); return result; };
   const priorAdminRender = renderAdmin;
-  renderAdmin = () => { priorAdminRender(); groupAdminNavigation(); AdminPendingBadges.start(); ContactDirectory.refresh().catch(error => console.warn('โหลดข้อมูลติดต่อร้านค้าไม่สำเร็จ', error)); StoreModeration.refresh().catch(error => console.warn('โหลดสถานะกำกับร้านไม่สำเร็จ', error)); };
+  renderAdmin = () => { priorAdminRender(); groupAdminNavigation(); AdminPendingBadges.start(); window.AdminPerformance?.loadFor?.('overview'); };
   repairImageSourceButtons(); new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => { if (node.nodeType === 1) repairImageSourceButtons(node); }))).observe(document.body, { childList: true, subtree: true });
   new MutationObserver(() => { groupAdminNavigation(); AdminPendingBadges.render(); }).observe(q('#adminTabs'), { childList: true });
-  ensureStoreContactFields(); groupAdminNavigation(); installAdminNextPageNavigation(); if (Storage.isAdmin()) { AdminPendingBadges.start(); ContactDirectory.refresh().catch(() => {}); CustomerDirectory.load({ quiet: true }).catch(() => {}); }
+  ensureStoreContactFields(); groupAdminNavigation(); installAdminNextPageNavigation(); if (Storage.isAdmin()) AdminPendingBadges.render();
 })();
