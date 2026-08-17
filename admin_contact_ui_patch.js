@@ -397,7 +397,7 @@
   };
   const bindPromotionImage = promo => {
     const input = q(`#promotionImageFile-${promo.id}`); if (!input || input.dataset.bound) return; input.dataset.bound = 'true';
-    input.addEventListener('change', async () => { const file = input.files?.[0]; if (!file) return; try { UI.toast('กำลังบีบอัดภาพโฆษณา…'); const result = await compressImageForUpload(file); promo.imageUrl = result.dataUrl; Storage.save(); renderHome(); window.renderPromotionEditor(); UI.toast('เตรียมภาพโฆษณาแล้ว กดบันทึกหน้าเว็บและสื่อเพื่อยืนยัน', 'success'); } catch (error) { input.value = ''; UI.toast(error.message, 'error'); } finally { input.removeAttribute('capture'); } });
+    input.addEventListener('change', async () => { const file = input.files?.[0]; if (!file) return; try { UI.toast('กำลังบีบอัดภาพโฆษณา…'); const result = await compressImageForUpload(file); promo.imageUrl = result.dataUrl; Storage.save(); renderHome(); window.renderPromotionEditor(); UI.toast('เตรียมภาพโฆษณาแล้ว · ' + Math.ceil(result.bytes / 1024) + ' KB · กดบันทึกหน้าเว็บและสื่อเพื่อยืนยัน', 'success'); } catch (error) { input.value = ''; UI.toast(error.message, 'error'); } finally { input.removeAttribute('capture'); } });
   };
   window.renderPromotionEditor = () => {
     const target = q('#promotionEditor'); if (!target) return; const items = AppState.config.content.promotions || [];

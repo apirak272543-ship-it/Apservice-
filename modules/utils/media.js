@@ -1,4 +1,5 @@
-export const IMAGE_UPLOAD_MAX_BYTES = 1000000;
+// Inline Base64 adds roughly 33% overhead; 720 KB raw stays below the 1 MB database limit.
+export const IMAGE_UPLOAD_MAX_BYTES = 720000;
 export const IMAGE_UPLOAD_MAX_DIMENSION = 1600;
 
 export function blobToDataUrl(blob) {
@@ -45,5 +46,5 @@ export async function compressImageForUpload(file, {
     if (quality > 0.5) quality = Math.max(0.48, quality - 0.1);
     else { bound = Math.max(480, Math.round(bound * 0.78)); quality = 0.82; }
   }
-  throw new Error('ไม่สามารถบีบอัดรูปให้ต่ำกว่า 1 MB ได้โดยยังคงคุณภาพที่เหมาะสม กรุณาเลือกรูปที่เล็กลง');
+  throw new Error('ไม่สามารถบีบอัดรูปให้อยู่ในขนาดปลอดภัยก่อนแปลงเป็นข้อมูลในระบบได้ กรุณาเลือกรูปที่เล็กลง');
 }

@@ -459,9 +459,8 @@
       }
       try {
         this.setStatus('กำลังเตรียมสลิปเพื่อส่งเข้าคิวตรวจสอบ…', 'info');
-        const compressed = typeof window.compressImageForUpload === 'function'
-          ? await window.compressImageForUpload(file, { maxBytes: 1000000, maxDimension: 1600 })
-          : { dataUrl: await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }), bytes: file.size };
+        if (typeof window.compressImageForUpload !== 'function') throw new Error('ระบบเตรียมภาพยังไม่พร้อม กรุณารีเฟรชหน้าเว็บแล้วลองใหม่');
+        const compressed = await window.compressImageForUpload(file, { maxBytes: 720000, maxDimension: 1600 });
         const blob = await fetch(compressed.dataUrl).then(response => response.blob());
         const extension = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
         this.current = { blob, extension, bytes: Number(compressed.bytes || blob.size), selectedAt: new Date().toISOString(), fileName: file.name || `slip.${extension}`, previewDataUrl: compressed.dataUrl };

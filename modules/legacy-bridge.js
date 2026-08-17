@@ -8,7 +8,7 @@ import * as supportChat from './services/support-chat.js';
 import * as customerDelivery from './services/customer-delivery.js';
 import * as categoryUX from './services/category-ux.js';
 import * as money from './utils/money.js';
-import * as media from './utils/media.js';
+import * as media from './utils/media.js?v=img-hardcap-v1';
 import * as location from './utils/location.js';
 import * as ui from './utils/ui.js';
 import * as dom from './components/dom.js';
