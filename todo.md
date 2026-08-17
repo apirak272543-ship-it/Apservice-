@@ -69,3 +69,11 @@
 - [x] แก้ Cannot read properties of null หลังบันทึก และคงข้อมูลที่บันทึกสำเร็จไว้
 - [x] เพิ่ม regression test สำหรับการ reset ฟอร์มที่มีหรือไม่มี element
 - [x] ทดสอบและเผยแพร่บั๊กฟิกขึ้น GitHub Pages
+
+## Referral Guest Login Gate Fix
+
+- [x] ตรวจ flow ผู้เยี่ยมชมจาก Referral ตั้งแต่หน้าร้าน ตะกร้า และ Checkout
+- [x] บังคับเข้าสู่ระบบก่อนเพิ่มสินค้า เปิดตะกร้า หรือเปิด Checkout
+- [x] รักษาการเปิดดูร้านและการเก็บ Referral สำหรับผู้เยี่ยมชมโดยไม่ล็อกอิน
+- [x] เพิ่ม regression test สำหรับ guest และ signed-in flows
+- [ ] ทดสอบและเผยแพร่บั๊กฟิกขึ้น GitHub Pages
