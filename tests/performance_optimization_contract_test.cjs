@@ -1,0 +1,26 @@
+const assert = require('assert');
+const fs = require('fs');
+const patch = fs.readFileSync('performance_optimization_patch.js', 'utf8');
+const html = fs.readFileSync('index.html', 'utf8');
+
+assert.match(patch, /requestCache = new Map/, 'ต้องมีแคชคำขอข้อมูล');
+assert.match(patch, /requestInflight = new Map/, 'ต้องรวมคำขอที่กำลังโหลดซ้ำ');
+assert.match(patch, /CACHE_TTL_MS = 8000/, 'ต้องมี TTL ที่จำกัดเพื่อไม่ให้ข้อมูลค้างนาน');
+assert.match(patch, /method === 'GET'/, 'ต้องแคชเฉพาะคำขออ่านข้อมูล');
+assert.match(patch, /if \(!cacheable\)\s*\{\s*invalidate\(path\)/, 'คำขอเขียนต้องล้างแคชที่เกี่ยวข้อง');
+assert.match(patch, /catalogState\.inflight/, 'ต้อง dedupe การโหลด catalog');
+assert.match(patch, /marketplaceState\.inflight/, 'ต้อง dedupe การโหลดตลาด');
+assert.match(patch, /storage\.save = \(\) =>/, 'ต้องรวมการบันทึก localStorage ที่เกิดถี่');
+const storage = fs.readFileSync('modules/core/storage.js', 'utf8');
+const bridge = fs.readFileSync('modules/legacy-bridge.js', 'utf8');
+assert.match(storage, /shouldSanitize = key === 'apcx_stores' \|\| key === 'apcx_config'/, 'storage module ต้องตัด inline images ก่อน serialize');
+assert.match(storage, /stripInlineImages\(value\)/, 'storage module ต้องเก็บ cache แบบไม่มี Base64');
+assert.match(bridge, /core\/storage\.js\?v=performance-v1/, 'ต้อง cache bust storage module');
+assert.match(patch, /setTimeout\(flush, 140\)/, 'ต้องหน่วงการ serialize เพื่อไม่บล็อกการกดปุ่มทันที');
+assert.match(html, /catalog_stores\?select=id,name,emoji,image_url/, 'catalog ต้องจำกัดฟิลด์ที่โหลด');
+assert.match(html, /catalog_menu_items\?select=id,store_id,name,emoji,image_url/, 'เมนูต้องจำกัดฟิลด์ที่โหลด');
+assert.doesNotMatch(html, /\n\s*Marketplace\.refresh\(\);\n\s*updateFoodDeliveryUI/, 'หน้าแรกต้องไม่โหลดตลาดทันทีตอนบูต');
+assert.match(html, /if\(name==='marketplace'\)\{renderMarketplace\(\);if\(!Marketplace\.listings\.length\)Marketplace\.refresh\(\)/, 'ตลาดต้องโหลดเมื่อเปิดหน้าจริง');
+assert.match(html, /performance_optimization_patch\.js\?v=performance-v2/, 'ต้องโหลด performance patch');
+assert.match(html, /modules\/boot\.js\?v=performance-storage-v2/, 'ต้อง cache bust module boot');
+console.log('performance optimization contract: PASS');

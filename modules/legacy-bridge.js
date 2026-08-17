@@ -1,5 +1,5 @@
 import * as config from './core/config.js';
-import * as storage from './core/storage.js';
+import * as storage from './core/storage.js?v=performance-v1';
 import * as appState from './state/app-state.js';
 import * as supabase from './api/supabase-client.js';
 import * as storeOps from './services/store-ops.js';

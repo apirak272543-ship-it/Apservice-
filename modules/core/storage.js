@@ -43,10 +43,12 @@ export function isQuotaError(error) {
 }
 
 export function safeSetItem(key, value, localStore = globalThis.localStorage) {
-  const serialized = JSON.stringify(value);
+  const shouldSanitize = key === 'apcx_stores' || key === 'apcx_config';
+  const cacheValue = shouldSanitize ? stripInlineImages(value) : value;
+  const serialized = JSON.stringify(cacheValue);
   try {
     localStore.setItem(key, serialized);
-    return { ok: true, sanitized: false };
+    return { ok: true, sanitized: shouldSanitize };
   } catch (error) {
     if (!isQuotaError(error)) {
       console.warn(`AP Service storage skipped ${key}`, error);
