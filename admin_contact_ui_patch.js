@@ -312,6 +312,19 @@
     });
   }
 
+  async function uploadCatalogMedia(file, scope) {
+    if (!window.APServiceMedia?.uploadPublicCatalogImage) throw new Error('ระบบอัปโหลดรูปภาพกลางยังไม่พร้อม กรุณารีเฟรชหน้าเว็บแล้วลองใหม่');
+    const session = await SupabaseAdminSync.ensureAdminSession();
+    const cfg = SupabaseSync.config();
+    return window.APServiceMedia.uploadPublicCatalogImage(file, {
+      url: cfg.url,
+      publishableKey: cfg.publishableKey,
+      accessToken: session.access_token,
+      actorId: session.user?.id,
+      scope,
+    });
+  }
+
   function ensureStoreMediaFields() {
     const anchor = q('#storeFormEmoji')?.closest('.field');
     if (!anchor || q('#storeFormMediaFields')) return;
@@ -320,7 +333,7 @@
     anchor.insertAdjacentElement('afterend', wrap);
     wrap.querySelectorAll('[data-store-media-file]').forEach(input => input.addEventListener('change', async () => {
       const file = input.files?.[0]; const key = input.dataset.storeMediaFile; if (!file || !key) return;
-      try { UI.toast('กำลังบีบอัดภาพร้าน…'); const result = await compressImageForUpload(file); const target = q(key === 'imageUrl' ? '#storeFormImageUrl' : '#storeFormBackgroundUrl'); if (target) target.value = result.dataUrl; UI.toast(`เตรียม${key === 'imageUrl' ? 'ไอคอน' : 'ภาพพื้นหลัง'}แล้ว · ${Math.ceil(result.bytes / 1024)} KB`, 'success'); } catch (error) { input.value = ''; UI.toast(error.message, 'error'); } finally { input.removeAttribute('capture'); }
+      try { UI.toast('กำลังบีบอัด อัปโหลด และตรวจสอบภาพร้าน…'); const result = await uploadCatalogMedia(file, `store-${key}`); const target = q(key === 'imageUrl' ? '#storeFormImageUrl' : '#storeFormBackgroundUrl'); if (target) target.value = result.publicUrl; UI.toast(`อัปโหลด${key === 'imageUrl' ? 'ไอคอน' : 'ภาพพื้นหลัง'}สำเร็จ · ${Math.ceil(result.bytes / 1024)} KB`, 'success'); } catch (error) { input.value = ''; UI.toast(error.message, 'error'); } finally { input.removeAttribute('capture'); }
     }));
   }
   function ensureStoreContactFields() {
@@ -493,7 +506,7 @@
   };
   const bindPromotionImage = promo => {
     const input = q(`#promotionImageFile-${promo.id}`); if (!input || input.dataset.bound) return; input.dataset.bound = 'true';
-    input.addEventListener('change', async () => { const file = input.files?.[0]; if (!file) return; try { UI.toast('กำลังบีบอัดภาพโฆษณา…'); const result = await compressImageForUpload(file); promo.imageUrl = result.dataUrl; Storage.save(); renderHome(); window.renderPromotionEditor(); UI.toast('เตรียมภาพโฆษณาแล้ว · ' + Math.ceil(result.bytes / 1024) + ' KB · กดบันทึกหน้าเว็บและสื่อเพื่อยืนยัน', 'success'); } catch (error) { input.value = ''; UI.toast(error.message, 'error'); } finally { input.removeAttribute('capture'); } });
+    input.addEventListener('change', async () => { const file = input.files?.[0]; if (!file) return; try { UI.toast('กำลังบีบอัด อัปโหลด และตรวจสอบภาพโฆษณา…'); const result = await uploadCatalogMedia(file, 'promotion'); promo.imageUrl = result.publicUrl; Storage.save(); renderHome(); window.renderPromotionEditor(); UI.toast('อัปโหลดภาพโฆษณาสำเร็จ · ' + Math.ceil(result.bytes / 1024) + ' KB · กดบันทึกหน้าเว็บและสื่อเพื่อยืนยัน', 'success'); } catch (error) { input.value = ''; UI.toast(error.message, 'error'); } finally { input.removeAttribute('capture'); } });
   };
   window.renderPromotionEditor = () => {
     const target = q('#promotionEditor'); if (!target) return; const items = AppState.config.content.promotions || [];
@@ -516,7 +529,7 @@
   const detailImagePicker = (key, label, value) => { const inline = /^data:image\//i.test(String(value || '').trim()); const displayValue = inline ? '' : String(value || ''); return `<div class="store-detail-media-picker"><label>${esc(label)}</label><input type="hidden" name="${esc(key)}" value="${esc(value || '')}" /><input data-store-detail-image-display="${esc(key)}" value="${esc(displayValue)}" placeholder="วาง URL รูปภาพ (ไม่บังคับ)" /><small id="storeDetailImageStatus-${esc(key)}" class="media-library-label">${inline ? 'มีรูปที่บันทึกไว้แล้ว · เลือกไฟล์ใหม่ได้เมื่อต้องการเปลี่ยน' : 'เลือกรูปจากคลังหรือกล้องเพื่อเตรียมภาพ'}</small><input id="storeDetailImage-${esc(key)}" class="promotion-image-input" data-store-detail-image-input="${esc(key)}" type="file" accept="image/*" /><div class="media-source-actions"><label class="btn btn-plain" for="storeDetailImage-${esc(key)}" onpointerdown="document.getElementById('storeDetailImage-${esc(key)}').removeAttribute('capture')">เลือกจากคลังไฟล์</label><label class="btn btn-main" for="storeDetailImage-${esc(key)}" onpointerdown="document.getElementById('storeDetailImage-${esc(key)}').setAttribute('capture','environment')">ถ่ายรูปด้วยกล้อง</label></div><div id="storeDetailPreview-${esc(key)}" class="store-detail-image-preview ${value ? 'has-image' : ''}">${value ? `<img src="${esc(value)}" alt="ตัวอย่าง${esc(label)}" />` : ''}</div></div>`; };
   const bindStoreDetailMediaInputs = root => { root?.querySelectorAll?.('[data-store-detail-image-display]').forEach(display => { if (display.dataset.displayBound) return; display.dataset.displayBound = 'true'; display.addEventListener('input', () => { const target = q(`#storeDetailForm-appearance [name="${display.dataset.storeDetailImageDisplay}"]`); if (target) target.value = display.value.trim(); }); }); root?.querySelectorAll?.('[data-store-detail-image-input]').forEach(input => {
     if (input.dataset.detailMediaBound) return; input.dataset.detailMediaBound = 'true';
-    input.addEventListener('change', async () => { const file = input.files?.[0]; const field = input.dataset.storeDetailImageInput; if (!file || !field) return; try { UI.toast('กำลังบีบอัดภาพ…'); const result = await compressImageForUpload(file); const target = q(`#storeDetailForm-appearance [name="${field}"]`); const display = q(`#storeDetailForm-appearance [data-store-detail-image-display="${field}"]`); if (target) target.value = result.dataUrl; if (display) display.value = ''; const status = q(`#storeDetailImageStatus-${field}`); if (status) status.textContent = `เตรียมภาพใหม่แล้ว · ${Math.ceil(result.bytes / 1024)} KB`; const preview = q(`#storeDetailPreview-${field}`); if (preview) { preview.classList.add('has-image'); preview.innerHTML = `<img src="${esc(result.dataUrl)}" alt="ตัวอย่างภาพที่เลือก" />`; } UI.toast('เตรียมภาพแล้ว กดบันทึกรูปและสื่อเพื่อยืนยัน', 'success'); } catch (error) { input.value = ''; UI.toast(error.message, 'error'); } finally { input.removeAttribute('capture'); } });
+    input.addEventListener('change', async () => { const file = input.files?.[0]; const field = input.dataset.storeDetailImageInput; if (!file || !field) return; try { UI.toast('กำลังบีบอัด อัปโหลด และตรวจสอบภาพ…'); const result = await uploadCatalogMedia(file, `store-detail-${field}`); const target = q(`#storeDetailForm-appearance [name="${field}"]`); const display = q(`#storeDetailForm-appearance [data-store-detail-image-display="${field}"]`); if (target) target.value = result.publicUrl; if (display) display.value = result.publicUrl; const status = q(`#storeDetailImageStatus-${field}`); if (status) status.textContent = `อัปโหลดและตรวจสอบภาพแล้ว · ${Math.ceil(result.bytes / 1024)} KB`; const preview = q(`#storeDetailPreview-${field}`); if (preview) { preview.classList.add('has-image'); preview.innerHTML = `<img src="${esc(result.publicUrl)}" alt="ตัวอย่างภาพที่อัปโหลด" />`; } UI.toast('อัปโหลดภาพสำเร็จ กดบันทึกรูปและสื่อเพื่อยืนยัน', 'success'); } catch (error) { input.value = ''; UI.toast(error.message, 'error'); } finally { input.removeAttribute('capture'); } });
   }); };
   const ensureStoreDetailModal = () => {
     if (q('#storeDetailModal')) return;

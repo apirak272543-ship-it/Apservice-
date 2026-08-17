@@ -132,6 +132,7 @@
 
   <div id="toast" class="toast"></div>
 
+  <script src="./shared/ap-service-core.js?v=four-client-contract-v1"></script>
   <script>
     const $=s=>document.querySelector(s);const money=n=>'฿'+Number(n||0).toLocaleString('th-TH');const now=()=>new Date().toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});const today=()=>new Date().toISOString().slice(0,10);const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','>':'&gt;','<':'&lt;','"':'&quot;'}[c]));
     const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}};const write=(key,value)=>{const inline=item=>typeof item==='string'&&/^data:image\\//i.test(item.trim()),strip=(item,seen=new WeakSet())=>{if(inline(item))return '';if(!item||typeof item!=='object')return item;if(seen.has(item))return null;seen.add(item);if(Array.isArray(item))return item.map(child=>strip(child,seen));const copy={};Object.entries(item).forEach(([name,child])=>{copy[name]=strip(child,seen)});return copy};try{localStorage.setItem(key,JSON.stringify(value))}catch(error){const message=String(error?.message||error||'').toLowerCase();if(!String(error?.name||'').toLowerCase().includes('quota')&&!message.includes('quota')&&!message.includes('exceeded the quota')){console.warn('AP Rider storage skipped '+key,error);return false}try{localStorage.removeItem(key);localStorage.setItem(key,JSON.stringify(strip(value)));console.warn('AP Rider storage sanitized inline images for '+key)}catch(fallbackError){console.warn('AP Rider storage skipped '+key+' after quota fallback',fallbackError)}}return true};
@@ -289,6 +290,8 @@
     window.acceptJob=async id=>{
       sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id);
       if(!rider||!order||order.riderId)return toast('งานนี้ถูกมอบหมายแล้ว');
+      const acceptance=window.APServiceCore?.order?.canTransition({from:order.status,to:'ไรเดอร์กำลังไปรับ',actor:'rider'});
+      if(!acceptance?.ok)return toast(acceptance?.reason||'งานนี้ยังไม่พร้อมให้ Rider รับ');
       if(!confirm(`ยืนยันรับงาน ${order.id}\nร้าน: ${order.storeName||'-'}\nยอด: ${money(order.payable||order.total)}\n\nเมื่อยืนยัน งานนี้จะถูกมอบหมายให้คุณ`))return;
       try{
         State.isSyncing=true;
@@ -305,6 +308,8 @@
     window.setStatusStep=async(id,stepStatus)=>{
       sync();const rider=currentRider(),order=State.orders.find(o=>o.id===id&&o.riderId===rider?.id);
       if(!order)return toast('ไม่พบงานของคุณ');
+      const decision=window.APServiceCore?.order?.canTransition({from:order.status,to:stepStatus,actor:'rider'});
+      if(!decision?.ok)return toast(decision?.reason||'ไม่สามารถเปลี่ยนสถานะนี้ได้');
       if(!confirm(`ยืนยันอัปเดตสถานะเป็น “${stepStatus}”`))return;
       if(stepStatus==='ถึงร้านค้า') order.arrivedAtStore=new Date().toISOString();
       if(stepStatus==='รับสินค้าแล้ว') order.itemsCollected=new Date().toISOString();

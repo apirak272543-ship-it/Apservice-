@@ -257,3 +257,34 @@
 - [x] route แอดมินที่ผ่านสิทธิ์เข้าสู่ Dashboard/ศูนย์ควบคุมและงานค้างทันที
 - [x] ซ่อนปุ่มและเส้นทาง Customer ออกจาก Dedicated Admin App พร้อมคง Customer App เดิมไม่เปลี่ยนแปลง
 - [x] ทดสอบ Admin login, auth guard, dashboard entry และหน้าจอมือถือก่อนเผยแพร่
+
+## Full Application Separation Master Task
+- [ ] ค้นหาและอ่าน AP-Service-Full-Application-Separation-Master-Task.md
+- [ ] ค้นหาเอกสารและข้อความ Master Task จาก AI Collaboration Workspace
+- [ ] แปลงข้อกำหนดเป็น acceptance criteria และตรวจ gap ของ Customer/Admin Apps ปัจจุบัน
+- [ ] ดำเนินการตาม Master Task พร้อมทดสอบและ rollback plan
+
+## Four-Client Application Separation Master Task
+- [ ] ทำ Safety baseline, rollback point และ audit Supabase/Auth/RLS/Storage/Legacy โดยไม่ลบข้อมูลหรือ schema
+- [ ] สร้าง dependency map และ ARCHITECTURE_CONTRACT.md สำหรับ Customer/Admin/Merchant/Rider + Shared Core/Services
+- [ ] สร้าง Data Contracts และ Central Business Rules สำหรับ order, payment, delivery, roles, media และ notification
+- [ ] แยก Customer, Admin, Merchant และ Rider Applications พร้อม entry points, role guards และ shared backend เดิม
+- [ ] ตรวจ Notification, Media Compression, Performance, Responsive, Deep Link และ shared contracts ทุก Client
+- [ ] ทดสอบ Security/RLS/Unauthorized/Regression/Runtime ครบทุก role และคง Monolith เป็น fallback
+- [ ] ทำ staged deployment, Final Report, rollback procedure และ Commit SHA ใน AI Workspace
+
+## Multi-Page Architecture and Control Plane Requirement
+- [ ] เปลี่ยน Master Task และ Architecture Contract ให้บังคับ Multi-Page Architecture สำหรับทุก Client Application
+- [ ] สร้าง page/route manifest ที่กำหนด JS/CSS/Data/Service เฉพาะหน้าสำหรับ Customer, Admin, Merchant และ Rider
+- [ ] หยุดแนวทาง copy `index.html` เพื่อสร้าง SPA/Monolith ใหม่ และใช้ shared components/core โดยไม่ทำ logic ซ้ำ
+- [ ] ทำ Admin เป็น Control Plane ของ central business configuration โดยบังคับกฎด้านความปลอดภัยและการเงินผ่าน Server/RLS
+- [ ] แยกและ reconcile state machine ของ Food Delivery กับ AP Ride ก่อนใช้ database trigger บังคับ lifecycle กลาง
+
+## Image Upload, Compression and Storage Functional Audit
+- [ ] สร้าง inventory เส้นทางเลือกภาพ → ตรวจไฟล์ → resize/compress → Blob/File → Storage upload → URL/path → Database → render ของ Customer/Admin/Merchant/Rider
+- [ ] หา root cause อาการกรอบรูปแสดงแต่รูปจริงไม่สำเร็จจาก implementation เดิม โดยห้ามรื้อระบบหรือเดาสุ่ม
+- [ ] ตรวจ MIME type, Blob/File integrity, JPEG/PNG/WebP conversion, canvas result, bucket/path, Storage RLS, database record และ URL อายุสั้น
+- [ ] กำหนด Shared Media Service contract ที่บีบอัดรูปไม่เกิน 1 MB และแยก preview URL ออกจาก Storage URL ที่บันทึกถาวร
+- [ ] ผ่าน end-to-end matrix: JPEG, PNG, WebP, รูปใหญ่หลัง compress, Android และ Desktop ก่อนถือว่า MPA migration เสร็จ
+- [ ] บังคับให้ทุกฟังก์ชันที่รับ อัปโหลด แก้ไข หรือสร้างรูปภาพในอนาคตเรียก Shared Media Service ก่อนบันทึก และเพิ่ม regression test ตามชนิดของ image flow
+- [ ] ทำเครื่องหมาย milestone ว่าเสร็จเมื่อ implementation และ tests ผ่านจริงแล้ว commit/push ขึ้น GitHub Pages ให้ผู้ใช้ตรวจ โดยคงของเก่าเป็น fallback จนกว่าจะได้รับคำสั่งใหม่
