@@ -120,6 +120,7 @@
       addAdminPageHeader(name, target);
       if (target === 'orders') { filterRenderedAdminOrders(); }
       if (name === 'payment-slips') window.refreshPaymentSlipQueue?.();
+      if (name === 'creator-affiliates') window.CreatorAffiliate?.activate?.();
       if (name === 'withdrawals') q('#withdrawalRequestList')?.scrollIntoView({ block: 'start' });
     };
     if (!q(`#admin-${target}`) && target === 'settlements' && window.refreshSettlementAdmin) { Promise.resolve(window.refreshSettlementAdmin()).then(finish).catch(finish); } else finish();

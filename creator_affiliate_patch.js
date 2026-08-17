@@ -17,6 +17,7 @@
     state: { creators: [], campaigns: [], commissions: [], rights: [], stores: [], sessions: [], attributions: [] },
     isAdmin() { try { return Boolean(window.Storage?.isAdmin?.()); } catch (_) { return false; } },
     session() { return window.SupabaseSync?.session?.() || null; },
+    isAdminView() { return Boolean(document.querySelector('#view-admin.admin-page-open, #admin-creator-affiliates.active')); },
     async request(path, options) {
       if (!window.SupabaseSync?.request) throw new Error('ระบบกำลังเตรียมการเชื่อมต่อข้อมูล');
       return window.SupabaseSync.request(path, options);
@@ -30,7 +31,7 @@
       $('#creatorCampaignCode').value = `AP-${source}-${suffix}`;
     },
     async load({ quiet = false } = {}) {
-      if (!this.isAdmin() || this.loading) return;
+      if (!this.isAdmin() || !this.isAdminView() || !this.session()?.access_token || this.loading) return;
       this.loading = true;
       try {
         const [creators, campaigns, commissions, rights, stores, sessions, attributions] = await Promise.all([
@@ -227,7 +228,8 @@
     async copyCode(code) { const ok = await this.writeToClipboard(code); this.toast(ok ? `คัดลอกรหัส ${code} แล้ว` : `คัดลอกรหัสไม่สำเร็จ: ${code}`, ok ? 'success' : 'warning'); },
     async copyLink(code) { const url = this.getReferralUrl(code); const ok = await this.writeToClipboard(url); this.toast(ok ? `คัดลอกลิงก์ ${code} แล้ว` : `คัดลอกลิงก์ไม่สำเร็จ โปรดลองกดค้างที่ช่องลิงก์`, ok ? 'success' : 'warning'); },
     async shareLink(code) { const url = this.getReferralUrl(code); if (navigator.share) { try { await navigator.share({ title: 'AP Service Referral', text: `ลิงก์สั่งซื้อผ่าน Creator ${code}`, url }); this.toast('เปิดเมนูแชร์ให้ Creator แล้ว', 'success'); return; } catch (error) { if (error?.name === 'AbortError') return; } } await this.copyLink(code); },
-    init() { if (!this.ensureSection()) return; if (this.isAdmin()) this.load({ quiet: true }); }
+    activate() { if (this.isAdmin() && this.isAdminView() && this.session()?.access_token) this.load({ quiet: true }); },
+    init() { this.ensureSection(); }
   };
 
   const CreatorReferral = {
