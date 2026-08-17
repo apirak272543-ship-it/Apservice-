@@ -184,3 +184,15 @@
 - [x] กู้คืนรูปภาพและองค์ประกอบภาพใน UI ที่ถูกตัดออกจากการปรับแต่ง Performance ให้กลับมาครบถ้วนโดยใช้การบีบอัดภาพ (Compressed Images) แทนการลบ
 - [x] ตรวจสอบการแสดงผลร้านค้า คารูเซล ไอคอน และภาพพื้นหลังให้มีความสวยงาม ไม่จืดชืด และคงฟังก์ชันเดิมครบถ้วน
 - [x] ทดสอบ UI และสร้าง commit ส่งมอบใหม่
+
+## Admin Navigation Delay Audit & Options Analysis (User Request)
+- [x] วัดเส้นทางจริง click-to-ready ของ Admin navigation (คลิกเมนู → DOM view switch → render → network → data ready)
+- [x] ตรวจสถาปัตยกรรมปัจจุบันว่า Admin เป็น SPA/DOM view switching หรือมี route แยกกันอย่างไร
+- [x] วิเคราะห์สาเหตุที่ทำให้ Admin ช้าประมาณ 5 วินาทีหลัง Performance Patch โดยไม่แก้แบบเดาสุ่ม
+- [x] เสนอทางเลือก A (ปรับ SPA เดิม) และ B (Hybrid Admin) พร้อมเปรียบเทียบข้อดีข้อเสีย
+
+## Admin Async Background Notification & Performance Timing (User Request)
+- [x] แยก AdminPendingBadges ให้อ่านจาก Cached Data ทันทีและรัน `refresh()` แบบ Asynchronous ใน Background โดยไม่ block navigation/render
+- [x] ป้องกันไม่ให้ Supabase count requests ขัดขวางหรือชะลอการสลับหน้า Admin
+- [x] เพิ่ม Performance Timing log (click → navigation/render vs network request) เพื่อพิสูจน์ว่า navigation ไม่ถูก block
+- [x] ทดสอบความทนทาน (Fallback & Resilience) เมื่อ Supabase ช้าหรือล้มเหลว หน้า Admin ยังใช้งานได้ปกติ

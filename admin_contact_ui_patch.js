@@ -110,6 +110,7 @@
   }
   function openAdminSubpage(name) {
     if (!Storage.isAdmin()) return showView('home');
+    const timingToken = AdminPendingBadges.beginNavigation(name);
     const target = ADMIN_PAGE_TARGETS_LOCAL[name] || name;
     const filter = ADMIN_FILTER_BY_PAGE[name] || (target === 'orders' ? 'all' : 'all');
     window.AdminOrderFilter.current = filter;
@@ -119,6 +120,8 @@
       q('#view-admin')?.classList.add('admin-page-open');
       addAdminPageHeader(name, target);
       if (target === 'orders') { filterRenderedAdminOrders(); }
+      AdminPendingBadges.markNavigationRendered(timingToken);
+      AdminPendingBadges.schedule(0);
       window.AdminPerformance?.loadFor?.(name);
       if (name === 'creator-affiliates') window.CreatorAffiliate?.activate?.();
       if (name === 'withdrawals') q('#withdrawalRequestList')?.scrollIntoView({ block: 'start' });
@@ -137,7 +140,38 @@
   }
 
   const AdminPendingBadges = {
-    counts: {}, refreshing: false, timer: null, refreshTimer: null, visibilityBound: false,
+    counts: {}, refreshing: false, timer: null, refreshTimer: null, visibilityBound: false, cacheKey: 'apcx_admin_pending_badges', navigationSeq: 0, lastNavigationTiming: null, lastRefreshTiming: null,
+    now() { return typeof performance !== 'undefined' && typeof performance.now === 'function' ? performance.now() : Date.now(); },
+    mark(label) { try { if (typeof performance !== 'undefined' && typeof performance.mark === 'function') performance.mark(label); } catch (_) {} },
+    readCache() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(this.cacheKey) || 'null');
+        if (!cached || !cached.counts || typeof cached.counts !== 'object') return false;
+        this.counts = { ...cached.counts };
+        this.cachedAt = Number(cached.savedAt || 0) || 0;
+        return true;
+      } catch (_) { return false; }
+    },
+    writeCache() {
+      try { localStorage.setItem(this.cacheKey, JSON.stringify({ savedAt: Date.now(), counts: this.counts })); } catch (_) {}
+    },
+    beginNavigation(name) {
+      const id = ++this.navigationSeq;
+      const startedAt = this.now();
+      this.lastNavigationTiming = { id, name: String(name || 'overview'), clickAt: startedAt, renderAt: null, renderDuration: null, badgeRefreshScheduledAt: null, badgeRefreshStartAt: null, badgeNetworkStartAt: null, badgeNetworkEndAt: null };
+      this.mark(`ap-admin-nav-${id}-click`);
+      return { id, name: String(name || 'overview'), clickAt: startedAt };
+    },
+    markNavigationRendered(token) {
+      const current = this.lastNavigationTiming;
+      if (!current || !token || current.id !== token.id) return;
+      current.renderAt = this.now(); current.renderDuration = current.renderAt - current.clickAt;
+      this.mark(`ap-admin-nav-${current.id}-render`);
+      try { window.dispatchEvent(new CustomEvent('apservice:admin-navigation-timing', { detail: this.timingSnapshot() })); } catch (_) {}
+    },
+    timingSnapshot() {
+      return { navigation: this.lastNavigationTiming ? { ...this.lastNavigationTiming } : null, notification: this.lastRefreshTiming ? { ...this.lastRefreshTiming } : null, cachedAt: this.cachedAt || 0 };
+    },
     isAdminViewOpen() { const view = q('#view-admin'); if (!view) return false; return getComputedStyle(view).display !== 'none' || view.classList.contains('admin-page-open'); },
     limit(value) { const count = Math.max(0, Number(value) || 0); return count > 99 ? '99+' : String(count); },
     orderCounts() {
@@ -147,37 +181,72 @@
       return { incoming, active, operational: incoming + active };
     },
     async listCount(path) {
+      const networkStartedAt = this.now();
+      if (this.lastRefreshTiming && !this.lastRefreshTiming.networkStartAt) this.lastRefreshTiming.networkStartAt = networkStartedAt;
+      const navigation = this.lastNavigationTiming;
+      if (navigation && !navigation.badgeNetworkStartAt) navigation.badgeNetworkStartAt = networkStartedAt;
+      this.mark('ap-admin-badges-network-start');
       try { const rows = await SupabaseSync.request(path); return Array.isArray(rows) ? rows.length : 0; }
-      catch (error) { console.warn(`ไม่สามารถโหลดจำนวนงานค้างจาก ${path}`, error); return 0; }
+      catch (error) { console.warn(`ไม่สามารถโหลดจำนวนงานค้างจาก ${path}`, error); return null; }
     },
     async refresh({ quiet = false } = {}) {
       if (!Storage.isAdmin() || !this.isAdminViewOpen() || this.refreshing) return;
       this.refreshing = true;
+      const refreshStartedAt = this.now();
+      const navigation = this.lastNavigationTiming;
+      if (navigation) navigation.badgeRefreshStartAt = refreshStartedAt;
+      this.lastRefreshTiming = { startedAt: refreshStartedAt, endedAt: null, duration: null, networkStartAt: null, networkEndAt: null, failed: false };
+      const previous = { ...this.counts };
+      let hadCountError = false;
       const order = this.orderCounts();
       const hasSession = Boolean(SupabaseSync.session?.()?.access_token);
-      let slips = 0, chats = 0, applications = 0, settlements = 0, withdrawals = 0, errors = 0, aiTasks = 0, creatorProfiles = 0, creatorCommissions = 0, creatorRights = 0;
-      if (hasSession) {
-        [slips, chats, applications, settlements, withdrawals, errors, aiTasks, creatorProfiles, creatorCommissions, creatorRights] = await Promise.all([
-          this.listCount('payment_slip_reviews?select=id&status=eq.pending&limit=500'),
-          this.listCount('support_conversations?select=id&status=eq.open&admin_seen_at=is.null&limit=500'),
-          this.listCount('rider_applications?select=id&status=in.(pending,under_review)&limit=500'),
-          this.listCount('settlements?select=id&status=eq.pending&limit=500'),
-          this.listCount('withdrawal_requests?select=id&status=in.(requested,approved)&limit=500'),
-          this.listCount('error_reports?select=id&status=in.(new,triaged)&limit=500'),
-          this.listCount('ai_workspace_tasks?select=id&status=in.(queued,blocked,review)&limit=500'),
-          this.listCount('creators?select=id&status=eq.pending&limit=500'),
-          this.listCount('creator_commissions?select=id&status=in.(qualified,approved)&limit=500'),
-          this.listCount('creator_content_rights?select=id&consent_status=eq.pending&limit=500')
-        ]);
+      let slips = previous['payment-slips'] ?? 0, chats = previous.support ?? 0, applications = previous['rider-applications'] ?? 0, settlements = previous.settlements ?? 0, withdrawals = previous.withdrawals ?? 0, errors = previous.errors ?? 0, aiTasks = previous['ai-workspace'] ?? 0, creatorProfiles = 0, creatorCommissions = 0, creatorRights = 0;
+      try {
+        if (hasSession) {
+          [slips, chats, applications, settlements, withdrawals, errors, aiTasks, creatorProfiles, creatorCommissions, creatorRights] = await Promise.all([
+            this.listCount('payment_slip_reviews?select=id&status=eq.pending&limit=500'),
+            this.listCount('support_conversations?select=id&status=eq.open&admin_seen_at=is.null&limit=500'),
+            this.listCount('rider_applications?select=id&status=in.(pending,under_review)&limit=500'),
+            this.listCount('settlements?select=id&status=eq.pending&limit=500'),
+            this.listCount('withdrawal_requests?select=id&status=in.(requested,approved)&limit=500'),
+            this.listCount('error_reports?select=id&status=in.(new,triaged)&limit=500'),
+            this.listCount('ai_workspace_tasks?select=id&status=in.(queued,blocked,review)&limit=500'),
+            this.listCount('creators?select=id&status=eq.pending&limit=500'),
+            this.listCount('creator_commissions?select=id&status=in.(qualified,approved)&limit=500'),
+            this.listCount('creator_content_rights?select=id&consent_status=eq.pending&limit=500')
+          ]);
+          hadCountError = [slips, chats, applications, settlements, withdrawals, errors, aiTasks, creatorProfiles, creatorCommissions, creatorRights].some(value => value === null);
+          slips = slips === null ? (previous['payment-slips'] ?? 0) : slips;
+          chats = chats === null ? (previous.support ?? 0) : chats;
+          applications = applications === null ? (previous['rider-applications'] ?? 0) : applications;
+          settlements = settlements === null ? (previous.settlements ?? 0) : settlements;
+          withdrawals = withdrawals === null ? (previous.withdrawals ?? 0) : withdrawals;
+          errors = errors === null ? (previous.errors ?? 0) : errors;
+          aiTasks = aiTasks === null ? (previous['ai-workspace'] ?? 0) : aiTasks;
+          creatorProfiles = creatorProfiles === null ? (previous['creator-affiliates'] ?? 0) : creatorProfiles;
+          creatorCommissions = creatorCommissions === null ? 0 : creatorCommissions;
+          creatorRights = creatorRights === null ? 0 : creatorRights;
+        }
+        this.counts = {
+          overview: order.operational + slips, orders: order.operational, 'new-orders': order.incoming, 'active-orders': order.active,
+          'payment-slips': slips, support: chats, 'rider-applications': applications, 'creator-affiliates': creatorProfiles + creatorCommissions + creatorRights, 'ai-workspace': aiTasks,
+          finance: settlements + withdrawals, settlements, withdrawals, errors,
+          operations: order.operational + slips, accounts: chats + applications + creatorProfiles + creatorCommissions + creatorRights + aiTasks, settings: errors
+        };
+        this.writeCache();
+        this.render();
+      } catch (error) {
+        console.warn('Admin pending badge refresh ล้มเหลว แต่คงค่า cached badges และหน้า Admin ไว้', error);
+        this.counts = previous;
+        this.render();
+      } finally {
+        const endedAt = this.now();
+        const networkStartAt = this.lastRefreshTiming?.networkStartAt || null;
+        this.lastRefreshTiming = { startedAt: refreshStartedAt, endedAt, duration: endedAt - refreshStartedAt, networkStartAt, networkEndAt: networkStartAt ? endedAt : null, failed: hadCountError };
+        if (navigation) navigation.badgeNetworkEndAt = networkStartAt ? endedAt : null;
+        this.refreshing = false;
+        try { window.dispatchEvent(new CustomEvent('apservice:admin-badges-timing', { detail: this.timingSnapshot() })); } catch (_) {}
       }
-      this.counts = {
-        overview: order.operational + slips, orders: order.operational, 'new-orders': order.incoming, 'active-orders': order.active,
-        'payment-slips': slips, support: chats, 'rider-applications': applications, 'creator-affiliates': creatorProfiles + creatorCommissions + creatorRights, 'ai-workspace': aiTasks,
-        finance: settlements + withdrawals, settlements, withdrawals, errors,
-        operations: order.operational + slips, accounts: chats + applications + creatorProfiles + creatorCommissions + creatorRights + aiTasks, settings: errors
-      };
-      this.render();
-      this.refreshing = false;
     },
     render() {
       const tabs = q('#adminTabs'); if (!tabs) return;
@@ -195,8 +264,19 @@
         if (group) { group.classList.add('has-pending'); put(group.querySelector('.admin-nav-group-head'), count); }
       });
     },
-    schedule(delay = 1200) { clearTimeout(this.timer); this.timer = setTimeout(() => this.refresh({ quiet: true }), delay); },
+    schedule(delay = 1200) {
+      clearTimeout(this.timer);
+      const run = () => {
+        this.timer = null;
+        const navigation = this.lastNavigationTiming;
+        if (navigation && !navigation.badgeRefreshScheduledAt) navigation.badgeRefreshScheduledAt = this.now();
+        Promise.resolve().then(() => this.refresh({ quiet: true })).catch(error => console.warn('Admin badge background refresh ถูกข้าม', error));
+      };
+      this.timer = setTimeout(run, Math.max(0, Number(delay) || 0));
+    },
     start() {
+      const hasCachedBadges = this.readCache();
+      if (hasCachedBadges) this.render();
       if (this.refreshTimer) return this.schedule(0);
       this.refreshTimer = setInterval(() => this.refresh({ quiet: true }), 60000);
       if (!this.visibilityBound) { this.visibilityBound = true; document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.isAdminViewOpen()) this.schedule(0); }); }
@@ -208,6 +288,8 @@
     }
   };
   window.refreshAdminPendingBadges = () => AdminPendingBadges.refresh({ quiet: true });
+  window.getAdminPerformanceTiming = () => AdminPendingBadges.timingSnapshot();
+  window.AdminPendingBadges = AdminPendingBadges;
 
   function repairImageSourceButtons(root = document) {
     root.querySelectorAll?.('.media-source-actions').forEach(actions => {
