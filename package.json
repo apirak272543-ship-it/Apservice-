@@ -5,6 +5,7 @@
   "scripts": {
     "test:modular-contract": "node tests/modular_contract_check.mjs",
     "test:feature-contract": "node tests/ap_console_contract_check.mjs",
+    "test:dedicated-admin": "node tests/dedicated_admin_functional_contract_test.cjs",
     "test": "npm run test:feature-contract && npm run test:modular-contract"
   }
 }

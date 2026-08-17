@@ -240,8 +240,14 @@
 - [x] ทดสอบ Responsive และ Performance ก่อน/หลัง พร้อมทำ Final Report + Commit SHA ลง AI Workspace
 
 ## Two-App Architecture Separation: Customer App vs Admin App
-- [ ] แยกโครงสร้างไฟล์และ entry point เป็นสองแอปเด็ดขาด (Customer Monolith `index.html` และ Admin Standalone App `admin.html`)
-- [ ] แชร์ Supabase connection, Auth, RLS และ Core Storage โดยไม่มีการสร้างฐานข้อมูลใหม่
-- [ ] ตัด Admin bundles และ modules ทั้งหมดออกจาก Customer App เพื่อลด Initial Load และ Bundle Size
-- [ ] กำหนด Auth Guard และ Supabase Session/Role verification ที่เข้มงวดใน Admin App
-- [ ] ทดสอบสองแอปแยกกันและยืนยันว่า Customer, Merchant, Rider และ Admin ทำงานได้ปกติ พร้อม deploy และรายงานผล
+- [x] แยกโครงสร้างไฟล์และ entry point เป็นสองแอปเด็ดขาด (Customer Monolith `index.html` และ Admin Standalone App `admin.html`)
+- [x] แชร์ Supabase connection, Auth, RLS และ Core Storage โดยไม่มีการสร้างฐานข้อมูลใหม่
+- [x] ตัด Admin bundles และ modules ทั้งหมดออกจาก Customer App เพื่อลด Initial Load และ Bundle Size
+- [x] กำหนด Auth Guard และ Supabase Session/Role verification ที่เข้มงวดใน Admin App
+- [x] ทดสอบสองแอปแยกกันและยืนยันว่า Customer, Merchant, Rider และ Admin ทำงานได้ปกติ พร้อม deploy และรายงานผล
+
+## Dedicated Admin App Functional Parity Recovery
+- [x] ตรวจ DOM/runtime contract ที่ทำให้ Dedicated Admin App เป็นเพียง shell และไม่มีฟังก์ชันจริง
+- [x] นำ Admin views, forms, dynamic sections และ event handlers ของระบบเดิมมาใช้งานใน Dedicated Admin App ครบทุกหมวด
+- [x] รักษา Supabase/Auth/RLS/Storage เดิมและห้ามนำ Customer UI หรือ flow มาปะปนใน Dedicated Admin App
+- [x] ทดสอบ Admin functions, navigation, notification, upload และ fallback กับ Monolith Admin ก่อนเผยแพร่
