@@ -50,6 +50,10 @@ Customer checkout ส่งเฉพาะ `item_id` และ `quantity` ไป
 
 Customer checkout, Admin Settings, Merchant entry และ Rider jobs route ตอบ HTTP 200 จาก GitHub Pages และแสดง login/application shell เฉพาะบทบาทของตน ไม่มี route ชี้กลับไป repository Customer สำหรับ Merchant/Rider.
 
+### Order identifier integrity
+
+การตรวจ schema หลังเพิ่ม RPC พบ `delivery_orders.id` เป็น `NOT NULL` แต่ไม่มี default ขณะที่ RPC ตั้งใจไม่รับ id จาก client. ได้เพิ่ม database default `order-<uuid>` ด้วย `gen_random_uuid()` และยืนยัน column default จาก Supabase แล้ว ทำให้ atomic server checkout สร้าง identifier ได้โดยไม่พึ่งค่าจาก browser.
+
 ## หลักฐานโค้ดที่เกี่ยวข้อง
 
 * `admin/admin-app.js`: Admin upload สื่อร้านด้วย `uploadPublicCatalogImage`, PATCH `stores.image_url/background_url`; Admin promotions UPSERT `platform_configs.customer_promotions`.
