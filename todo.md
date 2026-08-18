@@ -288,3 +288,11 @@
 - [ ] ผ่าน end-to-end matrix: JPEG, PNG, WebP, รูปใหญ่หลัง compress, Android และ Desktop ก่อนถือว่า MPA migration เสร็จ
 - [ ] บังคับให้ทุกฟังก์ชันที่รับ อัปโหลด แก้ไข หรือสร้างรูปภาพในอนาคตเรียก Shared Media Service ก่อนบันทึก และเพิ่ม regression test ตามชนิดของ image flow
 - [ ] ทำเครื่องหมาย milestone ว่าเสร็จเมื่อ implementation และ tests ผ่านจริงแล้ว commit/push ขึ้น GitHub Pages ให้ผู้ใช้ตรวจ โดยคงของเก่าเป็น fallback จนกว่าจะได้รับคำสั่งใหม่
+
+## Four Live MPA Applications Acceptance Gate
+- [ ] Customer MPA: เปิดร้าน ดูเมนู จัดการตะกร้า ส่ง checkout และดูออร์เดอร์ของบัญชีที่ล็อกอินได้จริง
+- [ ] Admin MPA: login/role guard, dashboard, orders, stores, riders, finance และ settings โหลดข้อมูลจริงเฉพาะหน้าที่เกี่ยวข้อง
+- [ ] Merchant MPA: login/role guard, dashboard, orders, menu, store profile และ finance ใช้งานผ่าน routes แยกได้จริง
+- [ ] Rider MPA: login/role guard, dashboard, jobs, delivery, earnings และ profile ใช้งานผ่าน routes แยกได้จริง
+- [ ] ทุก route แสดง loading/error ภาษาไทย, ไม่รอ network ก่อนเปลี่ยน document, ใช้ Shared Core/Services และไม่ import runtime ของบทบาทอื่น
+- [ ] รัน live route/auth/RLS/media/performance regression แล้ว commit/push ก่อนส่งลิงก์ 4 แอปให้ผู้ใช้ตรวจ
