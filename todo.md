@@ -356,6 +356,6 @@
 - [x] ไฟล์งานที่ 1: ทดสอบ AD banner บน local/production แล้ว commit/push พร้อมรายงานเฉพาะงาน
 - [x] ไฟล์งานที่ 2: Audit และแก้ Customer marketplace browse/category display ให้รายการ public-active และหมวดหมู่แสดงจากข้อมูลจริง
 - [x] ไฟล์งานที่ 2: ทดสอบ marketplace display บน local/production แล้ว commit/push พร้อมรายงานเฉพาะงาน
-- [ ] ไฟล์งานที่ 3: ทำ Admin performance waterfall audit/fix ตาม `pasted_content.txt` โดยมี before/after metrics
+- [x] ไฟล์งานที่ 3: ทำ Admin performance waterfall audit/fix ตาม `pasted_content.txt` โดยมี before/after metrics
 - [ ] ไฟล์งานที่ 4: ทำ Admin MPA navigation/UI audit/fix ตาม `pasted_content_2.txt` โดยรักษา functionality เดิม
 - [ ] ไฟล์งานที่ 5: ทำ Central Media Contract และ legacy media inventory/normalization plan ตาม `pasted_content_3.txt` และ `pasted_content_4.txt`
