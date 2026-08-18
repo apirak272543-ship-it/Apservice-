@@ -7,6 +7,7 @@ assert.match(runtime, /requireRole/, 'Shared MPA runtime ต้องมี role
 assert.match(runtime, /auth\/v1\/\$\{normalizePath\(path\)\}/, 'Shared MPA runtime ต้องเชื่อม Supabase Auth');
 assert.match(runtime, /token\?grant_type=password/, 'Shared MPA runtime ต้องรองรับการเข้าสู่ระบบด้วย Supabase Auth');
 assert.match(runtime, /rest\/v1/, 'Shared MPA runtime ต้องเชื่อม Supabase REST endpoint');
+assert.match(runtime, /refreshSession/, 'Shared MPA runtime ต้องต่ออายุ session ก่อนงานที่ต้องมีสิทธิ์');
 assert.match(stylesheet, /mpa-loading/, 'Shared MPA shell ต้องมี loading state');
 assert.match(stylesheet, /mpa-error/, 'Shared MPA shell ต้องมี error state');
 
@@ -40,5 +41,8 @@ const adminRuntime = fs.readFileSync('admin/admin-app.js', 'utf8');
 assert.match(adminRuntime, /กำลังเปิดศูนย์ควบคุมหลังบ้าน/, 'Admin entry ต้องแสดงเฉพาะสถานะกำลังเปิดหลังบ้าน ไม่ใช่หน้า Landing/ข่าว');
 assert.match(adminRuntime, /M\.auth\.currentUser\(\)/, 'Admin entry ต้องตรวจ session เดิมก่อนแสดงฟอร์ม login');
 assert.match(adminRuntime, /roles\.includes\('admin'\).*location\.replace\('dashboard\.html'\)/s, 'Admin session ที่มีสิทธิ์ต้องเข้าสู่ Dashboard โดยตรง');
+assert.match(fs.readFileSync('admin/stores.html', 'utf8'), /shared\/ap-service-media\.js/, 'Admin stores route ต้องโหลด Shared Media Service เฉพาะหน้าที่ใช้สื่อ');
+assert.match(adminRuntime, /uploadPublicCatalogImage/, 'Admin stores route ต้องอัปโหลดสื่อผ่าน Shared Media Service');
+assert.match(adminRuntime, /data-media-editor/, 'Admin stores route ต้องมี action เปิดตัวแก้ไขรูปและสื่อ');
 
 console.log('live MPA routes contract: PASS');

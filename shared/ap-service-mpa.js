@@ -22,16 +22,36 @@
 
   function token() { return getSession()?.access_token || ''; }
 
+  async function refreshSession(force = false) {
+    const current = getSession();
+    if (!current?.refresh_token) return current;
+    const expiresAt = Number(current.expires_at || 0);
+    const expiresSoon = !expiresAt || expiresAt <= Math.floor(Date.now() / 1000) + 90;
+    if (!force && !expiresSoon) return current;
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Authorization: `Bearer ${current.refresh_token}` },
+      body: JSON.stringify({ refresh_token: current.refresh_token }),
+    });
+    const next = await response.json().catch(() => null);
+    if (!response.ok || !next?.access_token) { saveSession(null); throw new Error(next?.error_description || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); }
+    saveSession(next);
+    return next;
+  }
+
   async function request(path, options = {}) {
     const method = String(options.method || 'GET').toUpperCase();
     const publicRead = method === 'GET' && !options.private;
-    const headers = {
-      apikey: SUPABASE_KEY,
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...(options.headers || {}),
+    const run = () => {
+      const headers = { apikey: SUPABASE_KEY, ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) };
+      if (token() && (!publicRead || options.forceSession)) headers.Authorization = `Bearer ${token()}`;
+      return fetch(`${SUPABASE_URL}/rest/v1/${normalizePath(path)}`, { ...options, method, headers });
     };
-    if (token() && (!publicRead || options.forceSession)) headers.Authorization = `Bearer ${token()}`;
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/${normalizePath(path)}`, { ...options, method, headers });
+    let response = await run();
+    if (response.status === 401 && token() && !options.skipRefreshRetry) {
+      await refreshSession(true);
+      response = await run();
+    }
     const text = await response.text();
     let data = null;
     try { data = text ? JSON.parse(text) : null; } catch { data = text; }
@@ -56,9 +76,11 @@
   }
 
   async function currentUser() {
-    const current = getSession();
+    let current = getSession();
     if (!current?.access_token) return null;
     try {
+      current = await refreshSession(false);
+      if (!current?.access_token) return null;
       const user = await authRequest('user', { headers: { Authorization: `Bearer ${current.access_token}` } });
       return user;
     } catch {
@@ -113,7 +135,7 @@
 
   root.APServiceMPA = Object.freeze({
     version: 'mpa-runtime-v1', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request,
-    auth: { getSession, signIn, signOut, currentUser, rolesFor, requireRole },
+    auth: { getSession, refreshSession, signIn, signOut, currentUser, rolesFor, requireRole },
     ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart,
   });
 })();
