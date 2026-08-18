@@ -364,4 +364,5 @@
 - [ ] ย้าย legacy Data URL ไปยัง Storage ผ่าน protected batch worker, update reference แบบ additive และเก็บ original ไว้ตาม Legacy Media Normalization Plan
 - [x] อ่าน Admin UI/UX Multi-Page Navigation specification ล่าสุดครบทุก acceptance criteria และทำ gap analysis กับ Admin MPA production
 - [x] ปรับ Admin Workspace/navigation/page isolation/mobile/responsive/background badges/quick actions ให้ครบตาม specification ล่าสุดโดยไม่ลด function เดิม
-- [ ] ทดสอบ Admin desktop/mobile, back navigation, page-level loading, badge non-blocking, 4-app regression และเผยแพร่พร้อมรายงาน acceptance criteria
+- [x] ทดสอบ Admin desktop/mobile ผ่าน responsive contract, back navigation, page-level loading, badge non-blocking, 4-app regression และเผยแพร่พร้อมรายงาน acceptance criteria
+- [ ] ตรวจรับ authenticated Admin CRUD บน production: route → data → action → save → database → browser back โดยใช้บัญชี Admin จริงและไม่ bypass RLS
