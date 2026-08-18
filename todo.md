@@ -347,13 +347,13 @@
 - [x] เพิ่ม Customer profile location consent/GPS โดยต้องกดอนุญาตก่อน, บันทึก location/profile และ consent ตาม RLS
 - [ ] คืน Customer location consent/GPS/address map flow และ distance/service-fee behavior โดยใช้ business rules ที่ตรวจสอบได้
 - [ ] คืน Customer errand/ride service routes หลัง audit central fee rules, rider eligibility และ status contracts ครบ
-- [ ] คืน Customer campaign/advertisement surface พร้อม public-active data source, validated destination และ responsive lazy media
+- [x] คืน Customer campaign/advertisement surface พร้อม public-active data source, validated destination และ responsive lazy media
 - [ ] กำหนดและเผยแพร่ `platform_configs.business_rules` พร้อม server-side quote/enforcement ก่อนเปิด Customer parcel/errand/AP Ride booking ที่คิดเงินจริง
 
 ## Serialized User-Requested File Workflow
 
 - [x] ไฟล์งานที่ 1: Audit และแก้ Customer AD banner ให้ดึงข้อมูลจาก Admin data source จริง แสดงภาพ/ข้อความ/ปลายทาง และไม่ซ่อนเมื่อมี active data
-- [ ] ไฟล์งานที่ 1: ทดสอบ AD banner บน local/production แล้ว commit/push พร้อมรายงานเฉพาะงาน
+- [x] ไฟล์งานที่ 1: ทดสอบ AD banner บน local/production แล้ว commit/push พร้อมรายงานเฉพาะงาน
 - [ ] ไฟล์งานที่ 2: Audit และแก้ Customer marketplace browse/category display ให้รายการ public-active และหมวดหมู่แสดงจากข้อมูลจริง
 - [ ] ไฟล์งานที่ 2: ทดสอบ marketplace display บน local/production แล้ว commit/push พร้อมรายงานเฉพาะงาน
 - [ ] ไฟล์งานที่ 3: ทำ Admin performance waterfall audit/fix ตาม `pasted_content.txt` โดยมี before/after metrics
