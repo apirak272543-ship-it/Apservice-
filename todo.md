@@ -308,6 +308,9 @@
 - [ ] ตรวจทุกปุ่มและ action: บันทึก เพิ่ม แก้ไข ลบ เปิดรายละเอียด กลับหน้า ยืนยัน ยกเลิก รีเฟรช อัปโหลด ดาวน์โหลด คัดลอกลิงก์ และแจ้งเตือน ว่ามีผลลัพธ์หรือ error state ภาษาไทยที่ถูกต้อง
 - [ ] วัด click-to-document, data load และ media processing เพื่อแก้เฉพาะ latency ที่เกินความจำเป็น
 - [x] เพิ่มแถบ progress สีเขียวและข้อความขั้นตอน โดยใช้ความคืบหน้าที่วัดได้จริงของงาน data/media และไม่แสดงเปอร์เซ็นต์เทียม
+- [ ] กำหนด P0/P1/P2/P3 data priority, non-blocking navigation, request deduplication, cache refresh และ stale-response protection สำหรับ Shared MPA runtime
+- [ ] ทำ scoped background sync/realtime ตามบทบาทโดยไม่ poll ทุกตาราง, ไม่ reset UI และไม่สร้าง duplicate request/request storm
+- [ ] วัด network waterfall, request count/duplicate, navigation timing และ first render บน mobile/desktop ก่อน report ว่าผ่าน performance acceptance
 - [x] ปรับ `/admin/` และ Admin login ให้ตรวจ session/role แล้วเข้าสู่ `/admin/dashboard.html` โดยตรงหลัง login โดยไม่มีหน้า Landing/ข่าวของ Admin
 - [ ] ย้าย Admin MPA media workflow สำหรับไอคอน/พื้นหลังร้านและภาพโฆษณาจาก fallback โดยใช้ Shared Media Service, Storage URL persistence และ reload verification
 - [ ] ระบุและย้าย feature gap ของ Customer payment/media, Merchant menu/store media และ Rider proof/withdrawal media ออกจาก fallback สู่ MPA โดยไม่ลด workflow
@@ -316,3 +319,16 @@
 - [ ] ตรวจ Merchant flow: login, dashboard, order update, menu CRUD, store profile/media, finance/settlement และ notifications
 - [ ] ตรวจ Rider flow: login, availability, job acceptance, food/AP Ride lifecycle, proof/media, earnings, withdrawal และ notifications
 - [ ] ห้ามทำเครื่องหมาย functional acceptance ว่าเสร็จก่อนผ่าน test จริงในทุก row หรือบันทึก blocker พร้อมหลักฐาน
+
+## MPA Performance, Media and Payment Lifecycle Milestone
+
+- [x] เพิ่ม Shared MPA request lifecycle: cache-first TTL, in-flight deduplication, request scope/AbortController และ stale-response protection
+- [x] เพิ่ม scoped background sync ที่หยุดเมื่อหน้าเว็บถูกซ่อน และกำหนด cadence ขั้นต่ำ 15 วินาที
+- [x] นำ non-blocking scoped sync ไปใช้กับ Customer order list, Admin counters, Merchant orders และ Rider jobs
+- [x] เพิ่ม Merchant store icon/background upload จากคลังหรือกล้อง ผ่าน Shared Media Service และ RLS path ของเจ้าของร้าน
+- [x] เพิ่ม Rider private delivery-proof upload จากคลังหรือกล้อง พร้อม private bucket, signed verification และ storage reference ถาวร
+- [x] เพิ่ม Customer payment-slip upload และ payment_slip_reviews ตาม schema/RLS ที่มีอยู่
+- [x] เพิ่ม Admin MPA payment-slip queue, in-app private viewer และ approval/needs-reupload ที่ใช้ Shared Core transition
+- [x] เพิ่ม Admin Control Plane form สำหรับ business_rules โดยคง platform_configs RLS และ JSON editor เดิม
+- [x] เก็บ HTTP และ Chromium-CDP production baseline สำหรับ request count, resource bytes, first paint และ navigation timing
+- [ ] Push milestone, วัด production หลังเผยแพร่ และบันทึก before/after performance evidence

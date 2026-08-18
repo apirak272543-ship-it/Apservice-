@@ -168,14 +168,14 @@
     });
   }
 
-  async function uploadPublicCatalogImage(file, { url, publishableKey, accessToken, actorId, scope = 'catalog' } = {}) {
+  async function uploadPublicCatalogImage(file, { url, publishableKey, accessToken, actorId, scope = 'catalog', pathPrefix = 'admin' } = {}) {
     let prepared = null;
     progress.open('กำลังเตรียมรูปภาพ…');
     try {
       if (!url || !publishableKey || !accessToken || !actorId) fail('ไม่พบข้อมูลการยืนยันตัวตนสำหรับอัปโหลดรูปภาพ');
       prepared = await prepareImage(file);
       const nonce = typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const path = `admin/${safeSegment(actorId, 'admin')}/${safeSegment(scope)}/${nonce}.${prepared.extension}`;
+      const path = `${safeSegment(pathPrefix, 'admin')}/${safeSegment(actorId, 'user')}/${safeSegment(scope)}/${nonce}.${prepared.extension}`;
       progress.update(58, 'กำลังอัปโหลดรูปภาพ', 'กำลังเริ่มส่งไฟล์ไปยังระบบจัดเก็บ');
       const upload = await uploadBlobWithMeasuredProgress(`${String(url).replace(/\/$/, '')}/storage/v1/object/catalog-media/${path}`, {
         apikey: publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': prepared.mimeType, 'x-upsert': 'false'
@@ -196,12 +196,47 @@
     }
   }
 
+  async function createSignedImageUrl({ url, publishableKey, accessToken, bucket, path, expiresIn = 300 } = {}) {
+    if (!url || !publishableKey || !accessToken || !bucket || !path) fail('ข้อมูลไม่ครบสำหรับสร้าง URL รูปภาพส่วนตัว');
+    const response = await fetch(`${String(url).replace(/\/$/, '')}/storage/v1/object/sign/${encodeURIComponent(bucket)}/${path.split('/').map(encodeURIComponent).join('/')}`, {
+      method: 'POST', headers: { apikey: publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ expiresIn: Math.max(60, Math.min(3600, Number(expiresIn) || 300)) })
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body?.signedURL) fail(body?.message || 'ไม่สามารถสร้าง URL ดูรูปภาพส่วนตัวได้');
+    return /^https:\/\//i.test(body.signedURL) ? body.signedURL : `${String(url).replace(/\/$/, '')}/storage/v1${body.signedURL}`;
+  }
+
+  async function uploadPrivateImage(file, { url, publishableKey, accessToken, actorId, bucket, scope = 'proof' } = {}) {
+    let prepared = null;
+    progress.open('กำลังเตรียมหลักฐานรูปภาพ…');
+    try {
+      if (!url || !publishableKey || !accessToken || !actorId || !bucket) fail('ไม่พบข้อมูลการยืนยันตัวตนสำหรับอัปโหลดหลักฐาน');
+      prepared = await prepareImage(file);
+      const nonce = typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const path = `${safeSegment(actorId, 'user')}/${safeSegment(scope, 'proof')}/${nonce}.${prepared.extension}`;
+      progress.update(58, 'กำลังอัปโหลดหลักฐานรูปภาพ', 'กำลังส่งไฟล์ไปยังพื้นที่จัดเก็บส่วนตัว');
+      const upload = await uploadBlobWithMeasuredProgress(`${String(url).replace(/\/$/, '')}/storage/v1/object/${encodeURIComponent(bucket)}/${path}`, { apikey: publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': prepared.mimeType, 'x-upsert': 'false' }, prepared.blob);
+      if (!upload.ok) { const detail = await upload.text().catch(() => ''); fail(`ไม่สามารถอัปโหลดหลักฐานได้${detail ? `: ${detail}` : ''}`); }
+      progress.update(90, 'กำลังตรวจสอบหลักฐานรูปภาพ', 'กำลังทดสอบ URL ส่วนตัวก่อนบันทึก');
+      const signedUrl = await createSignedImageUrl({ url, publishableKey, accessToken, bucket, path });
+      await verifyRenderableUrl(signedUrl);
+      progress.complete(`อัปโหลดและตรวจสอบหลักฐานแล้ว · ${Math.ceil(prepared.bytes / 1024)} KB`);
+      return Object.freeze({ ...prepared, bucket, path, storageRef: `${bucket}/${path}`, signedUrl });
+    } catch (error) {
+      if (prepared?.previewUrl) URL.revokeObjectURL(prepared.previewUrl);
+      progress.fail(error?.message || 'อัปโหลดหลักฐานรูปภาพไม่สำเร็จ');
+      throw error;
+    }
+  }
+
   root.APServiceMediaProgress = progress;
   root.APServiceMedia = Object.freeze({
-    version: 'shared-media-v2',
+    version: 'shared-media-v3',
     policy: Object.freeze({ sourceImageMaxBytes: SOURCE_IMAGE_MAX_BYTES, outputImageMaxBytes: DEFAULT_OUTPUT_MAX_BYTES, acceptedImageTypes: ACCEPTED_IMAGE_TYPES }),
     prepareImage,
     uploadPublicCatalogImage,
+    uploadPrivateImage,
+    createSignedImageUrl,
     verifyRenderableUrl,
     progress,
     revokePreview(prepared) { if (prepared?.previewUrl) URL.revokeObjectURL(prepared.previewUrl); },
