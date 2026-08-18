@@ -13,6 +13,8 @@ assert.match(admin, /platform_configs\?on_conflict=key/, 'Admin promotion editor
 assert.match(route, /shared\/ap-service-media\.js/, 'promotion route ต้องโหลด Shared Media Service');
 assert.match(customer, /platform_configs\?select=value&key=eq.customer_promotions/, 'Customer home ต้องอ่าน promotion configuration ที่ Admin MPA บันทึกเป็น source หลัก');
 assert.match(customer, /campaigns\?select=id,name,description,campaign_type,active,starts_at,ends_at,metadata/, 'Customer home ต้องมี legacy campaign fallback เมื่อ config หลักว่าง');
+assert.match(customer, /legacyDefaultPromotions/, 'Customer home ต้องคืน legacy promotion cards เมื่อ Admin config และ campaign ยังไม่มีข้อมูล');
+assert.match(customer, /customer-promotion--legacy/, 'legacy promotion ต้อง render เป็น card visual โดยไม่ต้องใช้ Data URL');
 assert.match(customer, /customer-promotion-empty/, 'Customer home ต้องคงพื้นที่ AD พร้อม empty state เมื่อยังไม่มีรายการ');
 assert.match(customer, /promotionLink/, 'Customer home ต้องตรวจปลายทาง banner ก่อน render ลิงก์');
 assert.match(customer, /void promotions\(scope.request\)/, 'การโหลด AD ต้องไม่ block การแสดงรายการร้านค้า');
