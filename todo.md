@@ -372,3 +372,4 @@
 - [x] เปลี่ยน ap-store-mobile และ ap-rider-mobile เป็น public, เปิด GitHub Pages และยืนยัน URL console ที่แยกจาก Customer
 - [x] เปลี่ยน Merchant/Rider mobile WebView ไปใช้ console ของ repository ตนเอง พร้อมตรวจ session bridge และ fallback
 - [x] ตัด Admin/Merchant/Rider application source ออกจาก Apservice- หลังปลายทางใหม่ทดสอบผ่าน โดยคง Customer และ shared backend contract ที่จำเป็น
+- [x] จัดทำ End-to-End testing plan สำหรับ Customer → Merchant → Rider order lifecycle พร้อม acceptance criteria และหลักฐานตรวจรับ
