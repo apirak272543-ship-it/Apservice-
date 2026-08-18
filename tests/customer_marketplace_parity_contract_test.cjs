@@ -10,6 +10,9 @@ assert.match(app, /function marketplaceNew\(\)/, 'Customer ต้องมี ma
 assert.match(app, /function marketplaceProfile\(\)/, 'Customer ต้องมี marketplace profile');
 assert.match(app, /function marketplaceChat\(\)/, 'Customer ต้องมี marketplace chat');
 assert.match(app, /marketplace_listings\?select=id,title,description,category,price,image_url/, 'Browse ต้องใช้ public active listings data source');
+assert.match(app, /marketCategoryChips/, 'Browse ต้องสร้างพื้นที่ category filter จากข้อมูลประกาศจริง');
+assert.match(app, /data-market-category/, 'Browse ต้องมี action เลือก category ที่ตรวจสอบได้');
+assert.match(app, /selectedCategory/, 'Browse ต้อง filter category ร่วมกับคำค้นโดยไม่ลดรายการ active');
 assert.match(app, /status: 'active'/, 'Listing create ต้องใช้ active status ที่ schema อนุญาต');
 assert.match(app, /status: 'pending'/, 'Marketplace purchase ต้องใช้ pending status ที่ schema อนุญาต');
 assert.match(app, /marketplace_conversations/, 'Marketplace chat ต้องใช้ participant conversation table');
