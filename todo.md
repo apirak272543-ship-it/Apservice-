@@ -362,3 +362,6 @@
 - [x] ตรวจและแก้ production version/cache mismatch: ผู้ใช้เห็น 4 application เหมือนเดิมหลังงานล่าสุด พร้อมยืนยันลิงก์และ asset version ที่เปิดจริง
 - [x] Audit และกู้คืนการแสดง legacy Data URL สำหรับ banner/โฆษณา/store icon/store background ที่มีอยู่จริง โดยคง original, จำกัด MIME/ขนาด และไม่เพิ่ม page jank
 - [ ] ย้าย legacy Data URL ไปยัง Storage ผ่าน protected batch worker, update reference แบบ additive และเก็บ original ไว้ตาม Legacy Media Normalization Plan
+- [x] อ่าน Admin UI/UX Multi-Page Navigation specification ล่าสุดครบทุก acceptance criteria และทำ gap analysis กับ Admin MPA production
+- [x] ปรับ Admin Workspace/navigation/page isolation/mobile/responsive/background badges/quick actions ให้ครบตาม specification ล่าสุดโดยไม่ลด function เดิม
+- [ ] ทดสอบ Admin desktop/mobile, back navigation, page-level loading, badge non-blocking, 4-app regression และเผยแพร่พร้อมรายงาน acceptance criteria

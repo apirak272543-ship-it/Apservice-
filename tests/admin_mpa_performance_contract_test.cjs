@@ -5,6 +5,7 @@ const runtime = fs.readFileSync('shared/ap-service-mpa.js', 'utf8');
 const admin = fs.readFileSync('admin/admin-app.js', 'utf8');
 const navigationCss = fs.readFileSync('admin/admin-navigation.css', 'utf8');
 const sharedCss = fs.readFileSync('shared/ap-service-mpa.css', 'utf8');
+const legacyDeepLink = fs.readFileSync('admin-legacy-deeplink.js', 'utf8');
 
 assert.match(runtime, /async function requestCount\(/, 'Shared MPA runtime ต้องมี requestCount แบบ HEAD');
 assert.match(runtime, /method = 'HEAD'/, 'requestCount ต้องไม่ดึง body ของทุก row เพื่อหาจำนวน');
@@ -28,5 +29,15 @@ assert.match(navigationCss, /:focus-visible/, 'Navigation ต้องมี vis
 assert.match(navigationCss, /@media\(max-width:760px\)/, 'Navigation ต้องมี mobile breakpoint');
 assert.match(navigationCss, /admin-nav-more/, 'Navigation ต้องมี More menu สำหรับ mobile');
 assert.match(navigationCss, /admin-nav-link:nth-child\(4\)/, 'Mobile ต้องเก็บ primary icon เท่าที่พอดีและย้ายที่เหลือไป More menu');
+assert.match(admin, /admin-nav-group/, 'More menu ต้องจัดกลุ่มงานเพื่อไม่รวมรายการยาวโดยไร้บริบท');
+assert.match(admin, /admin-account-link/, 'Navigation ต้องมีทางเข้าบัญชี/ตั้งค่ากลางที่มองเห็นได้');
+assert.match(admin, /admin-nav-badge/, 'Orders, finance และ notifications ต้องรองรับ badge');
+assert.match(admin, /sessionStorage\.getItem\(adminBadgeStorageKey\)/, 'Badge ต้องแสดง cache ล่าสุดก่อน network');
+assert.match(admin, /setTimeout\(async \(\) =>/, 'Badge refresh ต้อง schedule หลัง shell render');
+assert.match(admin, /adminBadgeTtlMs = 20_000/, 'Badge refresh ต้องมี TTL ลด duplicate request ระหว่างเปลี่ยน MPA page');
+assert.match(admin, /document\.hidden/, 'Badge refresh ต้องหยุดเมื่อหน้าไม่อยู่ foreground');
+assert.match(admin, /Cached values remain visible; badge failures never block a route/, 'ความล้มเหลวของ badge ห้าม block page');
+assert.match(legacyDeepLink, /new URLSearchParams\(location\.search\)\.get\('admin'\)/, 'Legacy fallback ต้องเปิด function เดิมผ่าน deep-link ได้');
+assert.match(legacyDeepLink, /window\.switchAdmin\(requested\)/, 'Deep-link ต้องเรียก legacy section ที่เลือกจริง');
 
 console.log('admin MPA performance contract: PASS');
