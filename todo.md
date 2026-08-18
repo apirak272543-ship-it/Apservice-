@@ -359,3 +359,5 @@
 - [x] ไฟล์งานที่ 3: ทำ Admin performance waterfall audit/fix ตาม `pasted_content.txt` โดยมี before/after metrics
 - [x] ไฟล์งานที่ 4: ทำ Admin MPA navigation/UI audit/fix ตาม `pasted_content_2.txt` โดยรักษา functionality เดิม
 - [x] ไฟล์งานที่ 5: ทำ Central Media Contract และ legacy media inventory/normalization plan ตาม `pasted_content_3.txt` และ `pasted_content_4.txt`
+- [ ] ตรวจและแก้ production version/cache mismatch: ผู้ใช้เห็น 4 application เหมือนเดิมหลังงานล่าสุด พร้อมยืนยันลิงก์และ asset version ที่เปิดจริง
+- [ ] Audit และกู้คืน legacy Data URL สำหรับ banner/โฆษณา/store icon/store background ที่มีอยู่จริงให้แสดงผ่าน storage-backed media โดยคง original และไม่เพิ่ม page jank
