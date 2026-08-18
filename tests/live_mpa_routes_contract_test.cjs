@@ -36,4 +36,9 @@ for (const [app, runtimeFile] of [['customer', 'customer-app.js'], ['admin', 'ad
   assert.match(source, /APServiceCore/, `${app} ต้องใช้ Shared Core`);
 }
 
+const adminRuntime = fs.readFileSync('admin/admin-app.js', 'utf8');
+assert.match(adminRuntime, /กำลังเปิดศูนย์ควบคุมหลังบ้าน/, 'Admin entry ต้องแสดงเฉพาะสถานะกำลังเปิดหลังบ้าน ไม่ใช่หน้า Landing/ข่าว');
+assert.match(adminRuntime, /M\.auth\.currentUser\(\)/, 'Admin entry ต้องตรวจ session เดิมก่อนแสดงฟอร์ม login');
+assert.match(adminRuntime, /roles\.includes\('admin'\).*location\.replace\('dashboard\.html'\)/s, 'Admin session ที่มีสิทธิ์ต้องเข้าสู่ Dashboard โดยตรง');
+
 console.log('live MPA routes contract: PASS');

@@ -14,7 +14,13 @@
     return M.auth.requireRole('admin', { loginUrl: 'index.html', container: $('[data-page-content]') });
   }
   async function login() {
-    document.body.innerHTML = `<main class="mpa-shell" style="min-height:100vh;display:grid;place-items:center"><section class="mpa-card" style="width:min(430px,100%)"><div style="text-align:center"><div style="width:48px;height:48px;border-radius:16px;margin:auto;display:grid;place-items:center;background:#0b8c7c;color:#fff;font-weight:950">AP</div><h1>Admin Control Plane</h1><p class="mpa-muted">เข้าสู่ระบบด้วยบัญชีที่ได้รับสิทธิ์ Admin ใน Supabase</p></div><form id="loginForm"><div class="mpa-field"><label>อีเมล</label><input id="email" type="email" required></div><div class="mpa-field"><label>รหัสผ่าน</label><input id="password" type="password" required></div><button class="mpa-button" style="width:100%">เข้าสู่ระบบแอดมิน</button></form><p class="mpa-muted" style="text-align:center;margin:16px 0 0"><a href="../admin.html">เปิด Admin fallback เดิม</a></p></section></main>`;
+    document.body.innerHTML = `<main class="mpa-shell" style="min-height:100vh;display:grid;place-items:center" data-page-content>${M.ui.loading('กำลังเปิดศูนย์ควบคุมหลังบ้าน…')}</main>`;
+    const signedInUser = await M.auth.currentUser();
+    if (signedInUser) {
+      const roles = await M.auth.rolesFor(signedInUser.id).catch(() => []);
+      if (roles.includes('admin')) { location.replace('dashboard.html'); return; }
+    }
+    document.body.innerHTML = `<main class="mpa-shell" style="min-height:100vh;display:grid;place-items:center"><section class="mpa-card" style="width:min(430px,100%)"><div style="text-align:center"><div style="width:48px;height:48px;border-radius:16px;margin:auto;display:grid;place-items:center;background:#0b8c7c;color:#fff;font-weight:950">AP</div><h1>เข้าสู่ศูนย์ควบคุมหลังบ้าน</h1><p class="mpa-muted">เข้าสู่ระบบด้วยบัญชีที่ได้รับสิทธิ์ Admin ใน Supabase</p></div><form id="loginForm"><div class="mpa-field"><label>อีเมล</label><input id="email" type="email" autocomplete="email" autofocus required></div><div class="mpa-field"><label>รหัสผ่าน</label><input id="password" type="password" autocomplete="current-password" required></div><button class="mpa-button" style="width:100%">เข้าสู่หลังบ้าน</button></form><p class="mpa-muted" style="text-align:center;margin:16px 0 0"><a href="../admin.html">เปิดระบบเดิม (fallback)</a></p></section></main>`;
     $('#loginForm').onsubmit = async event => { event.preventDefault(); try { const session = await M.auth.signIn($('#email').value.trim(), $('#password').value); const roles = await M.auth.rolesFor(session.user.id); if (!roles.includes('admin')) { M.auth.signOut('index.html'); throw new Error('บัญชีนี้ไม่มีสิทธิ์ Admin'); } location.assign('dashboard.html'); } catch (error) { M.ui.setNotice(error.message, 'error'); } };
   }
   async function dashboard() {

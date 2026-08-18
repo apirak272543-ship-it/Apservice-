@@ -296,3 +296,21 @@
 - [x] Rider MPA: login/role guard, dashboard, jobs, delivery, earnings และ profile ใช้งานผ่าน routes แยกได้จริง
 - [x] ทุก route แสดง loading/error ภาษาไทย, ไม่รอ network ก่อนเปลี่ยน document, ใช้ Shared Core/Services และไม่ import runtime ของบทบาทอื่น
 - [ ] รัน live route/auth/RLS/media/performance regression แล้ว commit/push ก่อนส่งลิงก์ 4 แอปให้ผู้ใช้ตรวจ
+
+## Four-Application Production Audit
+- [ ] ตรวจ production HTTP status, redirect, script/CSS assets และ runtime syntax ของทุก Customer/Admin/Merchant/Rider route
+- [ ] ตรวจ public data loading, no-session behavior, role guard และ Thai error/loading states ของทุกหน้า
+- [ ] ตรวจ console/runtime errors และ Supabase request contracts โดยไม่แก้จากการคาดเดา
+- [ ] แก้เฉพาะข้อผิดพลาดที่พิสูจน์ได้ เพิ่ม regression test และเผยแพร่ผลแก้ไขให้ตรวจซ้ำ
+
+## End-to-End Functional Acceptance Matrix
+- [ ] สร้าง matrix ของทุกปุ่ม ฟอร์ม upload/download, navigation, modal, data read/write และ role workflow ใน Customer/Admin/Merchant/Rider
+- [ ] ตรวจทุกปุ่มและ action: บันทึก เพิ่ม แก้ไข ลบ เปิดรายละเอียด กลับหน้า ยืนยัน ยกเลิก รีเฟรช อัปโหลด ดาวน์โหลด คัดลอกลิงก์ และแจ้งเตือน ว่ามีผลลัพธ์หรือ error state ภาษาไทยที่ถูกต้อง
+- [ ] วัด click-to-document, data load และ media processing เพื่อแก้เฉพาะ latency ที่เกินความจำเป็น
+- [ ] เพิ่มแถบ progress สีเขียวและข้อความขั้นตอน โดยใช้ความคืบหน้าที่วัดได้จริงของงาน data/media และไม่แสดงเปอร์เซ็นต์เทียม
+- [x] ปรับ `/admin/` และ Admin login ให้ตรวจ session/role แล้วเข้าสู่ `/admin/dashboard.html` โดยตรงหลัง login โดยไม่มีหน้า Landing/ข่าวของ Admin
+- [ ] ตรวจ Admin image upload ทุกประเภท: branding, store icon/background, banner/ad, payment-slip review และหลักฐานอื่น ตั้งแต่ file → compress → Storage/RLS → database → render หลัง reload
+- [ ] ตรวจ Customer flow: login/profile, catalog, cart, multi-store checkout, payment/QR/slip, order status, referral และ support paths
+- [ ] ตรวจ Merchant flow: login, dashboard, order update, menu CRUD, store profile/media, finance/settlement และ notifications
+- [ ] ตรวจ Rider flow: login, availability, job acceptance, food/AP Ride lifecycle, proof/media, earnings, withdrawal และ notifications
+- [ ] ห้ามทำเครื่องหมาย functional acceptance ว่าเสร็จก่อนผ่าน test จริงในทุก row หรือบันทึก blocker พร้อมหลักฐาน
