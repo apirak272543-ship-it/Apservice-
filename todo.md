@@ -381,3 +381,4 @@
 - [x] แก้ RLS ของ brand_public เพื่อให้โลโก้/branding ที่ Admin ตั้งค่าแสดงใน Customer app ได้จริง
 - [x] ปรับ Supabase payment-slips bucket ให้บังคับ file size ไม่เกิน 1 MB ตาม Shared Media Service และมาตรฐานพื้นที่จัดเก็บ
 - [x] แก้ secure checkout RPC ให้สร้าง delivery_orders.id ที่ฐานข้อมูลบังคับ และทดสอบ creation path ก่อนเปิดใช้จริง
+- [x] จัดทำ mobile E2E acceptance checklist สำหรับ Customer/Admin/Merchant/Rider เนื่องจาก browser takeover ใช้งานไม่ได้
