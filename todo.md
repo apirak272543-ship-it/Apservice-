@@ -378,3 +378,5 @@
 - [x] แก้ Customer checkout ให้ COD เข้าคิว Merchant ได้โดยไม่ติด payment review ที่ไม่มี payment slip review
 - [x] เชื่อม Admin delivery pricing กับ Customer checkout และบังคับค่าส่ง/ยอดสุทธิฝั่ง Supabase โดยไม่ hard-code ค่าเงินใน client
 - [x] สร้างและ seed pricing defaults สำหรับทดสอบ โดยแยก Food/Parcel/Errand ใน Admin Control Plane และให้แก้ไขภายหลังได้โดยไม่ต้องแก้โค้ด
+- [x] แก้ RLS ของ brand_public เพื่อให้โลโก้/branding ที่ Admin ตั้งค่าแสดงใน Customer app ได้จริง
+- [x] ปรับ Supabase payment-slips bucket ให้บังคับ file size ไม่เกิน 1 MB ตาม Shared Media Service และมาตรฐานพื้นที่จัดเก็บ

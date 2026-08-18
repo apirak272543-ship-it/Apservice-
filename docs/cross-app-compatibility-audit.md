@@ -40,6 +40,16 @@
 
 Customer checkout ส่งเฉพาะ `item_id` และ `quantity` ไปที่ RPC; QR slip review ใช้ `expected_amount` จาก `order.payable` ที่ server ตอบกลับ. COD ได้สถานะ `ร้านค้ารับออร์เดอร์` ขณะที่ QR/สลิปเป็น `รอตรวจสอบการชำระเงิน`.
 
+### Media, branding และ storage
+
+พบว่า Customer เรียก `brand_public` ตาม contract อยู่แล้ว แต่ RLS เดิมเปิด public select เพียง `payment_public` และ `customer_promotions`; จึงทำให้โลโก้/branding ที่ Admin ตั้งค่าใหม่ไม่สามารถแสดงก่อน login ได้แม้ UI ฝั่ง Admin บันทึกสำเร็จ. ได้เพิ่ม policy `platform_configs_read_brand_public` สำหรับ `anon, authenticated` โดยจำกัดเฉพาะ key `brand_public` และยืนยัน policy บน Supabase แล้ว.
+
+`catalog-media` และ `marketplace-media` เป็น public buckets, จำกัด JPEG/PNG/WEBP ที่ 1 MB; proofs และ payment slips เป็น private buckets พร้อม role-specific policies. ตรวจพบ `payment-slips` เป็นข้อยกเว้นที่ storage limit 5 MB แม้ Shared Media Service บีบอัด client-side. ได้ลด bucket limit เหลือ 1,000,000 bytes ฝั่ง storage แล้ว จึงป้องกันไฟล์ใหญ่ได้แม้ browser/client เก่าไม่บีบอัด.
+
+### Online route smoke check
+
+Customer checkout, Admin Settings, Merchant entry และ Rider jobs route ตอบ HTTP 200 จาก GitHub Pages และแสดง login/application shell เฉพาะบทบาทของตน ไม่มี route ชี้กลับไป repository Customer สำหรับ Merchant/Rider.
+
 ## หลักฐานโค้ดที่เกี่ยวข้อง
 
 * `admin/admin-app.js`: Admin upload สื่อร้านด้วย `uploadPublicCatalogImage`, PATCH `stores.image_url/background_url`; Admin promotions UPSERT `platform_configs.customer_promotions`.
