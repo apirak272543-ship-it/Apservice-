@@ -17,7 +17,8 @@ assert.doesNotMatch(slip, /reader\.readAsDataURL\(file\)/, 'ห้ามมี f
 assert.match(sharedMedia, /DEFAULT_OUTPUT_MAX_BYTES = 1_000_000/, 'Shared Media Service ต้องบังคับ output ไม่เกิน 1 MB');
 assert.match(sharedMedia, /ACCEPTED_IMAGE_TYPES/, 'Shared Media Service ต้องตรวจ MIME type ก่อนบีบอัด');
 assert.match(sharedMedia, /verifyRenderableUrl/, 'Shared Media Service ต้องตรวจว่า URL ของรูปที่อัปโหลดแสดงผลได้จริง');
-assert.match(sharedMedia, /storage\/v1\/object\/catalog-media/, 'Shared Media Service ต้องอัปโหลด catalog media ผ่าน Storage path ที่ชัดเจน');
+assert.match(sharedMedia, /storage\/v1\/object\/\$\{encodeURIComponent\(bucket\)\}/, 'Shared Media Service ต้องอัปโหลด public media ผ่าน bucket path ที่ชัดเจน');
+assert.match(sharedMedia, /uploadPublicCatalogImage\(file, options = \{\}\).*bucket: 'catalog-media'/, 'Catalog API เดิมต้องคง wrapper ที่จำกัด bucket เป็น catalog-media');
 assert.match(admin, /uploadCatalogMedia\(file/, 'ภาพร้านและโฆษณาต้องเรียก Shared Media Service');
 assert.match(page, /image_url:catalogMediaUrl\(store\.imageUrl\)/, 'publishCatalog ต้อง persist image_url ไม่ใช่ preview-only state');
 assert.match(page, /background_url:catalogMediaUrl\(store\.backgroundUrl\)/, 'publishCatalog ต้อง persist background_url ไม่ใช่ preview-only state');

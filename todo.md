@@ -332,3 +332,20 @@
 - [x] เพิ่ม Admin Control Plane form สำหรับ business_rules โดยคง platform_configs RLS และ JSON editor เดิม
 - [x] เก็บ HTTP และ Chromium-CDP production baseline สำหรับ request count, resource bytes, first paint และ navigation timing
 - [x] Push milestone, วัด production หลังเผยแพร่ และบันทึก before/after performance evidence
+
+## Customer MPA UI and Feature Parity Restoration
+
+- [x] สร้าง Feature/Component/Asset Parity Matrix ระหว่าง Customer legacy (`index.html` และ dependencies) กับ Customer MPA ทุก route
+- [x] ตรวจ dependencies ของ banner, promotion, advertisement, media, store card และ content จริงทั้ง Database, Storage, URL, RLS, cache และ destination routes
+- [ ] คืน UI/UX, navigation และ customer workflows ที่ legacy มีแต่ MPA ยังไม่มี โดยไม่ลบหรือแก้ fallback
+- [ ] คืน media/advertisement/promotion พร้อม data source จริง, lazy loading, image error handling และ responsive behavior
+- [ ] ตรวจ Customer acceptance ครบหน้าแรก, ค้นหา, หมวดหมู่, ร้าน, cart, checkout, order, tracking, profile, login/register และ notifications
+- [ ] ทำ visual/mobile/performance parity audit, commit/push และส่ง final report ที่ระบุ MATCHED/MIGRATED/ADAPTED/MISSING/BROKEN อย่างโปร่งใส
+- [x] ย้าย Customer support conversation/chat ตาม `support_conversations`, `support_messages` และ participant RLS เดิม
+- [x] ย้าย Customer marketplace browse/detail/create/profile/chat ตาม table และ media/RLS เดิม โดยแยก MPA routes
+- [x] เพิ่ม Customer marketplace image upload จากคลัง/กล้องผ่าน `marketplace-media`, compression 1 MB, render verification และ owner-path RLS
+- [x] เพิ่ม Customer profile location consent/GPS โดยต้องกดอนุญาตก่อน, บันทึก location/profile และ consent ตาม RLS
+- [ ] คืน Customer location consent/GPS/address map flow และ distance/service-fee behavior โดยใช้ business rules ที่ตรวจสอบได้
+- [ ] คืน Customer errand/ride service routes หลัง audit central fee rules, rider eligibility และ status contracts ครบ
+- [ ] คืน Customer campaign/advertisement surface พร้อม public-active data source, validated destination และ responsive lazy media
+- [ ] กำหนดและเผยแพร่ `platform_configs.business_rules` พร้อม server-side quote/enforcement ก่อนเปิด Customer parcel/errand/AP Ride booking ที่คิดเงินจริง

@@ -168,33 +168,35 @@
     });
   }
 
-  async function uploadPublicCatalogImage(file, { url, publishableKey, accessToken, actorId, scope = 'catalog', pathPrefix = 'admin' } = {}) {
+  async function uploadPublicImage(file, { url, publishableKey, accessToken, actorId, bucket = 'catalog-media', scope = 'catalog', pathPrefix = 'admin' } = {}) {
     let prepared = null;
     progress.open('กำลังเตรียมรูปภาพ…');
     try {
-      if (!url || !publishableKey || !accessToken || !actorId) fail('ไม่พบข้อมูลการยืนยันตัวตนสำหรับอัปโหลดรูปภาพ');
+      if (!url || !publishableKey || !accessToken || !actorId || !bucket) fail('ไม่พบข้อมูลการยืนยันตัวตนสำหรับอัปโหลดรูปภาพ');
       prepared = await prepareImage(file);
       const nonce = typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const path = `${safeSegment(pathPrefix, 'admin')}/${safeSegment(actorId, 'user')}/${safeSegment(scope)}/${nonce}.${prepared.extension}`;
       progress.update(58, 'กำลังอัปโหลดรูปภาพ', 'กำลังเริ่มส่งไฟล์ไปยังระบบจัดเก็บ');
-      const upload = await uploadBlobWithMeasuredProgress(`${String(url).replace(/\/$/, '')}/storage/v1/object/catalog-media/${path}`, {
+      const upload = await uploadBlobWithMeasuredProgress(`${String(url).replace(/\/$/, '')}/storage/v1/object/${encodeURIComponent(bucket)}/${path}`, {
         apikey: publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': prepared.mimeType, 'x-upsert': 'false'
       }, prepared.blob);
       if (!upload.ok) {
         const detail = await upload.text().catch(() => '');
         fail(`ไม่สามารถอัปโหลดรูปภาพได้${detail ? `: ${detail}` : ''}`);
       }
-      const publicUrl = `${String(url).replace(/\/$/, '')}/storage/v1/object/public/catalog-media/${path}`;
+      const publicUrl = `${String(url).replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(bucket)}/${path}`;
       progress.update(90, 'กำลังตรวจสอบว่ารูปภาพเปิดแสดงได้', 'ยืนยัน URL ก่อนให้บันทึกลงข้อมูลร้านหรือโฆษณา');
       await verifyRenderableUrl(publicUrl);
       progress.complete(`อัปโหลดและตรวจสอบภาพแล้ว · ${Math.ceil(prepared.bytes / 1024)} KB`);
-      return Object.freeze({ ...prepared, bucket: 'catalog-media', path, publicUrl });
+      return Object.freeze({ ...prepared, bucket, path, publicUrl });
     } catch (error) {
       if (prepared?.previewUrl) URL.revokeObjectURL(prepared.previewUrl);
       progress.fail(error?.message || 'อัปโหลดรูปภาพไม่สำเร็จ');
       throw error;
     }
   }
+
+  async function uploadPublicCatalogImage(file, options = {}) { return uploadPublicImage(file, { ...options, bucket: 'catalog-media' }); }
 
   async function createSignedImageUrl({ url, publishableKey, accessToken, bucket, path, expiresIn = 300 } = {}) {
     if (!url || !publishableKey || !accessToken || !bucket || !path) fail('ข้อมูลไม่ครบสำหรับสร้าง URL รูปภาพส่วนตัว');
@@ -234,6 +236,7 @@
     version: 'shared-media-v3',
     policy: Object.freeze({ sourceImageMaxBytes: SOURCE_IMAGE_MAX_BYTES, outputImageMaxBytes: DEFAULT_OUTPUT_MAX_BYTES, acceptedImageTypes: ACCEPTED_IMAGE_TYPES }),
     prepareImage,
+    uploadPublicImage,
     uploadPublicCatalogImage,
     uploadPrivateImage,
     createSignedImageUrl,

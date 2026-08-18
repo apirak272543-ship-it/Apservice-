@@ -12,7 +12,7 @@ assert.match(stylesheet, /mpa-loading/, 'Shared MPA shell ต้องมี loa
 assert.match(stylesheet, /mpa-error/, 'Shared MPA shell ต้องมี error state');
 
 const routes = {
-  customer: ['index.html', 'stores.html', 'store.html', 'checkout.html', 'orders.html', 'profile.html'],
+  customer: ['index.html', 'stores.html', 'store.html', 'checkout.html', 'orders.html', 'order.html', 'notifications.html', 'support.html', 'marketplace.html', 'marketplace-item.html', 'marketplace-new.html', 'marketplace-profile.html', 'marketplace-chat.html', 'profile.html', 'privacy.html'],
   admin: ['index.html', 'login.html', 'dashboard.html', 'orders.html', 'stores.html', 'promotions.html', 'customers.html', 'riders.html', 'finance.html', 'notifications.html', 'ai-workspace.html', 'settings.html'],
   merchant: ['index.html', 'login.html', 'dashboard.html', 'orders.html', 'menu.html', 'store.html', 'finance.html', 'settings.html'],
   rider: ['index.html', 'login.html', 'dashboard.html', 'jobs.html', 'delivery.html', 'earnings.html', 'profile.html', 'settings.html'],
