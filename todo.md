@@ -385,6 +385,11 @@
 - [x] ทำ Admin functional audit ครบเมนู ปุ่ม route, event handler, Supabase request, RLS/Storage และแก้ defects ที่ยืนยันได้
 - [x] ตรวจและแก้ Admin Application Apservicebeta ตามเมนู Dashboard/ออร์เดอร์/ร้านค้า/การเงิน/แจ้งเตือน/โฆษณา/AI Workspace/ตั้งค่ากลาง และ legacy menu จาก UI จริง
 - [ ] ตรวจรับ final click-through ด้วยบัญชี Admin จริงบนมือถือ ตาม checklist เนื่องจาก browser takeover ใช้งานไม่ได้
+- [ ] แก้ Notifications Admin ที่อ้าง mobile_notifications.read_at ซึ่งไม่มีใน schema และแสดง empty state ที่อ่านง่าย
+- [ ] เพิ่ม Admin media review/registry เพื่อดูไฟล์ที่อัปโหลดแล้ว พร้อม preview, owner, เวลา, status และตำแหน่งใช้งาน
+- [ ] ย้าย AI Workspace เข้า Admin MPA โดยตรง ไม่เปิด legacy-admin-console หรือหน้าเว็บอื่น
+- [ ] ย้าย GP จาก business_rules กลางไปกำหนดเป็นรายร้านใน Admin Stores และให้ settlement ใช้ค่าร้านนั้น
+- [ ] แทน legacy menu cross-page ด้วย Admin-native routes/features ใน Apservicebeta โดยไม่พึ่ง Customer repository หรือ legacy console
 - [x] แก้ Admin legacy menu ให้เปิด legacy-admin-console พร้อม query ของแต่ละฟังก์ชัน แทน admin.html compatibility redirect ที่ทำให้เมนูกดแล้วไม่มีผล
 - [x] เชื่อม Admin MPA AI Workspace ไปยัง legacy workspace ที่ใช้งานจริง พร้อมรองรับ ai-workspace deeplink
 - [x] เพิ่ม Admin Finance MPA workflow อนุมัติ/ปฏิเสธ/บันทึกโอนคำขอถอนเงินผ่าน server RPC และอัปโหลดหลักฐานไม่เกิน 1 MB
