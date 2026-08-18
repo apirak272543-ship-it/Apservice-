@@ -360,4 +360,5 @@
 - [x] ไฟล์งานที่ 4: ทำ Admin MPA navigation/UI audit/fix ตาม `pasted_content_2.txt` โดยรักษา functionality เดิม
 - [x] ไฟล์งานที่ 5: ทำ Central Media Contract และ legacy media inventory/normalization plan ตาม `pasted_content_3.txt` และ `pasted_content_4.txt`
 - [x] ตรวจและแก้ production version/cache mismatch: ผู้ใช้เห็น 4 application เหมือนเดิมหลังงานล่าสุด พร้อมยืนยันลิงก์และ asset version ที่เปิดจริง
-- [x] Audit และกู้คืน legacy Data URL สำหรับ banner/โฆษณา/store icon/store background ที่มีอยู่จริงให้แสดงผ่าน storage-backed media โดยคง original และไม่เพิ่ม page jank
+- [x] Audit และกู้คืนการแสดง legacy Data URL สำหรับ banner/โฆษณา/store icon/store background ที่มีอยู่จริง โดยคง original, จำกัด MIME/ขนาด และไม่เพิ่ม page jank
+- [ ] ย้าย legacy Data URL ไปยัง Storage ผ่าน protected batch worker, update reference แบบ additive และเก็บ original ไว้ตาม Legacy Media Normalization Plan
