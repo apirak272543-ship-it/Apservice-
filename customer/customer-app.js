@@ -52,18 +52,61 @@
     if (!id) { app('stores', M.ui.error('ไม่พบรหัสร้านค้า', 'กรุณากลับไปเลือกร้านค้าใหม่')); return; }
     app('stores', `<div id="storePage">${M.ui.loading('กำลังโหลดร้านและเมนู…')}</div>`);
     const scope = pageScope('customer:store');
+    if (!document.getElementById('customer-menu-table-style')) {
+      document.head.insertAdjacentHTML('beforeend', `<style id="customer-menu-table-style">
+        .customer-menu-hero{display:flex;gap:18px;align-items:center;margin:18px 0 22px;padding:18px;border:1px solid var(--ap-line);border-radius:22px;background:linear-gradient(135deg,rgba(11,140,124,.10),rgba(255,255,255,.96));box-shadow:0 12px 28px rgba(0,55,51,.08)}
+        .customer-menu-hero__visual{width:86px;height:86px;flex:0 0 86px;border-radius:20px;overflow:hidden;display:grid;place-items:center;background:#e8f6f3;color:var(--ap-brand,#0b8c7c);font-size:42px}
+        .customer-menu-hero__visual img{width:100%;height:100%;object-fit:cover}
+        .customer-menu-hero__copy{min-width:0;flex:1}.customer-menu-hero__copy h1{margin:3px 0 5px;font-size:clamp(1.5rem,4vw,2.2rem)}.customer-menu-hero__copy p{margin:0;color:var(--ap-muted,#64748b)}
+        .customer-menu-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 16px}.customer-menu-toolbar__label{font-weight:700;color:#23413e}.customer-menu-filter{border:1px solid var(--ap-line);background:#fff;border-radius:999px;padding:8px 13px;cursor:pointer;color:#365b57}.customer-menu-filter.is-active{background:var(--ap-brand,#0b8c7c);color:#fff;border-color:var(--ap-brand,#0b8c7c)}
+        .customer-menu-sections{display:grid;gap:18px}.customer-menu-section{overflow:hidden;border:1px solid var(--ap-line);border-radius:18px;background:#fff;box-shadow:0 10px 24px rgba(0,55,51,.06)}.customer-menu-section__head{display:flex;align-items:center;gap:10px;padding:15px 17px;border-bottom:1px solid var(--ap-line);background:#f6fbfa}.customer-menu-section__head strong{font-size:1.05rem}.customer-menu-section__head span{font-size:1.35rem}.customer-menu-table-wrap{overflow-x:auto}.customer-menu-table{width:100%;border-collapse:collapse;min-width:620px}.customer-menu-table th,.customer-menu-table td{padding:13px 14px;border-bottom:1px solid #edf3f1;text-align:left;vertical-align:middle}.customer-menu-table th{font-size:.8rem;letter-spacing:.02em;color:#6b817d;background:#fbfefd}.customer-menu-table tr:last-child td{border-bottom:0}.customer-menu-item{display:flex;gap:12px;align-items:center;min-width:250px}.customer-menu-item__visual{width:58px;height:58px;flex:0 0 58px;display:grid;place-items:center;overflow:hidden;border-radius:14px;background:#eef8f6;color:var(--ap-brand,#0b8c7c);font-size:28px}.customer-menu-item__visual img{width:100%;height:100%;object-fit:cover}.customer-menu-item__copy{min-width:0}.customer-menu-item__copy strong{display:block;color:#183b37}.customer-menu-item__copy small{display:block;margin-top:4px;color:#6b817d;line-height:1.45}.customer-menu-price{font-weight:800;white-space:nowrap;color:#0b7569}.customer-menu-status{white-space:nowrap}.customer-menu-status--ready{color:#16805f}.customer-menu-status--off{color:#b45309}.customer-menu-empty{padding:30px 22px;text-align:center;border:1px dashed #a8cfc8;border-radius:18px;background:linear-gradient(180deg,#fbfffe,#f2faf8)}.customer-menu-empty strong{display:block;color:#23413e;font-size:1.08rem}.customer-menu-empty span{display:block;margin-top:7px;color:#6b817d}.customer-menu-error{margin:0 0 16px;padding:12px 14px;border-radius:13px;background:#fff8eb;color:#9a5b09;border:1px solid #f2d39b}
+        @media (max-width:640px){.customer-menu-hero{align-items:flex-start}.customer-menu-hero__visual{width:68px;height:68px;flex-basis:68px;font-size:32px}.customer-menu-table{min-width:560px}.customer-menu-table th,.customer-menu-table td{padding:11px 10px}}
+      </style>`);
+    }
     try {
-      const [storeRows, items] = await Promise.all([
+      const [storeResult, menuResult] = await Promise.allSettled([
         scope.request(`catalog_stores?select=id,name,emoji,description,rating,eta,icon_url,background_url&id=eq.${encodeURIComponent(id)}&limit=1`, { cacheTtlMs: 30_000, cacheKey: `catalog-store:${id}` }),
-        scope.request(`menu_items?select=id,name,emoji,description,price,available&store_id=eq.${encodeURIComponent(id)}&available=eq.true&order=name.asc`, { cacheTtlMs: 30_000, cacheKey: `menu:${id}` }),
+        scope.request(`catalog_menu_items?select=id,store_id,name,emoji,description,price,available,promo,image_url,stock,category_id,category_name,category_icon&store_id=eq.${encodeURIComponent(id)}&order=category_id.asc,name.asc`, { cacheTtlMs: 30_000, cacheKey: `catalog-menu:${id}` }),
       ]);
-      const store = storeRows?.[0];
+      if (storeResult.status !== 'fulfilled') throw storeResult.reason;
+      const store = storeResult.value?.[0];
       if (!store) throw new Error('ไม่พบร้านค้าที่เลือก');
-      $('#storePage').innerHTML = `<div class="mpa-page-head"><div><a href="stores.html" class="mpa-muted">← กลับไปร้านค้า</a><h1 style="margin-top:7px">${h(store.emoji || '🍽️')} ${h(store.name)}</h1><p>${h(store.description || '')}</p></div><a class="mpa-button mpa-button-secondary" href="checkout.html">ไปตะกร้า</a></div><div class="mpa-grid cards">${(items || []).map(item => `<article class="mpa-card"><div style="font-size:30px">${h(item.emoji || '🍜')}</div><h3 style="margin:9px 0 4px">${h(item.name)}</h3><p class="mpa-muted">${h(item.description || 'เมนูอร่อยพร้อมจัดส่ง')}</p><div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px"><strong>${M.ui.baht(item.price)}</strong><button class="mpa-button" data-add="${h(item.id)}">เพิ่ม</button></div></article>`).join('') || M.ui.empty('ร้านนี้ยังไม่มีเมนูพร้อมขาย')}</div>`;
-      document.querySelectorAll('[data-add]').forEach(button => button.addEventListener('click', () => {
-        const item = items.find(row => row.id === button.dataset.add); M.cart.add({ id: item.id, name: item.name, emoji: item.emoji || '🍜', price: Number(item.price || 0), storeId: store.id, storeName: store.name }); M.ui.setNotice(`เพิ่ม ${item.name} ลงตะกร้าแล้ว`);
+      const items = menuResult.status === 'fulfilled' && Array.isArray(menuResult.value) ? menuResult.value : [];
+      const menuReadFailed = menuResult.status !== 'fulfilled';
+      const storeVisual = legacyVisualImage(store.icon_url) || legacyVisualImage(store.emoji);
+      const storeFallback = storeVisual ? '🏪' : String(store.emoji || '🍽️').slice(0, 12);
+      const grouped = new Map();
+      items.forEach(item => {
+        const key = String(item.category_id || item.category_name || 'uncategorized');
+        if (!grouped.has(key)) grouped.set(key, { name: String(item.category_name || 'เมนูแนะนำ'), icon: String(item.category_icon || '🍽️'), items: [] });
+        grouped.get(key).items.push(item);
+      });
+      const renderItem = item => {
+        const image = legacyVisualImage(item.image_url);
+        const emoji = String(item.emoji || '🍜').slice(0, 12);
+        const stockKnown = item.stock !== null && item.stock !== undefined && item.stock !== '';
+        const ready = item.available !== false && (!stockKnown || Number(item.stock) > 0);
+        const status = ready ? '<span class="customer-menu-status customer-menu-status--ready">พร้อมสั่ง</span>' : '<span class="customer-menu-status customer-menu-status--off">ยังไม่พร้อมขาย</span>';
+        const action = ready ? `<button class="mpa-button" type="button" data-add="${h(item.id)}">เพิ่ม</button>` : '<span class="mpa-muted">รอร้านอัปเดต</span>';
+        const visual = image ? `<img src="${h(image)}" alt="${h(item.name || 'รูปเมนู')}" loading="lazy" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${h(emoji)}</span>` : `<span>${h(emoji)}</span>`;
+        return `<tr><td><div class="customer-menu-item"><div class="customer-menu-item__visual">${visual}</div><div class="customer-menu-item__copy"><strong>${h(item.name || 'เมนูไม่ระบุชื่อ')}</strong><small>${h(item.description || 'เมนูอร่อยพร้อมจัดส่ง')}${item.promo ? ` · ${h(item.promo)}` : ''}</small></div></div></td><td class="customer-menu-price">${M.ui.baht(item.price)}</td><td>${status}</td><td>${action}</td></tr>`;
+      };
+      const renderSections = filter => [...grouped.entries()].filter(([, group]) => filter === 'all' || filter === group.name || filter === group.items[0]?.category_id).map(([key, group]) => `<section class="customer-menu-section" data-menu-section="${h(key)}" data-menu-category="${h(group.name)}"><div class="customer-menu-section__head"><span>${h(group.icon)}</span><strong>${h(group.name)}</strong><span class="mpa-muted">${group.items.length} รายการ</span></div><div class="customer-menu-table-wrap"><table class="customer-menu-table"><thead><tr><th>เมนูและรายละเอียด</th><th>ราคา</th><th>สถานะ</th><th>สั่ง</th></tr></thead><tbody>${group.items.map(renderItem).join('')}</tbody></table></div></section>`).join('');
+      const filters = [{ key: 'all', label: 'ทั้งหมด', icon: '🍽️' }, ...[...grouped.values()].map(group => ({ key: group.name, label: group.name, icon: group.icon }))];
+      const menuContent = items.length ? `<div class="customer-menu-toolbar"><span class="customer-menu-toolbar__label">เลือกหมวดเมนู</span>${filters.map((filter, index) => `<button type="button" class="customer-menu-filter${index === 0 ? ' is-active' : ''}" data-menu-filter="${h(filter.key)}">${h(filter.icon)} ${h(filter.label)}</button>`).join('')}</div><div id="customerMenuSections" class="customer-menu-sections">${renderSections('all')}</div>` : `<div class="customer-menu-empty" role="status"><strong>${menuReadFailed ? 'เมนูยังไม่พร้อมใช้งานในขณะนี้' : 'ร้านนี้ยังไม่มีเมนูพร้อมขาย'}</strong><span>${menuReadFailed ? 'กรุณาลองใหม่อีกครั้ง หรือติดต่อร้านค้าให้ตรวจสอบรายการเมนู' : 'ร้านค้ากำลังเตรียมรายการอาหาร เมนูจะแสดงที่นี่เมื่อพร้อมให้บริการ'}</span></div>`;
+      $('#storePage').innerHTML = `<div class="customer-menu-hero"><div class="customer-menu-hero__visual">${storeVisual ? `<img src="${h(storeVisual)}" alt="โลโก้ ${h(store.name)}" loading="eager" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${h(storeFallback)}</span>` : `<span>${h(storeFallback)}</span>`}</div><div class="customer-menu-hero__copy"><a href="stores.html" class="mpa-muted">← กลับไปร้านค้า</a><h1>${h(store.name)}</h1><p>${h(store.description || 'ร้านค้าใน AP Service')}${store.eta ? ` · ${h(store.eta)}` : ''}</p></div><a class="mpa-button mpa-button-secondary" href="checkout.html">ไปตะกร้า</a></div>${menuReadFailed ? '<p class="customer-menu-error" role="status">ขณะนี้ยังโหลดรายการเมนูไม่ได้ ระบบจะแสดงเมนูทันทีเมื่อร้านพร้อมให้บริการ</p>' : ''}${menuContent}`;
+      const bindAddButtons = () => document.querySelectorAll('[data-add]').forEach(addButton => {
+        addButton.onclick = () => {
+          const item = items.find(row => row.id === addButton.dataset.add); if (!item) return;
+          M.cart.add({ id: item.id, name: item.name, emoji: item.emoji || '🍜', image_url: legacyVisualImage(item.image_url), price: Number(item.price || 0), storeId: store.id, storeName: store.name }); M.ui.setNotice(`เพิ่ม ${item.name} ลงตะกร้าแล้ว`);
+        };
+      });
+      document.querySelectorAll('[data-menu-filter]').forEach(button => button.addEventListener('click', () => {
+        document.querySelectorAll('[data-menu-filter]').forEach(item => item.classList.toggle('is-active', item === button));
+        const sections = $('#customerMenuSections'); if (sections) { sections.innerHTML = renderSections(button.dataset.menuFilter || 'all'); bindAddButtons(); }
       }));
-    } catch (err) { $('#storePage').innerHTML = M.ui.error('โหลดเมนูไม่สำเร็จ', err.message); }
+      bindAddButtons();
+    } catch (err) { $('#storePage').innerHTML = M.ui.error('โหลดร้านค้าไม่สำเร็จ', 'กรุณาลองใหม่อีกครั้ง'); }
   }
 
   function cartRows(items) { return items.map(item => `<tr><td>${h(item.emoji)} ${h(item.name)}</td><td>${M.ui.baht(item.price)}</td><td><button class="mpa-button mpa-button-secondary" data-minus="${h(item.id)}">−</button> ${item.qty} <button class="mpa-button mpa-button-secondary" data-plus="${h(item.id)}">+</button></td><td>${M.ui.baht(item.price * item.qty)}</td></tr>`).join(''); }
