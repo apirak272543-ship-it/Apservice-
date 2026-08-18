@@ -366,3 +366,9 @@
 - [x] ปรับ Admin Workspace/navigation/page isolation/mobile/responsive/background badges/quick actions ให้ครบตาม specification ล่าสุดโดยไม่ลด function เดิม
 - [x] ทดสอบ Admin desktop/mobile ผ่าน responsive contract, back navigation, page-level loading, badge non-blocking, 4-app regression และเผยแพร่พร้อมรายงาน acceptance criteria
 - [ ] ตรวจรับ authenticated Admin CRUD บน production: route → data → action → save → database → browser back โดยใช้บัญชี Admin จริงและไม่ bypass RLS
+- [x] Audit repositories ตามโครงสร้างเจ้าของงาน: Apservice- (Customer), Apservicebeta (Admin Beta), ap-store-mobile (Merchant), ap-rider-mobile (Rider)
+- [x] จัดทำและยืนยัน mapping/migration plan เพื่อย้ายโค้ดที่รวมใน Apservice- ไป repository ตาม role โดยใช้ Supabase/backend/business rules ร่วมกัน
+- [ ] ย้าย/จัดวาง/ทดสอบ/เผยแพร่ Customer, Admin Beta, Merchant และ Rider แยก repository พร้อมรายงานลิงก์และ commit ของแต่ละ application
+- [x] เปลี่ยน ap-store-mobile และ ap-rider-mobile เป็น public, เปิด GitHub Pages และยืนยัน URL console ที่แยกจาก Customer
+- [x] เปลี่ยน Merchant/Rider mobile WebView ไปใช้ console ของ repository ตนเอง พร้อมตรวจ session bridge และ fallback
+- [x] ตัด Admin/Merchant/Rider application source ออกจาก Apservice- หลังปลายทางใหม่ทดสอบผ่าน โดยคง Customer และ shared backend contract ที่จำเป็น

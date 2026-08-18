@@ -1,15 +1,14 @@
-# AP Service
+# AP Service — Customer
 
-ชุดเว็บ HTML สำหรับระบบเดลิเวอรีแบบหลายบทบาท ประกอบด้วยหน้าเว็บหลักสำหรับลูกค้า, Rider Console และ Store Console
+Repository นี้เป็น **Customer Application เท่านั้น** ของ AP Service และเป็น URL เดิมสำหรับผู้ใช้บริการ
 
-| URL หลังเปิด GitHub Pages | หน้าที่ใช้ |
-|---|---|
-| `/` | เว็บหลัก AP Service สำหรับลูกค้าและผู้ดูแลระบบ |
-| `/rider.html` | Rider Console สำหรับรับงาน เปิดแผนที่ และอัปเดตสถานะ |
-| `/store.html` | Store Console สำหรับร้านค้าจัดการเมนู สต็อก และออร์เดอร์ |
+| Repository | บทบาท | GitHub Pages |
+|---|---|---|
+| `Apservice-` | Customer | `/customer/` |
+| `Apservicebeta` | Admin | `/admin/` |
+| `ap-store-mobile` | Merchant | `/merchant/` |
+| `ap-rider-mobile` | Rider | `/rider/` |
 
-## เริ่มต้นใช้งาน
+Customer MPA อยู่ใน `customer/` และ root URL จะพาไป Customer application โดยตรง แอปนี้ใช้ Supabase, Auth, RLS, data contracts และ Shared Media Service ชุดเดียวกับ application บทบาทอื่น แต่ไม่เก็บ Admin, Merchant หรือ Rider application source code อีกต่อไป
 
-เปิดหน้าเว็บหลักก่อน แล้วเข้าสู่ระบบด้วยบัญชีแอดมินเพื่อแก้ไขร้านค้า เมนู การตั้งค่า Supabase และเผยแพร่แค็ตตาล็อกขึ้นฐานข้อมูลกลาง หากต้องการใช้งานข้ามอุปกรณ์ ให้ผู้ปฏิบัติงานเข้าสู่ระบบ Supabase จากเว็บหลักบนอุปกรณ์ของตนก่อนเปิด Rider Console หรือ Store Console
-
-> Publishable Key ของ Supabase สามารถอยู่ในไฟล์เว็บสาธารณะได้ตามการออกแบบของ Supabase แต่ห้ามเพิ่ม Service Role Key, Secret Key หรือรหัสผ่านลงใน Repository นี้โดยเด็ดขาด
+> Publishable Key ของ Supabase สามารถอยู่ในไฟล์เว็บสาธารณะได้ตามการออกแบบของ Supabase แต่ห้ามเพิ่ม Service Role Key, Secret Key หรือรหัสผ่านลงใน repository นี้โดยเด็ดขาด
