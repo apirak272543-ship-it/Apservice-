@@ -95,15 +95,13 @@
           uploadedSlip = await window.APServiceMedia.uploadPrivateImage(slipFile, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: (await M.auth.refreshSession(false))?.access_token, actorId: user.id, bucket: 'payment-slips', scope: `checkout-${Date.now()}` });
           $('#slipStatus').textContent = 'อัปโหลดและตรวจสอบสลิปแล้ว กำลังสร้างออร์เดอร์…';
         }
-        await Promise.all(groups.map(async group => {
-          const total = group.reduce((sum, row) => sum + row.price * row.qty, 0);
-          const order = { customer_id: user.id, customer_email: user.email || '', customer_name: user.user_metadata?.display_name || '', store_id: group[0].storeId, store_name: group[0].storeName, service_type: 'food', status: C.contracts.orderStatus.PAYMENT_REVIEW, total, payable: total, delivery_fee: 0, payment_method: paymentMethod, delivery_address: address, ordered_at: M.ui.nowIso() };
-          const rows = await M.request('delivery_orders', { method: 'POST', private: true, headers: { Prefer: 'return=representation' }, body: JSON.stringify(order) });
-          const orderId = rows?.[0]?.id; if (!orderId) throw new Error('ระบบสร้างออร์เดอร์ไม่สำเร็จ');
-          await M.request('delivery_order_items', { method: 'POST', private: true, headers: { Prefer: 'return=minimal' }, body: JSON.stringify(group.map(item => ({ order_id: orderId, item_id: item.id, name: item.name, emoji: item.emoji, unit_price: item.price, quantity: item.qty, options: {} }))) });
-          if (uploadedSlip) await M.request('payment_slip_reviews', { method: 'POST', private: true, headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ order_id: orderId, customer_id: user.id, slip_path: uploadedSlip.storageRef, expected_amount: total, status: 'pending', preliminary_status: 'file_valid', preliminary_result: { source: 'customer_checkout', bytes: uploadedSlip.bytes, mime_type: uploadedSlip.mimeType }, uploaded_at: M.ui.nowIso(), reviewer_note: '' }) });
+        const createdOrders = await Promise.all(groups.map(async group => {
+          const created = await M.request('rpc/create_food_order', { method: 'POST', private: true, body: JSON.stringify({ p_store_id: group[0].storeId, p_items: group.map(item => ({ item_id: item.id, quantity: item.qty })), p_delivery_address: address, p_payment_method: paymentMethod, p_customer_name: user.user_metadata?.display_name || '' }) });
+          const order = Array.isArray(created) ? created[0] : created, orderId = order?.id; if (!orderId) throw new Error('ระบบสร้างออร์เดอร์ไม่สำเร็จ');
+          if (uploadedSlip) await M.request('payment_slip_reviews', { method: 'POST', private: true, headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ order_id: orderId, customer_id: user.id, slip_path: uploadedSlip.storageRef, expected_amount: order.payable, status: 'pending', preliminary_status: 'file_valid', preliminary_result: { source: 'customer_checkout', bytes: uploadedSlip.bytes, mime_type: uploadedSlip.mimeType }, uploaded_at: M.ui.nowIso(), reviewer_note: '' }) });
+          return order;
         }));
-        M.cart.clear(); M.ui.setNotice('ส่งออร์เดอร์เข้าสู่ระบบแล้ว รอการตรวจสอบการชำระเงิน'); location.assign('orders.html');
+        const finalPayable = createdOrders.reduce((sum, order) => sum + Number(order.payable || 0), 0); M.cart.clear(); M.ui.setNotice(isTransfer ? `ส่งออร์เดอร์แล้ว ยอดชำระ ${M.ui.baht(finalPayable)} รอการตรวจสอบสลิป` : `ส่งออร์เดอร์ให้ร้านค้าแล้ว ยอดรวม ${M.ui.baht(finalPayable)}`); location.assign('orders.html');
       } catch (err) { M.ui.setNotice(err.message, 'error'); }
     });
   }

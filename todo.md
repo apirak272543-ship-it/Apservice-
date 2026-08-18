@@ -375,3 +375,6 @@
 - [x] จัดทำ End-to-End testing plan สำหรับ Customer → Merchant → Rider order lifecycle พร้อม acceptance criteria และหลักฐานตรวจรับ
 - [ ] ทำ Cross-Application Functional Audit ครบ Customer/Admin/Merchant/Rider: data flow, routes, buttons, order/status, RLS, upload/compression และ media rendering พร้อมแก้ defects ที่ยืนยันได้
 - [x] แก้ Rider MPA ให้เห็นงานว่างและรับงานแบบ atomic โดยผูก rider_id, rider_name และสถานะตาม Shared Core contract
+- [x] แก้ Customer checkout ให้ COD เข้าคิว Merchant ได้โดยไม่ติด payment review ที่ไม่มี payment slip review
+- [x] เชื่อม Admin delivery pricing กับ Customer checkout และบังคับค่าส่ง/ยอดสุทธิฝั่ง Supabase โดยไม่ hard-code ค่าเงินใน client
+- [x] สร้างและ seed pricing defaults สำหรับทดสอบ โดยแยก Food/Parcel/Errand ใน Admin Control Plane และให้แก้ไขภายหลังได้โดยไม่ต้องแก้โค้ด
