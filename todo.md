@@ -382,3 +382,8 @@
 - [x] ปรับ Supabase payment-slips bucket ให้บังคับ file size ไม่เกิน 1 MB ตาม Shared Media Service และมาตรฐานพื้นที่จัดเก็บ
 - [x] แก้ secure checkout RPC ให้สร้าง delivery_orders.id ที่ฐานข้อมูลบังคับ และทดสอบ creation path ก่อนเปิดใช้จริง
 - [x] จัดทำ mobile E2E acceptance checklist สำหรับ Customer/Admin/Merchant/Rider เนื่องจาก browser takeover ใช้งานไม่ได้
+- [ ] ทำ Admin functional audit ครบเมนู ปุ่ม route, event handler, Supabase request, RLS/Storage และแก้ defects ที่ยืนยันได้
+- [ ] ตรวจและแก้ Admin Application Apservicebeta ตามเมนู Dashboard/ออร์เดอร์/ร้านค้า/การเงิน/แจ้งเตือน/โฆษณา/AI Workspace/ตั้งค่ากลาง และ legacy menu จาก UI จริง
+- [x] แก้ Admin legacy menu ให้เปิด legacy-admin-console พร้อม query ของแต่ละฟังก์ชัน แทน admin.html compatibility redirect ที่ทำให้เมนูกดแล้วไม่มีผล
+- [x] เชื่อม Admin MPA AI Workspace ไปยัง legacy workspace ที่ใช้งานจริง พร้อมรองรับ ai-workspace deeplink
+- [x] เพิ่ม Admin Finance MPA workflow อนุมัติ/ปฏิเสธ/บันทึกโอนคำขอถอนเงินผ่าน server RPC และอัปโหลดหลักฐานไม่เกิน 1 MB
