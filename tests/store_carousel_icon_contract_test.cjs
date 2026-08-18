@@ -19,7 +19,7 @@ const checks = [
   ["media-safe carousel patch is cache-busted", html.includes("store_carousel_icon_patch.js?v=store-carousel-icon-v4-media-safe")],
   ["background media is applied only when near the viewport", carousel.includes("store.backgroundUrl || store.background_url") && carousel.includes("visual.classList.add('has-background')")],
   ["admin appearance tab labels image as store icon", admin.includes("ไอคอนร้าน / ภาพสัญลักษณ์")],
-  ["admin appearance tab keeps a compressed background picker", admin.includes("detailImagePicker('background_url'") && admin.includes("compressImageForUpload(file)")],
+  ["admin appearance tab keeps a shared-media background picker", admin.includes("detailImagePicker('background_url'") && admin.includes('uploadCatalogMedia(file, `store-detail-${field}`)')],
   ["new store form exposes icon and background media inputs", admin.includes("storeFormMediaFields") && admin.includes("storeFormImageUrl") && admin.includes("storeFormBackgroundUrl")],
 ];
 

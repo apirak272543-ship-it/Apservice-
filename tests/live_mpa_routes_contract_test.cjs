@@ -13,7 +13,7 @@ assert.match(stylesheet, /mpa-error/, 'Shared MPA shell ต้องมี error
 
 const routes = {
   customer: ['index.html', 'stores.html', 'store.html', 'checkout.html', 'orders.html', 'profile.html'],
-  admin: ['index.html', 'login.html', 'dashboard.html', 'orders.html', 'stores.html', 'customers.html', 'riders.html', 'finance.html', 'notifications.html', 'ai-workspace.html', 'settings.html'],
+  admin: ['index.html', 'login.html', 'dashboard.html', 'orders.html', 'stores.html', 'promotions.html', 'customers.html', 'riders.html', 'finance.html', 'notifications.html', 'ai-workspace.html', 'settings.html'],
   merchant: ['index.html', 'login.html', 'dashboard.html', 'orders.html', 'menu.html', 'store.html', 'finance.html', 'settings.html'],
   rider: ['index.html', 'login.html', 'dashboard.html', 'jobs.html', 'delivery.html', 'earnings.html', 'profile.html', 'settings.html'],
 };
@@ -44,5 +44,10 @@ assert.match(adminRuntime, /roles\.includes\('admin'\).*location\.replace\('dash
 assert.match(fs.readFileSync('admin/stores.html', 'utf8'), /shared\/ap-service-media\.js/, 'Admin stores route ต้องโหลด Shared Media Service เฉพาะหน้าที่ใช้สื่อ');
 assert.match(adminRuntime, /uploadPublicCatalogImage/, 'Admin stores route ต้องอัปโหลดสื่อผ่าน Shared Media Service');
 assert.match(adminRuntime, /data-media-editor/, 'Admin stores route ต้องมี action เปิดตัวแก้ไขรูปและสื่อ');
+assert.match(adminRuntime, /customer_promotions/, 'Admin promotion editor ต้องบันทึกลง central configuration ที่กำหนด');
+assert.match(fs.readFileSync('admin/promotions.html', 'utf8'), /shared\/ap-service-media\.js/, 'Admin promotions route ต้องโหลด Shared Media Service');
+const customerRuntime = fs.readFileSync('customer/customer-app.js', 'utf8');
+assert.match(customerRuntime, /customer_promotions/, 'Customer home ต้องอ่านเฉพาะ promotion configuration ที่เปิดเผยได้');
+assert.match(customerRuntime, /setInterval/, 'Customer promotion carousel ต้องเลื่อนตามเวลาโดยไม่ block navigation');
 
 console.log('live MPA routes contract: PASS');
