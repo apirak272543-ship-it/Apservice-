@@ -113,7 +113,7 @@
         if (!window.APServiceMedia?.uploadPublicCatalogImage) throw new Error('ระบบอัปโหลดรูปภาพยังโหลดไม่พร้อม กรุณารีเฟรชแล้วลองใหม่');
         status.textContent = 'กำลังเตรียมรูปภาพ…'; const session = await M.auth.refreshSession(false);
         if (!session?.access_token || !session?.user?.id) throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่ก่อนอัปโหลด');
-        const uploaded = await window.APServiceMedia.uploadPublicCatalogImage(file, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: session.access_token, actorId: session.user.id, pathPrefix: 'merchant', scope: `store-${ctx.store.id}-${field}` });
+        const uploaded = await window.APServiceMedia.uploadPublicCatalogImage(file, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: session.access_token, actorId: session.user.id, pathPrefix: 'merchant', scope: `store-${ctx.store.id}-${field}`, mediaType: field === 'image_url' ? 'STORE_LOGO' : 'STORE_BACKGROUND', ownerType: 'merchant' });
         draftMedia[field] = uploaded.publicUrl; const preview = $(`#preview-${field}`); if (preview) { preview.src = uploaded.publicUrl; preview.style.display = ''; }
         status.textContent = `อัปโหลดและตรวจสอบรูป ${field === 'image_url' ? 'ไอคอนร้าน' : 'ภาพพื้นหลัง'} แล้ว กดบันทึกข้อมูลร้านเพื่อยืนยัน`;
       } catch (err) { input.value = ''; status.textContent = err.message || 'อัปโหลดรูปภาพไม่สำเร็จ'; M.ui.setNotice(status.textContent, 'error'); }

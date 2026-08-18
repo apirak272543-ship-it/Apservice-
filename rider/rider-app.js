@@ -93,7 +93,7 @@
           if (!window.APServiceMedia?.uploadPrivateImage) throw new Error('ระบบอัปโหลดหลักฐานยังโหลดไม่พร้อม กรุณารีเฟรชแล้วลองใหม่');
           status.textContent = 'กำลังเตรียมหลักฐาน…'; const session = await M.auth.refreshSession(false);
           if (!session?.access_token || !session?.user?.id) throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่ก่อนอัปโหลด');
-          const uploaded = await window.APServiceMedia.uploadPrivateImage(file, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: session.access_token, actorId: session.user.id, bucket: 'delivery-proofs', scope: job.id });
+          const uploaded = await window.APServiceMedia.uploadPrivateImage(file, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: session.access_token, actorId: session.user.id, bucket: 'delivery-proofs', scope: job.id, mediaType: 'DELIVERY_PROOF', ownerType: 'rider' });
           proofRef = uploaded.storageRef;
           await M.request(`delivery_orders?id=eq.${encodeURIComponent(job.id)}`, { method: 'PATCH', private: true, headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ proof_image: proofRef, updated_at: M.ui.nowIso() }) });
           status.textContent = 'อัปโหลด ตรวจสอบ และบันทึกหลักฐานส่งงานแล้ว'; M.ui.setNotice('บันทึกหลักฐานส่งงานแล้ว');

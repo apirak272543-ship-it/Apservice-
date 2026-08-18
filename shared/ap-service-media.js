@@ -6,6 +6,14 @@
   const DEFAULT_OUTPUT_MAX_BYTES = 1_000_000;
   const DEFAULT_MAX_DIMENSION = 1600;
   const ACCEPTED_IMAGE_TYPES = Object.freeze(['image/jpeg', 'image/png', 'image/webp']);
+  const MEDIA_PROFILES = Object.freeze({
+    STORE_LOGO: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }), USER_AVATAR: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }), RIDER_AVATAR: Object.freeze({ maxDimension: 200, maxOutputBytes: 350_000, square: true }),
+    PRODUCT_IMAGE: Object.freeze({ maxDimension: 1280, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), STORE_BACKGROUND: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
+    BANNER: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), ADVERTISEMENT: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), PROMOTION: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
+    PAYMENT_SLIP: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), DELIVERY_PROOF: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
+    IDENTITY_DOCUMENT: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), LICENSE: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), VEHICLE_REGISTRATION: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), INSURANCE: Object.freeze({ maxDimension: 1600, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
+    QR_CODE: Object.freeze({ maxDimension: 1200, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES, preservePng: true }), ADMIN_MEDIA: Object.freeze({ maxDimension: DEFAULT_MAX_DIMENSION, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }), SYSTEM_MEDIA: Object.freeze({ maxDimension: DEFAULT_MAX_DIMENSION, maxOutputBytes: DEFAULT_OUTPUT_MAX_BYTES }),
+  });
 
   function fail(message) { throw new Error(message); }
 
@@ -103,7 +111,15 @@
     if (file.size > SOURCE_IMAGE_MAX_BYTES) fail('รูปภาพต้นฉบับมีขนาดเกิน 40 MB กรุณาเลือกรูปที่เล็กลง');
   }
 
-  async function prepareImage(file, { maxOutputBytes = DEFAULT_OUTPUT_MAX_BYTES, maxDimension = DEFAULT_MAX_DIMENSION } = {}) {
+  function mediaProfile(mediaType = 'ADMIN_MEDIA') { return MEDIA_PROFILES[String(mediaType || 'ADMIN_MEDIA').toUpperCase()] || MEDIA_PROFILES.ADMIN_MEDIA; }
+  function inferMediaContract({ bucket, pathPrefix, scope, mediaType, ownerType, privateMedia = false } = {}) {
+    const hint = `${pathPrefix || ''} ${scope || ''}`.toLowerCase();
+    const type = String(mediaType || (bucket === 'marketplace-media' ? 'PRODUCT_IMAGE' : bucket === 'delivery-proofs' ? 'DELIVERY_PROOF' : hint.includes('promotion') ? 'PROMOTION' : hint.includes('background') ? 'STORE_BACKGROUND' : hint.includes('image_url') || hint.includes('icon') ? 'STORE_LOGO' : privateMedia ? 'ADMIN_MEDIA' : 'ADMIN_MEDIA')).toUpperCase();
+    const owner = ownerType || (pathPrefix === 'merchant' ? 'merchant' : pathPrefix === 'marketplace' ? 'customer' : bucket === 'delivery-proofs' ? 'rider' : 'admin');
+    return Object.freeze({ mediaType: MEDIA_PROFILES[type] ? type : 'ADMIN_MEDIA', ownerType: owner });
+  }
+
+  async function prepareImage(file, { maxOutputBytes = DEFAULT_OUTPUT_MAX_BYTES, maxDimension = DEFAULT_MAX_DIMENSION, square = false, preservePng = false } = {}) {
     progress.update(8, 'กำลังตรวจสอบไฟล์รูปภาพ', 'ตรวจชนิดและขนาดไฟล์');
     assertInput(file);
     const outputLimit = Math.min(DEFAULT_OUTPUT_MAX_BYTES, Math.max(1, Number(maxOutputBytes) || DEFAULT_OUTPUT_MAX_BYTES));
@@ -113,19 +129,19 @@
     const originalHeight = image.naturalHeight || image.height;
     if (!originalWidth || !originalHeight) fail('รูปภาพไม่มีขนาดที่ใช้งานได้');
 
-    let bound = Math.min(Math.max(1, Number(maxDimension) || DEFAULT_MAX_DIMENSION), Math.max(originalWidth, originalHeight));
+    let bound = Math.min(Math.max(1, Number(maxDimension) || DEFAULT_MAX_DIMENSION), square ? Math.min(originalWidth, originalHeight) : Math.max(originalWidth, originalHeight));
     let quality = 0.88;
     for (let attempt = 0; attempt < 12; attempt += 1) {
       progress.update(24 + Math.round((attempt / 12) * 28), 'กำลังบีบอัดรูปภาพ', `กำลังปรับขนาดและคุณภาพให้ไม่เกิน ${Math.round(outputLimit / 1024)} KB`);
-      const ratio = Math.min(1, bound / Math.max(originalWidth, originalHeight));
-      const width = Math.max(1, Math.round(originalWidth * ratio));
-      const height = Math.max(1, Math.round(originalHeight * ratio));
+      const ratio = Math.min(1, bound / (square ? Math.min(originalWidth, originalHeight) : Math.max(originalWidth, originalHeight)));
+      const width = square ? Math.max(1, Math.round(Math.min(originalWidth, originalHeight) * ratio)) : Math.max(1, Math.round(originalWidth * ratio));
+      const height = square ? width : Math.max(1, Math.round(originalHeight * ratio));
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d', { alpha: false });
       if (!context) fail('อุปกรณ์นี้ไม่พร้อมสำหรับการบีบอัดรูปภาพ');
       canvas.width = width; canvas.height = height;
-      context.drawImage(image, 0, 0, width, height);
-      const type = file.type === 'image/png' && file.size <= outputLimit && ratio === 1 ? 'image/png' : 'image/webp';
+      if (square) { const side = Math.min(originalWidth, originalHeight); context.drawImage(image, Math.round((originalWidth - side) / 2), Math.round((originalHeight - side) / 2), side, side, 0, 0, width, height); } else context.drawImage(image, 0, 0, width, height);
+      const type = file.type === 'image/png' && file.size <= outputLimit && ratio === 1 && (preservePng || !square) ? 'image/png' : 'image/webp';
       const blob = await canvasBlob(canvas, type, quality);
       if (blob.size <= outputLimit) {
         progress.update(55, 'เตรียมไฟล์ภาพแล้ว', `ขนาดหลังบีบอัด ${Math.ceil(blob.size / 1024)} KB`);
@@ -168,12 +184,13 @@
     });
   }
 
-  async function uploadPublicImage(file, { url, publishableKey, accessToken, actorId, bucket = 'catalog-media', scope = 'catalog', pathPrefix = 'admin' } = {}) {
+  async function uploadPublicImage(file, { url, publishableKey, accessToken, actorId, bucket = 'catalog-media', scope = 'catalog', pathPrefix = 'admin', mediaType, ownerType, variant = 'primary', legacySource = {} } = {}) {
     let prepared = null;
     progress.open('กำลังเตรียมรูปภาพ…');
     try {
       if (!url || !publishableKey || !accessToken || !actorId || !bucket) fail('ไม่พบข้อมูลการยืนยันตัวตนสำหรับอัปโหลดรูปภาพ');
-      prepared = await prepareImage(file);
+      const contract = inferMediaContract({ bucket, pathPrefix, scope, mediaType, ownerType });
+      prepared = await prepareImage(file, mediaProfile(contract.mediaType));
       const nonce = typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const path = `${safeSegment(pathPrefix, 'admin')}/${safeSegment(actorId, 'user')}/${safeSegment(scope)}/${nonce}.${prepared.extension}`;
       progress.update(58, 'กำลังอัปโหลดรูปภาพ', 'กำลังเริ่มส่งไฟล์ไปยังระบบจัดเก็บ');
@@ -184,16 +201,45 @@
         const detail = await upload.text().catch(() => '');
         fail(`ไม่สามารถอัปโหลดรูปภาพได้${detail ? `: ${detail}` : ''}`);
       }
-      const publicUrl = `${String(url).replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(bucket)}/${path}`;
+      const publicUrl = publicMediaUrl({ url, bucket, path });
       progress.update(90, 'กำลังตรวจสอบว่ารูปภาพเปิดแสดงได้', 'ยืนยัน URL ก่อนให้บันทึกลงข้อมูลร้านหรือโฆษณา');
       await verifyRenderableUrl(publicUrl);
-      progress.complete(`อัปโหลดและตรวจสอบภาพแล้ว · ${Math.ceil(prepared.bytes / 1024)} KB`);
-      return Object.freeze({ ...prepared, bucket, path, publicUrl });
+      const asset = await registerMediaAsset({ url, publishableKey, accessToken, actorId, ownerType: contract.ownerType, mediaType: contract.mediaType, bucket, path, visibility: 'public', prepared, variant, legacySource });
+      progress.complete(`อัปโหลด ตรวจสอบ และลงทะเบียนสื่อแล้ว · ${Math.ceil(prepared.bytes / 1024)} KB`);
+      return Object.freeze({ ...prepared, bucket, path, publicUrl, mediaId: asset.id, media: asset });
     } catch (error) {
       if (prepared?.previewUrl) URL.revokeObjectURL(prepared.previewUrl);
       progress.fail(error?.message || 'อัปโหลดรูปภาพไม่สำเร็จ');
       throw error;
     }
+  }
+
+  async function registerMediaAsset({ url, publishableKey, accessToken, actorId, ownerType, mediaType, bucket, path, visibility, prepared, variant = 'primary', legacySource = {} } = {}) {
+    if (!url || !publishableKey || !accessToken || !actorId || !prepared) fail('ข้อมูลไม่ครบสำหรับบันทึก Media metadata กลาง');
+    const response = await fetch(`${String(url).replace(/\/$/, '')}/rest/v1/media_assets`, { method: 'POST', headers: { apikey: publishableKey, Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ owner_id: actorId, owner_type: ownerType, media_type: mediaType, bucket_id: bucket, storage_path: path, visibility, variant, mime_type: prepared.mimeType, byte_size: prepared.bytes, width: prepared.width, height: prepared.height, status: 'ready', legacy_source: legacySource || {} }) });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body?.[0]?.id) fail(body?.message || 'บันทึก Media metadata กลางไม่สำเร็จ');
+    return Object.freeze(body[0]);
+  }
+
+  function publicMediaUrl({ url, bucket, path, version = 1 } = {}) {
+    if (!url || !bucket || !path) return '';
+    return `${String(url).replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(bucket)}/${path.split('/').map(encodeURIComponent).join('/')}?v=${encodeURIComponent(Math.max(1, Number(version) || 1))}`;
+  }
+
+  async function getMediaMetadata({ url, publishableKey, accessToken, mediaId } = {}) {
+    if (!url || !publishableKey || !mediaId) fail('ข้อมูลไม่ครบสำหรับอ่าน Media metadata');
+    const response = await fetch(`${String(url).replace(/\/$/, '')}/rest/v1/media_assets?id=eq.${encodeURIComponent(mediaId)}&select=id,bucket_id,storage_path,visibility,variant,version,status,mime_type,byte_size,width,height,media_type`, { headers: { apikey: publishableKey, ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) } });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body?.[0]) fail(body?.message || 'ไม่พบ Media metadata');
+    return Object.freeze(body[0]);
+  }
+
+  async function getMedia({ url, publishableKey, accessToken, mediaId, expiresIn = 300 } = {}) {
+    const asset = await getMediaMetadata({ url, publishableKey, accessToken, mediaId });
+    if (asset.status !== 'ready') fail('ไฟล์สื่อยังไม่พร้อมใช้งาน');
+    const resolvedUrl = asset.visibility === 'public' ? publicMediaUrl({ url, bucket: asset.bucket_id, path: asset.storage_path, version: asset.version }) : await createSignedImageUrl({ url, publishableKey, accessToken, bucket: asset.bucket_id, path: asset.storage_path, expiresIn });
+    return Object.freeze({ ...asset, url: resolvedUrl });
   }
 
   async function uploadPublicCatalogImage(file, options = {}) { return uploadPublicImage(file, { ...options, bucket: 'catalog-media' }); }
@@ -208,12 +254,13 @@
     return /^https:\/\//i.test(body.signedURL) ? body.signedURL : `${String(url).replace(/\/$/, '')}/storage/v1${body.signedURL}`;
   }
 
-  async function uploadPrivateImage(file, { url, publishableKey, accessToken, actorId, bucket, scope = 'proof' } = {}) {
+  async function uploadPrivateImage(file, { url, publishableKey, accessToken, actorId, bucket, scope = 'proof', mediaType, ownerType, variant = 'primary', legacySource = {} } = {}) {
     let prepared = null;
     progress.open('กำลังเตรียมหลักฐานรูปภาพ…');
     try {
       if (!url || !publishableKey || !accessToken || !actorId || !bucket) fail('ไม่พบข้อมูลการยืนยันตัวตนสำหรับอัปโหลดหลักฐาน');
-      prepared = await prepareImage(file);
+      const contract = inferMediaContract({ bucket, scope, mediaType, ownerType, privateMedia: true });
+      prepared = await prepareImage(file, mediaProfile(contract.mediaType));
       const nonce = typeof crypto?.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const path = `${safeSegment(actorId, 'user')}/${safeSegment(scope, 'proof')}/${nonce}.${prepared.extension}`;
       progress.update(58, 'กำลังอัปโหลดหลักฐานรูปภาพ', 'กำลังส่งไฟล์ไปยังพื้นที่จัดเก็บส่วนตัว');
@@ -222,8 +269,9 @@
       progress.update(90, 'กำลังตรวจสอบหลักฐานรูปภาพ', 'กำลังทดสอบ URL ส่วนตัวก่อนบันทึก');
       const signedUrl = await createSignedImageUrl({ url, publishableKey, accessToken, bucket, path });
       await verifyRenderableUrl(signedUrl);
-      progress.complete(`อัปโหลดและตรวจสอบหลักฐานแล้ว · ${Math.ceil(prepared.bytes / 1024)} KB`);
-      return Object.freeze({ ...prepared, bucket, path, storageRef: `${bucket}/${path}`, signedUrl });
+      const asset = await registerMediaAsset({ url, publishableKey, accessToken, actorId, ownerType: contract.ownerType, mediaType: contract.mediaType, bucket, path, visibility: 'private', prepared, variant, legacySource });
+      progress.complete(`อัปโหลด ตรวจสอบ และลงทะเบียนหลักฐานแล้ว · ${Math.ceil(prepared.bytes / 1024)} KB`);
+      return Object.freeze({ ...prepared, bucket, path, storageRef: `${bucket}/${path}`, signedUrl, mediaId: asset.id, media: asset });
     } catch (error) {
       if (prepared?.previewUrl) URL.revokeObjectURL(prepared.previewUrl);
       progress.fail(error?.message || 'อัปโหลดหลักฐานรูปภาพไม่สำเร็จ');
@@ -233,13 +281,19 @@
 
   root.APServiceMediaProgress = progress;
   root.APServiceMedia = Object.freeze({
-    version: 'shared-media-v3',
-    policy: Object.freeze({ sourceImageMaxBytes: SOURCE_IMAGE_MAX_BYTES, outputImageMaxBytes: DEFAULT_OUTPUT_MAX_BYTES, acceptedImageTypes: ACCEPTED_IMAGE_TYPES }),
+    version: 'shared-media-v4',
+    policy: Object.freeze({ sourceImageMaxBytes: SOURCE_IMAGE_MAX_BYTES, outputImageMaxBytes: DEFAULT_OUTPUT_MAX_BYTES, acceptedImageTypes: ACCEPTED_IMAGE_TYPES, profiles: MEDIA_PROFILES }),
     prepareImage,
+    mediaProfile,
+    inferMediaContract,
     uploadPublicImage,
     uploadPublicCatalogImage,
     uploadPrivateImage,
     createSignedImageUrl,
+    registerMediaAsset,
+    getMediaMetadata,
+    getMedia,
+    publicMediaUrl,
     verifyRenderableUrl,
     progress,
     revokePreview(prepared) { if (prepared?.previewUrl) URL.revokeObjectURL(prepared.previewUrl); },
