@@ -9,16 +9,16 @@
   const links = [['dashboard','ภาพรวม'],['orders','ออร์เดอร์'],['stores','ร้านค้า'],['promotions','โฆษณา'],['customers','ลูกค้า'],['riders','ไรเดอร์'],['finance','การเงิน'],['notifications','แจ้งเตือน'],['ai-workspace','AI Workspace'],['settings','ตั้งค่ากลาง']];
   const nav = active => `<header class="mpa-topbar"><a class="mpa-brand" href="dashboard.html">AP Service · Admin Control Plane</a><nav class="mpa-nav">${links.map(([key,label]) => `<a class="${key===active?'active':''}" href="${key}.html">${label}</a>`).join('')}<a href="../admin.html">Fallback</a></nav></header>`;
   const app = (active, content) => { document.body.innerHTML = `${nav(active)}<main class="mpa-shell" data-page-content>${content}</main>`; };
-  const countRows = async (path, request = M.request, cacheKey = '') => { const rows = await request(path, { private: true, cacheTtlMs: 15_000, cacheKey }); return Array.isArray(rows) ? rows.length : 0; };
-  const dashboardCounts = async request => Promise.all([
-    countRows('delivery_orders?select=id&status=neq.สำเร็จแล้ว&limit=500', request, 'admin-count:active-orders'),
-    countRows('stores?select=id&active=eq.true&limit=500', request, 'admin-count:active-stores'),
-    countRows('riders?select=id&status=eq.พร้อมรับงาน&limit=500', request, 'admin-count:available-riders'),
-    countRows('withdrawal_requests?select=id&status=eq.pending&limit=500', request, 'admin-count:pending-withdrawals').catch(() => 0),
+  const countRows = async (path, requestCount = M.requestCount, cacheKey = '') => requestCount(path, { private: true, cacheTtlMs: 15_000, cacheKey });
+  const dashboardCounts = async requestCount => Promise.all([
+    countRows('delivery_orders?select=id&status=neq.สำเร็จแล้ว', requestCount, 'admin-count:active-orders'),
+    countRows('stores?select=id&active=eq.true', requestCount, 'admin-count:active-stores'),
+    countRows('riders?select=id&status=eq.พร้อมรับงาน', requestCount, 'admin-count:available-riders'),
+    countRows('withdrawal_requests?select=id&status=eq.pending', requestCount, 'admin-count:pending-withdrawals').catch(() => 0),
   ]);
   async function gate(active, content) {
     app(active, content);
-    return M.auth.requireRole('admin', { loginUrl: 'index.html', container: $('[data-page-content]') });
+    return M.auth.requireRole('admin', { loginUrl: 'index.html', container: $('[data-page-content]'), renderLoading: false });
   }
   async function login() {
     document.body.innerHTML = `<main class="mpa-shell" style="min-height:100vh;display:grid;place-items:center" data-page-content>${M.ui.loading('กำลังเปิดศูนย์ควบคุมหลังบ้าน…')}</main>`;
@@ -35,8 +35,8 @@
     $('#signOut').onclick = () => M.auth.signOut('index.html');
     const scope = pageScope('admin:dashboard'); let lastSignature = '';
     const render = counts => { const signature = JSON.stringify(counts); if (signature === lastSignature) return; lastSignature = signature; const [orders, stores, riders, withdrawals] = counts; $('#stats').innerHTML = `<div class="mpa-card mpa-stat"><small>ออร์เดอร์ที่ยังดำเนินการ</small><strong>${orders}</strong></div><div class="mpa-card mpa-stat"><small>ร้านค้าเปิดบริการ</small><strong>${stores}</strong></div><div class="mpa-card mpa-stat"><small>ไรเดอร์พร้อมรับงาน</small><strong>${riders}</strong></div><div class="mpa-card mpa-stat"><small>คำขอถอนเงินรอตรวจ</small><strong>${withdrawals}</strong></div>`; $('#pending').innerHTML = `<p class="mpa-muted">ใช้เมนู <a href="orders.html">ออร์เดอร์</a>, <a href="finance.html">การเงิน</a> และ <a href="settings.html">ตั้งค่ากลาง</a> เพื่อดำเนินงานแต่ละประเภท ข้อมูลนี้รีเฟรชภายหลัง shell แสดงแล้ว จึงไม่ block navigation</p>`; };
-    try { render(await dashboardCounts(scope.request)); } catch (err) { if (err.code !== M.network.STALE_RESPONSE) $('#stats').innerHTML = M.ui.error('โหลดสรุปไม่สำเร็จ', err.message); return; }
-    const stop = M.network.startBackgroundSync({ key: 'admin-dashboard-counts', intervalMs: 30_000, task: async () => { const counts = await dashboardCounts((path, options) => scope.request(path, { ...options, forceFresh: true })); return { changed: JSON.stringify(counts) !== lastSignature, data: counts }; } });
+    try { render(await dashboardCounts(scope.requestCount)); } catch (err) { if (err.code !== M.network.STALE_RESPONSE) $('#stats').innerHTML = M.ui.error('โหลดสรุปไม่สำเร็จ', err.message); return; }
+    const stop = M.network.startBackgroundSync({ key: 'admin-dashboard-counts', intervalMs: 30_000, task: async () => { const counts = await dashboardCounts((path, options) => scope.requestCount(path, { ...options, forceFresh: true })); return { changed: JSON.stringify(counts) !== lastSignature, data: counts }; } });
     const originalStop = stop; addEventListener('pagehide', originalStop, { once: true });
   }
   async function orders() {

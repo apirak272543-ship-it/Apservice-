@@ -49,6 +49,7 @@
         isActive: () => active && !controller.signal.aborted,
         dispose: () => { active = false; controller.abort(); },
         request: (path, options = {}) => request(path, { ...options, signal: controller.signal }).then(value => { if (!active) throw makeStaleError(); return value; }),
+        requestCount: (path, options = {}) => requestCount(path, { ...options, signal: controller.signal }).then(value => { if (!active) throw makeStaleError(); return value; }),
       });
     }
     function startBackgroundSync({ key, task, onData, onError, intervalMs = 15_000, runImmediately = false } = {}) {
@@ -104,7 +105,25 @@
       if (method === 'GET') inFlight.set(key, promise);
       try { return await promise; } finally { if (inFlight.get(key) === promise) inFlight.delete(key); }
     }
-    return Object.freeze({ request, createScope, startBackgroundSync, snapshotMetrics, clearCache, STALE_RESPONSE });
+    async function requestCount(path, rawOptions = {}) {
+      const { cacheTtlMs = 0, cacheKey, forceFresh = false, signal, private: privateRequest = false, forceSession = false, skipRefreshRetry = false, ...fetchOptions } = rawOptions;
+      const method = 'HEAD'; const publicRead = !privateRequest; const key = keyFor(method, path, { cacheKey, private: privateRequest, forceSession }); const ttl = Math.max(0, Number(cacheTtlMs) || 0);
+      if (!forceFresh) { const cachedValue = cached(key, ttl); if (cachedValue !== null) { metrics.cacheHits += 1; return cachedValue; } }
+      if (inFlight.has(key)) { metrics.deduped += 1; return inFlight.get(key); }
+      const promise = (async () => {
+        metrics.requests += 1;
+        const run = () => { const headers = { apikey: SUPABASE_KEY, Prefer: 'count=exact', ...(fetchOptions.headers || {}) }; if (token() && (!publicRead || forceSession)) headers.Authorization = `Bearer ${token()}`; return fetch(`${SUPABASE_URL}/rest/v1/${normalizePath(path)}`, { ...fetchOptions, method, headers, signal }); };
+        let response;
+        try { response = await run(); } catch (error) { if (isAbort(error)) metrics.aborted += 1; else metrics.failures += 1; throw error; }
+        if (response.status === 401 && token() && !skipRefreshRetry) { await refreshSession(true); response = await run(); }
+        const text = await response.text(); let data = null; try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+        if (!response.ok) { metrics.failures += 1; throw new Error(data?.message || data?.hint || `ไม่สามารถนับข้อมูลได้ (${response.status})`); }
+        const match = String(response.headers.get('content-range') || '').match(/\/(\d+)$/); if (!match) throw new Error('ไม่พบจำนวนข้อมูลจากเซิร์ฟเวอร์'); const total = Number(match[1]);
+        if (ttl) cache.set(key, { at: Date.now(), value: total }); return total;
+      })();
+      inFlight.set(key, promise); try { return await promise; } finally { if (inFlight.get(key) === promise) inFlight.delete(key); }
+    }
+    return Object.freeze({ request, requestCount, createScope, startBackgroundSync, snapshotMetrics, clearCache, STALE_RESPONSE });
   })();
 
   async function authRequest(path, options = {}) {
@@ -117,7 +136,7 @@
   async function signUp({ email, password, data = {} } = {}) { const result = await authRequest('signup', { method: 'POST', body: JSON.stringify({ email, password, data }) }); if (result?.access_token) saveSession(result); return result; }
   async function currentUser() { let current = getSession(); if (!current?.access_token) return null; try { current = await refreshSession(false); if (!current?.access_token) return null; return await authRequest('user', { headers: { Authorization: `Bearer ${current.access_token}` } }); } catch { saveSession(null); return null; } }
   async function rolesFor(userId) { if (!userId || !token()) return []; const rows = await lifecycle.request(`user_roles?select=role&user_id=eq.${encodeURIComponent(userId)}`, { private: true, cacheTtlMs: 10_000 }); return (rows || []).map(row => row.role).filter(Boolean); }
-  async function requireRole(role, { loginUrl = 'index.html', container = document.querySelector('[data-page-content]') } = {}) { if (container) container.innerHTML = loading('กำลังตรวจสอบสิทธิ์การใช้งาน…'); const user = await currentUser(); if (!user) { location.replace(loginUrl); return null; } const roles = await rolesFor(user.id); if (!roles.includes(role)) { if (container) container.innerHTML = error('บัญชีนี้ไม่มีสิทธิ์เข้าสู่หน้านี้', 'กรุณาเข้าสู่ระบบด้วยบัญชีที่ได้รับสิทธิ์ถูกต้อง'); return null; } return { user, roles }; }
+  async function requireRole(role, { loginUrl = 'index.html', container = document.querySelector('[data-page-content]'), renderLoading = true } = {}) { if (container && renderLoading) container.innerHTML = loading('กำลังตรวจสอบสิทธิ์การใช้งาน…'); const user = await currentUser(); if (!user) { location.replace(loginUrl); return null; } const roles = await rolesFor(user.id); if (!roles.includes(role)) { if (container) container.innerHTML = error('บัญชีนี้ไม่มีสิทธิ์เข้าสู่หน้านี้', 'กรุณาเข้าสู่ระบบด้วยบัญชีที่ได้รับสิทธิ์ถูกต้อง'); return null; } return { user, roles }; }
   function signOut(next = 'index.html') { lifecycle.clearCache(); saveSession(null); location.assign(next); }
   function loading(label = 'กำลังโหลดข้อมูล…') { return `<div class="mpa-state mpa-loading"><span class="mpa-spinner" aria-hidden="true"></span><p>${escapeHtml(label)}</p></div>`; }
   function error(title, detail = '') { return `<div class="mpa-state mpa-error"><strong>${escapeHtml(title)}</strong>${detail ? `<p>${escapeHtml(detail)}</p>` : ''}<button class="mpa-button mpa-button-secondary" type="button" onclick="location.reload()">ลองใหม่</button></div>`; }
@@ -125,5 +144,5 @@
   function setNotice(message, kind = 'success') { let host = document.getElementById('mpa-toast'); if (!host) { host = document.createElement('div'); host.id = 'mpa-toast'; host.className = 'mpa-toast'; document.body.append(host); } host.className = `mpa-toast ${kind}`; host.textContent = message; host.hidden = false; clearTimeout(setNotice.timer); setNotice.timer = setTimeout(() => { host.hidden = true; }, 4200); }
   const cart = { key: 'apservice_mpa_cart_v1', read() { try { return JSON.parse(sessionStorage.getItem(this.key) || '[]'); } catch { return []; } }, write(items) { sessionStorage.setItem(this.key, JSON.stringify(items)); root.dispatchEvent(new CustomEvent('apservice:cart')); }, add(item) { const items = this.read(); const index = items.findIndex(row => row.id === item.id && row.storeId === item.storeId); if (index >= 0) items[index].qty += 1; else items.push({ ...item, qty: 1 }); this.write(items); }, clear() { this.write([]); }, total() { return this.read().reduce((sum, row) => sum + Number(row.price || 0) * Number(row.qty || 0), 0); } };
 
-  root.APServiceMPA = Object.freeze({ version: 'mpa-runtime-v2', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request: lifecycle.request, network: lifecycle, auth: { getSession, refreshSession, signIn, signUp, signOut, currentUser, rolesFor, requireRole }, ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart });
+  root.APServiceMPA = Object.freeze({ version: 'mpa-runtime-v3', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request: lifecycle.request, requestCount: lifecycle.requestCount, network: lifecycle, auth: { getSession, refreshSession, signIn, signUp, signOut, currentUser, rolesFor, requireRole }, ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart });
 })();
