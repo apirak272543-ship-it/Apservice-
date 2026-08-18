@@ -373,3 +373,5 @@
 - [x] เปลี่ยน Merchant/Rider mobile WebView ไปใช้ console ของ repository ตนเอง พร้อมตรวจ session bridge และ fallback
 - [x] ตัด Admin/Merchant/Rider application source ออกจาก Apservice- หลังปลายทางใหม่ทดสอบผ่าน โดยคง Customer และ shared backend contract ที่จำเป็น
 - [x] จัดทำ End-to-End testing plan สำหรับ Customer → Merchant → Rider order lifecycle พร้อม acceptance criteria และหลักฐานตรวจรับ
+- [ ] ทำ Cross-Application Functional Audit ครบ Customer/Admin/Merchant/Rider: data flow, routes, buttons, order/status, RLS, upload/compression และ media rendering พร้อมแก้ defects ที่ยืนยันได้
+- [x] แก้ Rider MPA ให้เห็นงานว่างและรับงานแบบ atomic โดยผูก rider_id, rider_name และสถานะตาม Shared Core contract
