@@ -331,4 +331,4 @@
 - [x] เพิ่ม Admin MPA payment-slip queue, in-app private viewer และ approval/needs-reupload ที่ใช้ Shared Core transition
 - [x] เพิ่ม Admin Control Plane form สำหรับ business_rules โดยคง platform_configs RLS และ JSON editor เดิม
 - [x] เก็บ HTTP และ Chromium-CDP production baseline สำหรับ request count, resource bytes, first paint และ navigation timing
-- [ ] Push milestone, วัด production หลังเผยแพร่ และบันทึก before/after performance evidence
+- [x] Push milestone, วัด production หลังเผยแพร่ และบันทึก before/after performance evidence
