@@ -68,7 +68,7 @@
 
 | หัวข้อ | ผล | หลักฐาน |
 |---|---|---|
-| Checkout location card | ผ่าน DOM verification | Chromium headless จาก static preview พบ `checkoutLocationStatus`, GPS, map และ manual-save controls เมื่อ 19 สิงหาคม 2026 |
+| Checkout location card | ผ่าน DOM verification | Chromium headless พบ `checkoutLocationStatus`, GPS, map และ manual-save controls ทั้ง static preview และ Customer GitHub Pages production เมื่อ 19 สิงหาคม 2026 |
 | Server pricing boundary | ผ่าน contract | Customer ยังคงสร้างออร์เดอร์ผ่าน `rpc/create_food_order`; location picker ไม่คำนวณหรือ hardcode ค่าส่ง |
 | Map fallback | ผ่าน source contract | มี OpenStreetMap, Carto Voyager และ Humanitarian OpenStreetMap พร้อม manual latitude/longitude fallback |
 | Browser interactive retest | Blocked ชั่วคราว | browser subsystem ถูกปิดชั่วคราวหลัง crash loop; ต้องรันทดสอบคลิก GPS denied, tile error และ map save ซ้ำบน production/WebView หลัง push |
