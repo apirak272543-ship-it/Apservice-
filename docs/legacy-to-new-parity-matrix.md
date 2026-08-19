@@ -82,3 +82,19 @@ Legacy Merchant เรียก `DELETE menu_items` โดยตรงจาก 
 | Server pricing boundary | ผ่าน contract | Customer ยังคงสร้างออร์เดอร์ผ่าน `rpc/create_food_order`; location picker ไม่คำนวณหรือ hardcode ค่าส่ง |
 | Map fallback | ผ่าน source contract | มี OpenStreetMap, Carto Voyager และ Humanitarian OpenStreetMap พร้อม manual latitude/longitude fallback |
 | Browser interactive retest | Blocked ชั่วคราว | browser subsystem ถูกปิดชั่วคราวหลัง crash loop; ต้องรันทดสอบคลิก GPS denied, tile error และ map save ซ้ำบน production/WebView หลัง push |
+
+## Admin Section-Level Functional Mapping (Source Verified)
+
+ตารางนี้ตรวจจาก active dispatcher ของ Admin MPA และ route ที่ใช้งานจริง ไม่สรุปจากชื่อ function หรือ legacy redirect เพียงอย่างเดียว
+
+| Section MPA | Capability ที่ยืนยัน | Server boundary ที่พบ | สถานะ parity / follow-up |
+|---|---|---|---|
+| Dashboard | สรุปงานค้างและการเงินจากข้อมูลจริง, ทางลัดไปงานย่อย | Read ผ่าน RLS | ผ่าน source review; browser audit รอระบบ browser กลับมา |
+| Accounts / Customers | แยก Admin, Customer, Store, Rider; บัญชี, role, feature overrides และ wallet adjustment | `role-access`: `list_user_control_plane`, `create_managed_account`, `set_user_roles`, `set_account_control`, `adjust_customer_wallet` | ผ่าน server-control-plane source contract |
+| Stores V3 | สร้างร้าน+Merchant, บัญชี Merchant, ระงับร้าน, ปิดฉุกเฉิน, GP, เวลา/พิกัด, สื่อ และเมนู | `role-access` สำหรับ provision, account, moderation และ emergency state | **P1 hardening:** การแก้ field/sื่อ และ delete menu บางเส้นยัง PATCH/DELETE table โดยตรง; ต้องย้ายเป็น allow-listed server action ก่อน retirement sign-off |
+| Orders | ดูคิวและเปลี่ยนสถานะตาม Shared Core | RLS และ client transition helper ที่ตรวจในหน้า | **P1 evidence required:** ยืนยัน policy/RPC ฝั่ง backend ว่าป้องกัน invalid transition แม้ client ถูกดัดแปลง |
+| Finance | ดูสลิป signed URL, อนุมัติ/ปฏิเสธ/จ่ายคำขอถอนพร้อมหลักฐาน ≤1 MB | `rpc/admin_review_withdrawal` สำหรับ withdrawal; signed private media | ผ่าน withdrawal server RPC; payment-slip multi-table update ต้องมี browser/API retest |
+| Riders | เพิ่ม/แก้ rider, สถานะ, รถ และ operational note | RLS row mutation ปัจจุบัน | **P1 evidence required:** ยืนยัน server authorization/action log สำหรับ create/edit/suspend ก่อนปลด legacy console |
+| Notifications / Media | งานวันนี้, pending/history และ preview media/signed private media; migration รูป legacy ผ่าน Shared Media Service | RLS read, Shared Media Service | ผ่าน source review; ต้อง browser retest empty/error/modals |
+
+> ยังไม่มี section ใดของ Admin ได้สถานะพร้อมปลด legacy จนกว่าจะผ่าน browser audit ด้วยบัญชี AImanus Admin และปิด P1 hardening/evidence ตามตารางนี้

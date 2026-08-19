@@ -149,6 +149,7 @@ Deno.serve(async (request) => {
         if (has('description')) updates.description = text(input.description)
         if (has('eta')) updates.eta = text(input.eta)
         if (has('rating')) updates.rating = Math.min(5, number(input.rating))
+        if (has('settlement_gp_percent')) { const gp = number(input.settlement_gp_percent); if (!Number.isFinite(gp) || gp < 0 || gp > 100) return json({ error: 'GP ร้านค้าต้องอยู่ระหว่าง 0 ถึง 100' }, 400); updates.settlement_gp_percent = gp }
         if (has('phone')) { const phone = text(input.phone); if (!/^\+?[0-9][0-9\-\s()]{7,18}$/.test(phone)) return json({ error: 'รูปแบบเบอร์โทรติดต่อร้านไม่ถูกต้อง' }, 400); updates.phone = phone }
         if (has('category_id')) updates.category_id = text(input.category_id) || null
       }
