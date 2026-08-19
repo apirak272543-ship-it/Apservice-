@@ -125,7 +125,7 @@ Legacy Merchant เรียก `DELETE menu_items` โดยตรงจาก 
 | แอป | ขอบเขตที่เปลี่ยน | หลักฐาน regression | สถานะ Pages ณ เวลาบันทึก |
 |---|---|---|---|
 | Customer | ตัดหัวข้อ `เข้าสู่ระบบ`; คง email/password, ปุ่มเข้าสู่ระบบและลิงก์สมัครสมาชิก | `customer_login_minimal_shell_contract_test.cjs` และ Thai-first contract ผ่าน | build ของ commit `638b59f` สำเร็จ; runtime production ยืนยัน `aria-label` และไม่มี heading เดิม |
-| Merchant | ตัดหัวข้อ คำอธิบายบัญชี และข้อความ fallback; คง email/password, ปุ่มและ login handler | `merchant_login_minimal_shell_contract_test.cjs` และ finance contract ผ่าน | commit `60f8551e` push แล้ว; GitHub Pages กำลัง build จึงต้อง recheck asset ก่อน sign-off production |
+| Merchant | ตัดหัวข้อ คำอธิบายบัญชี และข้อความ fallback; คง email/password, ปุ่มและ login handler | `merchant_login_minimal_shell_contract_test.cjs` และ finance contract ผ่าน | build ของ commit `60f8551e` สำเร็จ; runtime production ยืนยัน `aria-label` และไม่มีข้อความระบบเดิม |
 | Rider | ตัดหัวข้อ คำอธิบายสิทธิ์ และข้อความ fallback; คง email/password, ปุ่มและ login handler | `rider_login_minimal_shell_contract_test.cjs` และ presence contract ผ่าน | build ของ commit `2086957` สำเร็จ; runtime production ยืนยัน `aria-label` และไม่มีข้อความสิทธิ์เดิม |
 | AP Retail POS | ตัด title/intro/footnote ใน card; คง AP mark, email/password, ปุ่มและ live status/error area | `retail_login_minimal_shell_contract.test.mjs`, Thai-first และ logout contracts ผ่าน | build ของ commit `1921090` สำเร็จ; markup production ยืนยัน shell ใหม่ |
 
