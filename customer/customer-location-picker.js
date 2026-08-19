@@ -1,0 +1,82 @@
+(() => {
+  'use strict';
+  const M = window.APServiceMPA;
+  if (!M || window.APServiceCustomerLocation) return;
+  const $ = selector => document.querySelector(selector);
+  const providers = [
+    { name: 'OpenStreetMap', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '© OpenStreetMap contributors' },
+    { name: 'Carto Voyager', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', attribution: '© OpenStreetMap contributors © CARTO' },
+    { name: 'Humanitarian OpenStreetMap', url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', attribution: '© OpenStreetMap contributors, Tiles style by HOT' },
+  ];
+  const cacheKey = 'apservice.customer.checkout.location.v1';
+  const validPoint = point => {
+    const lat = Number(point?.lat), lng = Number(point?.lng);
+    return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+  };
+  const safeCachedLocation = () => { try { const item = JSON.parse(localStorage.getItem(cacheKey) || 'null'); return validPoint(item) ? item : null; } catch (_) { return null; } };
+  const now = () => M.ui.nowIso();
+  let profile = null, savedLocation = safeCachedLocation(), map = null, marker = null, layer = null, selectedPoint = null, providerIndex = 0, tileLoads = 0, tileErrors = 0;
+
+  const status = text => { const el = $('#checkoutLocationStatus'); if (el) el.textContent = text; };
+  const describe = point => validPoint(point) ? `พิกัดพร้อมใช้: ${Number(point.lat).toFixed(6)}, ${Number(point.lng).toFixed(6)} · ${point.source === 'manual-coordinate' ? 'บันทึกด้วยการกรอกเอง' : `ความแม่นยำประมาณ ${Math.round(Number(point.accuracy) || 0)} เมตร`}` : 'ยังไม่ได้ระบุพิกัดจัดส่ง กรุณาใช้ GPS เปิดแผนที่ หรือกรอกพิกัดด้วยตนเอง';
+  const updateInputs = point => { if (!validPoint(point)) return; const lat = $('#checkoutLocationLat'), lng = $('#checkoutLocationLng'); if (lat) lat.value = Number(point.lat).toFixed(6); if (lng) lng.value = Number(point.lng).toFixed(6); };
+  const setSelectedPoint = (point, pan = true) => {
+    if (!validPoint(point)) return false;
+    selectedPoint = { lat: Number(point.lat), lng: Number(point.lng) }; updateInputs(selectedPoint);
+    if (map && window.L) { if (!marker) marker = window.L.marker([selectedPoint.lat, selectedPoint.lng], { draggable: true }).addTo(map).on('dragend', event => setSelectedPoint(event.target.getLatLng(), false)); else marker.setLatLng([selectedPoint.lat, selectedPoint.lng]); if (pan) map.panTo([selectedPoint.lat, selectedPoint.lng], { animate: false }); }
+    return true;
+  };
+  const closeMap = () => { const modal = $('#checkoutLocationModal'); if (modal) { modal.hidden = true; modal.setAttribute('aria-hidden', 'true'); } };
+  const openManual = () => { const el = $('#checkoutLocationManual'); if (el) el.hidden = !el.hidden; };
+  const pointFromInputs = () => ({ lat: Number($('#checkoutLocationLat')?.value), lng: Number($('#checkoutLocationLng')?.value) });
+  const ensureLeaflet = () => new Promise(resolve => {
+    if (window.L) return resolve(true);
+    if (document.getElementById('apservice-leaflet-loader')) return setTimeout(() => resolve(Boolean(window.L)), 2400);
+    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; css.id = 'apservice-leaflet-css'; document.head.append(css);
+    const script = document.createElement('script'); script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; script.id = 'apservice-leaflet-loader'; script.onload = () => resolve(Boolean(window.L)); script.onerror = () => resolve(false); document.head.append(script);
+  });
+  const fallback = message => { status(message); $('#checkoutLocationManual')?.removeAttribute('hidden'); };
+  const mountTiles = switchProvider => {
+    if (!map || !window.L) return fallback('แผนที่ไม่พร้อม คุณยังใช้ GPS หรือกรอก Latitude/Longitude เพื่อบันทึกตำแหน่งได้');
+    if (switchProvider) providerIndex = (providerIndex + 1) % providers.length;
+    if (layer) map.removeLayer(layer); tileLoads = 0; tileErrors = 0;
+    const index = providerIndex, provider = providers[index], canvas = $('#checkoutLocationMap'); canvas?.classList.add('is-loading');
+    layer = window.L.tileLayer(provider.url, { maxZoom: 19, keepBuffer: 2, attribution: provider.attribution, errorTileUrl: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="256" height="256"%3E%3Crect width="100%25" height="100%25" fill="%23edf4f5"/%3E%3Cpath d="M0 0L256 256M256 0L0 256" stroke="%23d1dadd"/%3E%3C/svg%3E' }).addTo(map);
+    layer.on('tileload', () => { tileLoads += 1; canvas?.classList.remove('is-loading'); if (tileLoads === 1) status(`แผนที่ ${provider.name} พร้อมใช้งาน · แตะหรือเลื่อนหมุดเพื่อปรับตำแหน่ง`); });
+    layer.on('tileerror', () => { tileErrors += 1; if (tileErrors >= 4) { if (providerIndex < providers.length - 1) { providerIndex += 1; fallback('กำลังสลับแหล่งภาพแผนที่สำรองเพื่อให้แสดงผลครบ…'); mountTiles(false); } else fallback('ภาพแผนที่โหลดไม่ครบ แต่คุณยังบันทึกด้วย GPS หรือกรอกพิกัดได้ตามปกติ'); } });
+    setTimeout(() => { if (index === providerIndex && tileLoads < 2 && providerIndex < providers.length - 1) { providerIndex += 1; fallback('แผนที่โหลดช้า จึงสลับแหล่งภาพสำรองให้อัตโนมัติ…'); mountTiles(false); } }, 6500);
+  };
+  const requestGps = () => new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('อุปกรณ์หรือเบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่งอัตโนมัติ'));
+    navigator.geolocation.getCurrentPosition(position => resolve({ lat: Number(position.coords.latitude), lng: Number(position.coords.longitude), accuracy: Number(position.coords.accuracy), captured_at: now(), source: 'checkout-geolocation' }), error => reject(Object.assign(new Error(error.code === 1 ? 'คุณยังไม่ได้อนุญาตให้ใช้ตำแหน่ง กรุณาเปิดสิทธิ์ในเบราว์เซอร์แล้วลองใหม่ หรือกรอกพิกัดด้วยตนเอง' : 'ยังระบุตำแหน่งไม่ได้ กรุณาตรวจการเชื่อมต่อแล้วลองใหม่'), { code: error.code })), { enableHighAccuracy: true, timeout: 12000, maximumAge: 120000 });
+  });
+  const loadProfile = async user => {
+    if (profile || !user) return profile;
+    const rows = await M.request(`user_profiles?select=email,display_name,phone,address,location&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, { private: true, cacheTtlMs: 10000, cacheKey: `customer-checkout-location:${user.id}` });
+    profile = rows?.[0] || {}; if (validPoint(profile.location)) savedLocation = profile.location;
+    const address = $('#deliveryAddress'); if (address && !address.value.trim() && profile.address) address.value = profile.address;
+    updateInputs(savedLocation); status(describe(savedLocation)); return profile;
+  };
+  const persist = async (user, point) => {
+    if (!user) throw new Error('กรุณาเข้าสู่ระบบก่อนบันทึกตำแหน่ง');
+    if (!validPoint(point)) throw new Error('กรุณาระบุ Latitude และ Longitude ให้ถูกต้อง');
+    await loadProfile(user); const location = { ...point, lat: Number(point.lat), lng: Number(point.lng), captured_at: point.captured_at || now(), source: point.source || 'manual-coordinate' };
+    await M.request('user_profiles?on_conflict=user_id', { method: 'POST', private: true, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ user_id: user.id, email: profile?.email || user.email || '', display_name: profile?.display_name || user.user_metadata?.display_name || user.email || 'ลูกค้า AP Service', phone: profile?.phone || '', address: $('#deliveryAddress')?.value.trim() || profile?.address || '', location, updated_at: now() }) });
+    try { await M.request('user_consents?on_conflict=user_id,consent_type,policy_version', { method: 'POST', private: true, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ user_id: user.id, consent_type: 'location_access', policy_version: '2026-08-18', granted: true, granted_at: now(), source: 'customer_mpa_checkout', evidence: { route: window.location.pathname, location_source: location.source, accuracy: location.accuracy || 0 }, created_at: now(), updated_at: now() }) }); } catch (_) { /* Consent evidence must not prevent profile-location persistence if a legacy schema lacks the composite conflict key. */ }
+    savedLocation = location; profile = { ...(profile || {}), location, address: $('#deliveryAddress')?.value.trim() || profile?.address || '' }; try { localStorage.setItem(cacheKey, JSON.stringify(location)); } catch (_) { }
+    updateInputs(location); status(describe(location)); return location;
+  };
+  const getUser = () => M.auth.currentUser();
+  const useGps = async () => { const user = await getUser(); if (!user) return M.ui.setNotice('กรุณาเข้าสู่ระบบก่อนใช้ตำแหน่งปัจจุบัน', 'error'); const button = $('#checkoutLocationGps'); if (button) button.disabled = true; status('กำลังขอตำแหน่งจากอุปกรณ์…'); try { const location = await requestGps(); setSelectedPoint(location); await persist(user, location); M.ui.setNotice('บันทึกตำแหน่งปัจจุบันแล้ว'); } catch (error) { status(error.message); openManual(); M.ui.setNotice(error.message, 'error'); } finally { if (button) button.disabled = false; } };
+  const openMap = async () => { const modal = $('#checkoutLocationModal'); if (!modal) return; modal.hidden = false; modal.setAttribute('aria-hidden', 'false'); const base = validPoint(savedLocation) ? savedLocation : validPoint(selectedPoint) ? selectedPoint : { lat: 13.7563, lng: 100.5018 }; setSelectedPoint(base); status('กำลังเตรียมแผนที่…'); const available = await ensureLeaflet(); if (!available) return fallback('ไม่สามารถโหลดเครื่องมือแผนที่ได้ ใช้ GPS หรือกรอกพิกัดด้านล่างเพื่อบันทึกตำแหน่งได้ทันที'); const canvas = $('#checkoutLocationMap'); if (!map) { map = window.L.map(canvas, { zoomControl: true, attributionControl: true, preferCanvas: true, tap: true, zoomAnimation: false, fadeAnimation: false }); map.on('click', event => setSelectedPoint(event.latlng)); mountTiles(false); } map.setView([base.lat, base.lng], 17, { animate: false }); setSelectedPoint(base, false); setTimeout(() => map.invalidateSize(false), 100); status('แตะบนแผนที่หรือเลื่อนหมุด แล้วกดบันทึกพิกัด'); };
+  const saveMap = async () => { const user = await getUser(); if (!user) return M.ui.setNotice('กรุณาเข้าสู่ระบบก่อนบันทึกตำแหน่ง', 'error'); const point = selectedPoint || pointFromInputs(); try { await persist(user, { ...point, accuracy: 0, source: map ? 'map-pin' : 'manual-coordinate' }); closeMap(); M.ui.setNotice('บันทึกพิกัดจัดส่งแล้ว'); } catch (error) { fallback(error.message); M.ui.setNotice(error.message, 'error'); } };
+  const saveManual = async () => { const user = await getUser(); if (!user) return M.ui.setNotice('กรุณาเข้าสู่ระบบก่อนบันทึกตำแหน่ง', 'error'); const point = pointFromInputs(); try { setSelectedPoint(point); await persist(user, { ...point, accuracy: 0, source: 'manual-coordinate' }); M.ui.setNotice('บันทึกพิกัดที่กรอกแล้ว'); } catch (error) { status(error.message); M.ui.setNotice(error.message, 'error'); } };
+  const mountCheckout = async () => {
+    const form = $('#checkoutForm'); if (!form || form.dataset.locationMounted) return; form.dataset.locationMounted = 'true';
+    $('#deliveryAddress')?.closest('.mpa-field')?.insertAdjacentHTML('afterend', `<section class="customer-location-card" aria-labelledby="checkoutLocationTitle"><h3 id="checkoutLocationTitle">ตำแหน่งจัดส่ง</h3><p class="mpa-muted">ใช้ GPS เพื่อความสะดวก หรือเลือกพิกัดบนแผนที่ หากแผนที่โหลดไม่ครบยังกรอก Latitude/Longitude ได้</p><p id="checkoutLocationStatus" class="mpa-muted" aria-live="polite">กำลังตรวจตำแหน่งที่บันทึกไว้…</p><div class="customer-location-actions"><button class="mpa-button mpa-button-secondary" type="button" id="checkoutLocationGps">ใช้ตำแหน่งปัจจุบัน</button><button class="mpa-button mpa-button-secondary" type="button" id="checkoutLocationMap">เลือกบนแผนที่</button><button class="mpa-button mpa-button-secondary" type="button" id="checkoutLocationManualToggle">กรอกพิกัดเอง</button></div><div id="checkoutLocationManual" class="customer-location-manual" hidden><div class="mpa-field"><label>Latitude</label><input id="checkoutLocationLat" inputmode="decimal" placeholder="เช่น 13.756300"></div><div class="mpa-field"><label>Longitude</label><input id="checkoutLocationLng" inputmode="decimal" placeholder="เช่น 100.501800"></div><div style="grid-column:1/-1"><button class="mpa-button mpa-button-secondary" type="button" id="checkoutLocationManualSave">บันทึกพิกัดที่กรอก</button></div></div></section><section id="checkoutLocationModal" class="customer-location-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="checkoutLocationMapTitle"><div class="customer-location-dialog"><div class="customer-location-modal__head"><div><h2 id="checkoutLocationMapTitle">เลือกพิกัดจัดส่ง</h2><p class="mpa-muted">แตะบนแผนที่หรือเลื่อนหมุดเพื่อปรับตำแหน่ง</p></div><button id="checkoutLocationMapClose" type="button" class="mpa-button mpa-button-secondary">ปิด</button></div><div id="checkoutLocationMap" class="customer-location-map" aria-label="แผนที่เลือกจุดจัดส่ง"></div><div class="customer-location-provider"><button id="checkoutLocationMapGps" type="button" class="mpa-button mpa-button-secondary">กลับสู่ตำแหน่งปัจจุบัน</button><button id="checkoutLocationMapProvider" type="button" class="mpa-button mpa-button-secondary">สลับแหล่งภาพแผนที่</button><button id="checkoutLocationMapRetry" type="button" class="mpa-button mpa-button-secondary">ลองโหลดแผนที่อีกครั้ง</button></div><div class="customer-location-actions"><button id="checkoutLocationMapSave" type="button" class="mpa-button">บันทึกพิกัดนี้</button></div></div></section>`);
+    $('#checkoutLocationGps').onclick = useGps; $('#checkoutLocationMap').onclick = openMap; $('#checkoutLocationManualToggle').onclick = openManual; $('#checkoutLocationManualSave').onclick = saveManual; $('#checkoutLocationMapClose').onclick = closeMap; $('#checkoutLocationMapSave').onclick = saveMap; $('#checkoutLocationMapProvider').onclick = () => mountTiles(true); $('#checkoutLocationMapRetry').onclick = () => mountTiles(false); $('#checkoutLocationMapGps').onclick = async () => { try { const point = await requestGps(); setSelectedPoint(point); status(`โฟกัสที่ตำแหน่งปัจจุบันแล้ว · ความแม่นยำประมาณ ${Math.round(point.accuracy || 0)} เมตร`); if (map) map.setView([point.lat, point.lng], 17, { animate: false }); } catch (error) { fallback(error.message); } };
+    const user = await getUser(); if (user) { try { await loadProfile(user); } catch (_) { status(describe(savedLocation)); } } else status('เข้าสู่ระบบก่อนบันทึกพิกัดจัดส่ง ระบบจะแสดงพิกัดเดิมเมื่อคุณเข้าสู่ระบบ');
+  };
+  const ensureForCheckout = async ({ user }) => { try { await loadProfile(user); } catch (_) { /* The save action below still validates current cached/profile state. */ } if (validPoint(savedLocation)) return savedLocation; status('กรุณาระบุตำแหน่งจัดส่งก่อนยืนยันออร์เดอร์'); $('#checkoutLocationStatus')?.closest('.customer-location-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); M.ui.setNotice('กรุณาใช้ GPS เลือกพิกัดบนแผนที่ หรือกรอกพิกัดเองก่อนยืนยันออร์เดอร์', 'error'); return null; };
+  window.APServiceCustomerLocation = { mountCheckout, ensureForCheckout };
+})();
