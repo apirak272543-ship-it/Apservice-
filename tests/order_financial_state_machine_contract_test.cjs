@@ -8,6 +8,9 @@ assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.checkout_groups/, '�
 assert.match(migration, /UNIQUE\(customer_id, idempotency_key\)/, 'checkout/cancellation ต้องมี idempotency ที่ผูกเจ้าของ');
 assert.match(migration, /ADD COLUMN IF NOT EXISTS workflow_state/, 'ออร์เดอร์ต้องมี canonical workflow state แยกจาก Thai status legacy');
 assert.match(migration, /sync_order_workflow_from_legacy_status/, 'ต้อง map legacy status เข้าสู่ workflow state กลาง');
+assert.match(migration, /assign_initial_order_workflow_state/, 'ออร์เดอร์ใหม่ต้องรับ canonical workflow state ตั้งแต่ before insert');
+assert.match(migration, /ร้านค้ารับออร์เดอร์' THEN 'store_accepted'/, 'สถานะจาก Customer checkout ต้อง map เป็น store_accepted');
+assert.match(migration, /ไรเดอร์กำลังไปรับ' THEN 'rider_assigned'/, 'สถานะไรเดอร์รับงาน legacy ต้อง map เป็น rider_assigned');
 assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.order_payments/, 'ต้องมี payment object แยกจาก order');
 assert.match(migration, /WHERE o\.customer_id IS NOT NULL/, 'payment backfill ต้องไม่ทำให้ legacy guest order ที่ไม่มี customer ID ล้มเหลว');
 assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.order_cancellation_requests/, 'ต้องมี cancellation request แยกจาก order');
