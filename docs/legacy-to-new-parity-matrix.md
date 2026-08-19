@@ -116,7 +116,7 @@ Legacy Merchant เรียก `DELETE menu_items` โดยตรงจาก 
 | Rider earnings และ withdrawal | ผ่าน source/regression | Rider MPA อ่าน `rider_earnings` และ wallet/withdrawal RPC จาก server; ข้อมูลยอดเงินยังไม่ใช้ตัวเลขจำลอง และหลักฐานถอนอยู่ภายใต้ RLS/storage policy |
 | Merchant sales analytics รายวัน–รายเดือน | Merchant production active | หน้า `merchant/finance.html` แสดงยอดวันนี้ เดือนนี้ และย้อนหลัง 12 เดือนจาก `delivery_orders` ที่สถานะสำเร็จเท่านั้น ใช้ยอดชำระจาก server และ timezone `Asia/Bangkok`; settlement/withdrawal เดิมยังอยู่ครบ |
 | Thai-first navigation copy | Customer, Merchant และ Rider production active | Customer แปล default tagline และ hero eyebrow; Merchant/Rider คง legacy link ไว้แต่แสดง `ระบบเดิม` แทนคำเทคนิค `Fallback`; regression และ asset production verification ผ่าน |
-| AP Retail POS Thai-first sign-in shell | Source/regression ผ่าน, production pending | หน้า login แปลหัวข้อและคำอธิบายสิทธิ์เป็นไทย; runtime, schema, checkout และ logout contracts ผ่าน แต่ GitHub Pages workflow ของ commit `10faa45` ยังอยู่ในคิว ณ เวลาตรวจ |
+| AP Retail POS Thai-first sign-in shell | Production active | หน้า login แปลหัวข้อและคำอธิบายสิทธิ์เป็นไทย; runtime, schema, checkout และ logout contracts ผ่าน และ production แสดง `ระบบขายหน้าร้าน` กับข้อความสิทธิ์ภาษาไทยแล้ว |
 
 ### ข้อจำกัดการทดสอบที่ยังเปิดอยู่
 
@@ -125,6 +125,6 @@ Legacy Merchant เรียก `DELETE menu_items` โดยตรงจาก 
 | Admin Order Control Plane | Blocked ชั่วคราว | Login ด้วย AImanus Admin แล้วตรวจ action sheet แบบ read-only และทดสอบ mutation กับข้อมูลทดสอบที่อนุญาตเท่านั้น |
 | Rider presence | Blocked ชั่วคราว | ทดสอบ permission GPS อนุญาต/ปฏิเสธ, readiness ที่ผ่าน/ไม่ผ่าน compliance และ native WebView APK บนอุปกรณ์จริง |
 | Merchant sales analytics | Blocked ชั่วคราว | ตรวจ responsive layout หน้าการเงินบนมือถือ และเทียบยอดกับออร์เดอร์สำเร็จของร้าน audit |
-| AP Retail POS release | Pending | รอ GitHub Pages workflow ออกจากคิว แล้วตรวจ asset production และ WebView APK |
+| AP Retail POS WebView APK | Blocked ชั่วคราว | Asset production ยืนยันแล้ว; เหลือเปิดผ่าน WebView APK และทดสอบ keyboard, safe-area, sign-in/error flow บนอุปกรณ์จริง |
 
 > รอบนี้ไม่ลบ legacy entrypoint, ไม่เปลี่ยน schema ธุรกิจกลาง และไม่เขียนยอดเงินจาก client; ทุกการปรับ UI คงลิงก์และ source of truth เดิมไว้
