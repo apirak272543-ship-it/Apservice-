@@ -29,7 +29,7 @@
 - [x] หาและแก้ root cause ที่ปุ่มยืนยันออกจากระบบไม่จบ session หลังผู้ใช้กดยืนยัน
 - [x] ย้ายการจัดการภาพหน้า Login เข้าแท็บ/หมวดคลังสื่อที่เหมาะสม โดยคงหน้าจอเดิมเป็นเส้นทางเข้าถึงได้
 - [x] ตรวจและแก้เมนูสามจุดของ Admin ทุกลิงก์ที่ไปผิดหน้า 404 หรือไม่สอดคล้องกับหน้าที่ใช้งาน
-- [ ] เพิ่ม regression tests และเผยแพร่การแก้ไข Admin screenshot-verified fixes
+- [x] เพิ่ม regression tests และเผยแพร่การแก้ไข Admin screenshot-verified fixes
 - [ ] ทดสอบการกด Logout, แท็บสื่อหน้า Login และเมนูสามจุดบนอุปกรณ์จริงหลัง production เผยแพร่
 
 - [x] Re-group Admin navigation into four user-approved work categories
