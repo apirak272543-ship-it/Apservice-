@@ -11,7 +11,11 @@ type Role = 'rider' | 'store_owner'
 type ManagedRole = Role | 'customer' | 'admin'
 type RoleProfile = { user_id: string; email: string; login_id: string | null }
 type RiderEntity = { id: string; name: string; emoji?: string; phone?: string; vehicle?: string; status?: string; lastLocation?: unknown }
-type StoreEntity = { id: string; name: string; emoji?: string; desc?: string; rating?: number; eta?: string; phone?: string; location?: unknown; active?: boolean }
+type StoreEntity = {
+  id: string; name: string; emoji?: string; desc?: string; rating?: number; eta?: string; phone?: string; location?: unknown; active?: boolean;
+  legal_name?: string; registration_number?: string; contact_name?: string; contact_email?: string;
+  registered_address?: string; pickup_address?: string; delivery_address?: string; registration_document_url?: string; category_id?: string;
+}
 type LocalOrder = {
   id?: unknown; storeId?: unknown; storeName?: unknown; serviceType?: unknown; status?: unknown; riderId?: unknown; riderName?: unknown;
   customerEmail?: unknown; name?: unknown; total?: unknown; creditUsed?: unknown; payable?: unknown; deliveryFee?: unknown;
@@ -198,7 +202,7 @@ Deno.serve(async (request) => {
       const entityId = text(body.entity_id)
       const section = text(body.section)
       const input = (body.data && typeof body.data === 'object' ? body.data : {}) as Record<string, unknown>
-      if (!entityId || !['general', 'appearance', 'operations'].includes(section)) return json({ error: 'กรุณาระบุร้านค้าและหมวดข้อมูลที่ต้องการบันทึก' }, 400)
+      if (!entityId || !['general', 'identity', 'addresses', 'documents', 'appearance', 'operations'].includes(section)) return json({ error: 'กรุณาระบุร้านค้าและหมวดข้อมูลที่ต้องการบันทึก' }, 400)
       const { data: existing, error: existingError } = await admin.from('stores').select('id,name').eq('id', entityId).maybeSingle()
       if (existingError) return json({ error: existingError.message }, 400)
       if (!existing) return json({ error: 'ไม่พบร้านค้าที่ต้องการแก้ไข' }, 404)
@@ -213,6 +217,30 @@ Deno.serve(async (request) => {
         if (has('settlement_gp_percent')) { const gp = number(input.settlement_gp_percent); if (!Number.isFinite(gp) || gp < 0 || gp > 100) return json({ error: 'GP ร้านค้าต้องอยู่ระหว่าง 0 ถึง 100' }, 400); updates.settlement_gp_percent = gp }
         if (has('phone')) { const phone = text(input.phone); if (!/^\+?[0-9][0-9\-\s()]{7,18}$/.test(phone)) return json({ error: 'รูปแบบเบอร์โทรติดต่อร้านไม่ถูกต้อง' }, 400); updates.phone = phone }
         if (has('category_id')) updates.category_id = text(input.category_id) || null
+      }
+
+      if (section === 'identity') {
+        if (has('legal_name')) updates.legal_name = text(input.legal_name).slice(0, 160)
+        if (has('registration_number')) updates.registration_number = text(input.registration_number).slice(0, 120)
+        if (has('contact_name')) updates.contact_name = text(input.contact_name).slice(0, 160)
+        if (has('contact_email')) { const email = normalizedId(input.contact_email); if (email && !looksLikeEmail(email)) return json({ error: 'รูปแบบอีเมลติดต่อร้านไม่ถูกต้อง' }, 400); updates.contact_email = email }
+        if (has('phone')) { const phone = text(input.phone); if (!/^\+?[0-9][0-9\-\s()]{7,18}$/.test(phone)) return json({ error: 'รูปแบบเบอร์โทรติดต่อร้านไม่ถูกต้อง' }, 400); updates.phone = phone }
+        if (has('category_id')) updates.category_id = text(input.category_id) || null
+      }
+
+      if (section === 'addresses') {
+        for (const key of ['registered_address', 'pickup_address', 'delivery_address']) {
+          if (has(key)) updates[key] = text(input[key]).slice(0, 800)
+        }
+        if (has('location')) updates.location = input.location || null
+      }
+
+      if (section === 'documents') {
+        if (has('registration_document_url')) {
+          const value = text(input.registration_document_url)
+          if (value && !value.startsWith('store-documents/')) return json({ error: 'ตำแหน่งเอกสารร้านไม่ถูกต้อง' }, 400)
+          updates.registration_document_url = value
+        }
       }
 
       if (section === 'appearance') {
@@ -231,7 +259,7 @@ Deno.serve(async (request) => {
       }
 
       if (Object.keys(updates).length === 1) return json({ error: 'ไม่พบข้อมูลที่แก้ไขในหมวดนี้' }, 400)
-      const { data: updated, error: updateError } = await admin.from('stores').update(updates).eq('id', entityId).select('id,name,emoji,description,rating,eta,phone,location,image_url,background_url,open_time,close_time,order_cutoff_minutes,emergency_closed,emergency_note,category_id,active,moderation_status,moderation_reason,moderation_changed_at').single()
+      const { data: updated, error: updateError } = await admin.from('stores').update(updates).eq('id', entityId).select('id,name,emoji,description,rating,eta,phone,location,image_url,background_url,open_time,close_time,order_cutoff_minutes,emergency_closed,emergency_note,category_id,legal_name,registration_number,contact_name,contact_email,registered_address,pickup_address,delivery_address,registration_document_url,active,moderation_status,moderation_reason,moderation_changed_at').single()
       if (updateError) return json({ error: updateError.message }, 400)
       return json({ ok: true, entity_id: entityId, section, store: updated })
     }
@@ -272,6 +300,31 @@ Deno.serve(async (request) => {
       const { data: profile, error: profileError } = rider.user_id ? await admin.from('user_profiles').select('email,login_id,phone,display_name').eq('user_id', rider.user_id).maybeSingle() : { data: null, error: null }
       if (profileError) return json({ error: profileError.message }, 400)
       return json({ ok: true, role, entity_id: rider.id, email: profile?.email || '', login_id: profile?.login_id || '', phone: profile?.phone || rider.phone || '', display_name: profile?.display_name || rider.name || '' })
+    }
+
+    if (body.action === 'get_withdrawal_review_detail') {
+      const requestId = text(body.request_id)
+      if (!requestId) return json({ error: 'กรุณาระบุคำขอถอนเงินที่ต้องการตรวจสอบ' }, 400)
+      const { data: withdrawal, error: withdrawalError } = await admin.from('withdrawal_requests').select('id,recipient_type,store_id,rider_id,recipient_name,amount,payout_snapshot,recipient_note,status,admin_note,proof_image_url,payment_reference,requested_at,reviewed_at,paid_at,proof_available').eq('id', requestId).maybeSingle()
+      if (withdrawalError) return json({ error: withdrawalError.message }, 400)
+      if (!withdrawal) return json({ error: 'ไม่พบคำขอถอนเงิน' }, 404)
+      let recipient: Record<string, unknown> = { name: withdrawal.recipient_name || '', phone: '', address: '', user_id: '' }
+      if (withdrawal.recipient_type === 'rider' && withdrawal.rider_id) {
+        const { data: rider, error } = await admin.from('riders').select('id,user_id,name,phone').eq('id', withdrawal.rider_id).maybeSingle()
+        if (error) return json({ error: error.message }, 400)
+        if (rider) {
+          const { data: profile } = rider.user_id ? await admin.from('user_profiles').select('display_name,phone,address,email').eq('user_id', rider.user_id).maybeSingle() : { data: null }
+          recipient = { name: profile?.display_name || rider.name || withdrawal.recipient_name || '', phone: profile?.phone || rider.phone || '', address: profile?.address || '', email: profile?.email || '', user_id: rider.user_id || '' }
+        }
+      } else if (withdrawal.recipient_type === 'store' && withdrawal.store_id) {
+        const { data: store, error } = await admin.from('stores').select('id,owner_id,name,phone,legal_name,contact_name,contact_email,registered_address,pickup_address').eq('id', withdrawal.store_id).maybeSingle()
+        if (error) return json({ error: error.message }, 400)
+        if (store) {
+          const { data: profile } = store.owner_id ? await admin.from('user_profiles').select('display_name,phone,address,email').eq('user_id', store.owner_id).maybeSingle() : { data: null }
+          recipient = { name: profile?.display_name || store.contact_name || store.legal_name || store.name || withdrawal.recipient_name || '', phone: profile?.phone || store.phone || '', address: profile?.address || store.pickup_address || store.registered_address || '', email: profile?.email || store.contact_email || '', user_id: store.owner_id || '', store_name: store.name || '' }
+        }
+      }
+      return json({ ok: true, withdrawal, recipient })
     }
 
     if (body.action === 'list_user_control_plane') {
@@ -484,7 +537,7 @@ Deno.serve(async (request) => {
       const { error: riderError } = await admin.from('riders').upsert({ id: entityId, user_id: userId, name: rider.name.trim(), emoji: rider.emoji || '🛵', phone: rider.phone || '', vehicle: rider.vehicle || 'มอเตอร์ไซค์', status: rider.status || 'พร้อมรับงาน', last_location: rider.lastLocation || null }, { onConflict: 'id' }); if (riderError) return json({ error: riderError.message }, 400)
     } else {
       const store = entity as StoreEntity; if (!store.name?.trim()) return json({ error: 'กรุณาระบุชื่อร้านค้า' }, 400)
-      const { error: storeError } = await admin.from('stores').upsert({ id: entityId, owner_id: userId, name: store.name.trim(), emoji: store.emoji || '🍽️', description: store.desc || '', rating: Number(store.rating || 0), eta: store.eta || '', phone: store.phone || phone, location: store.location || null, active: store.active !== false }, { onConflict: 'id' }); if (storeError) return json({ error: storeError.message }, 400)
+      const { error: storeError } = await admin.from('stores').upsert({ id: entityId, owner_id: userId, name: store.name.trim(), emoji: store.emoji || '🍽️', description: store.desc || '', rating: Number(store.rating || 0), eta: store.eta || '', phone: store.phone || phone, location: store.location || null, active: store.active !== false, legal_name: text(store.legal_name).slice(0, 160), registration_number: text(store.registration_number).slice(0, 120), contact_name: text(store.contact_name).slice(0, 160), contact_email: normalizedId(store.contact_email), registered_address: text(store.registered_address).slice(0, 800), pickup_address: text(store.pickup_address).slice(0, 800), delivery_address: text(store.delivery_address).slice(0, 800), registration_document_url: text(store.registration_document_url), category_id: text(store.category_id) || null }, { onConflict: 'id' }); if (storeError) return json({ error: storeError.message }, 400)
     }
     return json({ ok: true, user_id: userId, email, login_id: loginId, entity_id: entityId, role })
   } catch (error) { return json({ error: error instanceof Error ? error.message : 'Unexpected error' }, 500) }
