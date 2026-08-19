@@ -128,3 +128,9 @@ Legacy Merchant เรียก `DELETE menu_items` โดยตรงจาก 
 | AP Retail POS WebView APK | Blocked ชั่วคราว | Asset production ยืนยันแล้ว; เหลือเปิดผ่าน WebView APK และทดสอบ keyboard, safe-area, sign-in/error flow บนอุปกรณ์จริง |
 
 > รอบนี้ไม่ลบ legacy entrypoint, ไม่เปลี่ยน schema ธุรกิจกลาง และไม่เขียนยอดเงินจาก client; ทุกการปรับ UI คงลิงก์และ source of truth เดิมไว้
+
+### Browser recovery evidence
+
+มีการปิด browser session, ล้าง Chromium HTTP/code/GPU cache และ temporary headless profiles รวมถึงหยุด stale headless workers โดยคง Cookies, Login Data และ session storage ไว้ครบ จากนั้นหน้า Admin production เปิดได้ แต่คำสั่งอ่านฟอร์มแบบ interactive ทำให้ managed browser service กลับเข้าสู่ crash-loop ทันที จึงสรุปได้ว่า blocker ปัจจุบันไม่ใช่ cache หรือ worker เก่า การทดสอบ action sheet และ WebView APK ต้องทำต่อเมื่อ browser service กลับมาเสถียรหรือบนอุปกรณ์จริง
+
+การตรวจแทนที่ทำได้ผ่านแล้วคือ production static asset ยืนยันว่า Admin status, assign Rider และ item editing เรียก `manage_delivery_order`; และ smoke test แบบไม่เปลี่ยนข้อมูลผ่าน `role-access` production สำเร็จ

@@ -16,6 +16,14 @@
 - [x] Create payment-pending orders after preliminary slip validation and surface them in an Admin verification queue
 - [ ] Validate slip amount, date, time, recipient, and transaction reference with a trusted provider before automatic approval
 
+## Browser Recovery and Production Verification
+
+- [x] ล้าง Chromium HTTP/code/GPU cache และ temporary headless cache โดยคง Cookies/Login Data ไว้
+- [ ] กู้ browser subsystem crash-loop และยืนยันการเปิด production แบบ interactive ได้เสถียร
+- [ ] ทดสอบ Admin Order Control Plane แบบไม่เปลี่ยนข้อมูลด้วยบัญชี AImanus Admin
+- [ ] ตรวจ WebView-facing production routes ที่เกี่ยวข้องโดยไม่ทำ mutation
+- [ ] บันทึกผลทดสอบและข้อจำกัดที่ยังเหลือใน parity matrix
+
 - [x] Re-group Admin navigation into four user-approved work categories
 - [x] Move payment-slip verification into งานและออร์เดอร์ and separate incoming, in-progress, completed order views
 - [x] Move customer chat, admin management, store/menu management, rider management, rider applications, and AI Workspace into บัญชีและโปรไฟล์
