@@ -50,8 +50,8 @@
 
 | ระดับ | แอป | ผลเทียบที่ยืนยันแล้ว | การดำเนินการ |
 |---|---|---|---|
-| P0 | Customer | fallback มี reliable map picker, tile provider switch/retry และ manual coordinates; Customer MPA มี GPS ใน Profile แต่ Checkout ยังไม่มี fallback ดังกล่าว | ย้าย Location/Bill experience ก่อนทำ checkout parity sign-off |
-| P1 | Rider | fallback มี `verifyDeliveryGps`, destination map/GPS และ manual destination; Rider MPA delivery มี status/proof media แต่ไม่พบ geolocation หรือ map fallback | ย้าย delivery location verification/fallback โดยให้ server เป็นผู้ตัดสิน business rule |
+| P0 | Customer | fallback มี reliable map picker, tile provider switch/retry และ manual coordinates; Customer MPA มี GPS ใน Profile แต่ Checkout ยังไม่มี fallback ดังกล่าว | **ย้ายแล้ว:** checkout มี GPS retry, provider fallback และ manual coordinate persistence; รอ interactive Web/WebView retest ก่อน sign-off |
+| P1 | Rider | fallback มี `verifyDeliveryGps`, destination map/GPS และ manual destination; Rider MPA delivery มี status/proof media แต่ไม่พบ geolocation หรือ map fallback | **ย้ายแล้ว:** delivery มี GPS verification, Google/OpenStreetMap fallback และ manual route reference ที่ไม่เขียนทับจุดส่งลูกค้า; รอ interactive retest ก่อน sign-off |
 | P1 | Merchant | fallback มี delete menu และ error report; MPA มี create/edit/availability/media/order/finance แล้ว แต่ต้องตัดสิน policy ก่อนย้าย delete เพราะ Golden Rules ห้ามลบความสามารถเดิมโดยไม่อนุมัติ และ delete มีความเสี่ยงต่อข้อมูล | ทำ discovery UI/permission ก่อนเสนอ soft-delete หรือ retained legacy action |
 | P1 | Admin | legacy มี map picker และ operational commands จำนวนมาก; MPA มี control plane/section action จำนวนมากเช่นกัน แต่ยังต้อง trace action ต่อ action ไม่ใช่เทียบจากชื่อ function | ทำ section-level functional mapping โดยใช้ Admin audit account และ server action log |
 
@@ -91,10 +91,18 @@ Legacy Merchant เรียก `DELETE menu_items` โดยตรงจาก 
 |---|---|---|---|
 | Dashboard | สรุปงานค้างและการเงินจากข้อมูลจริง, ทางลัดไปงานย่อย | Read ผ่าน RLS | ผ่าน source review; browser audit รอระบบ browser กลับมา |
 | Accounts / Customers | แยก Admin, Customer, Store, Rider; บัญชี, role, feature overrides และ wallet adjustment | `role-access`: `list_user_control_plane`, `create_managed_account`, `set_user_roles`, `set_account_control`, `adjust_customer_wallet` | ผ่าน server-control-plane source contract |
-| Stores V3 | สร้างร้าน+Merchant, บัญชี Merchant, ระงับร้าน, ปิดฉุกเฉิน, GP, เวลา/พิกัด, สื่อ และเมนู | `role-access` สำหรับ provision, account, moderation และ emergency state | **P1 hardening:** การแก้ field/sื่อ และ delete menu บางเส้นยัง PATCH/DELETE table โดยตรง; ต้องย้ายเป็น allow-listed server action ก่อน retirement sign-off |
+| Stores V3 | สร้างร้าน+Merchant, บัญชี Merchant, ระงับร้าน, ปิดฉุกเฉิน, GP, เวลา/พิกัด, สื่อ และเมนู | `role-access` สำหรับ provision, account, moderation, emergency state และ `update_store_section` | **Hardening applied:** GP, field, พิกัด และ media update ผ่าน allow-listed server action แล้ว (role-access v13); destructive Admin menu delete ยังต้องตัดสิน policy ก่อน retirement sign-off |
 | Orders | ดูคิวและเปลี่ยนสถานะตาม Shared Core | RLS และ client transition helper ที่ตรวจในหน้า | **P1 evidence required:** ยืนยัน policy/RPC ฝั่ง backend ว่าป้องกัน invalid transition แม้ client ถูกดัดแปลง |
 | Finance | ดูสลิป signed URL, อนุมัติ/ปฏิเสธ/จ่ายคำขอถอนพร้อมหลักฐาน ≤1 MB | `rpc/admin_review_withdrawal` สำหรับ withdrawal; signed private media | ผ่าน withdrawal server RPC; payment-slip multi-table update ต้องมี browser/API retest |
 | Riders | เพิ่ม/แก้ rider, สถานะ, รถ และ operational note | RLS row mutation ปัจจุบัน | **P1 evidence required:** ยืนยัน server authorization/action log สำหรับ create/edit/suspend ก่อนปลด legacy console |
 | Notifications / Media | งานวันนี้, pending/history และ preview media/signed private media; migration รูป legacy ผ่าน Shared Media Service | RLS read, Shared Media Service | ผ่าน source review; ต้อง browser retest empty/error/modals |
 
 > ยังไม่มี section ใดของ Admin ได้สถานะพร้อมปลด legacy จนกว่าจะผ่าน browser audit ด้วยบัญชี AImanus Admin และปิด P1 hardening/evidence ตามตารางนี้
+
+## Deployment Evidence
+
+| รายการ | สถานะ | หลักฐาน |
+|---|---|---|
+| Customer Location/Bill MPA | Production active | Customer GitHub Pages อ้าง `customer-location-picker.js` แล้ว |
+| Rider Delivery GPS/Map MPA | Production active | Rider GitHub Pages อ้าง `rider-delivery-location.js` แล้ว |
+| Admin Store Control Plane | Backend active | Supabase `role-access` version 13, `verify_jwt=true`, active; deployed 19 สิงหาคม 2026 พร้อม GP range validation และ allow-listed `update_store_section` |
