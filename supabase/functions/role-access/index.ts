@@ -19,6 +19,27 @@ type LocalOrder = {
   distanceKm?: unknown; note?: unknown; orderedAt?: unknown; acceptedAt?: unknown; deliveryStartedAt?: unknown; completedAt?: unknown;
   items?: unknown[]
 }
+type OrderItemInput = { id?: unknown; item_id?: unknown; name?: unknown; emoji?: unknown; unit_price?: unknown; quantity?: unknown; options?: unknown }
+
+const ORDER_STATUS = Object.freeze({
+  PAYMENT_REVIEW: 'รอตรวจสอบการชำระเงิน', PAYMENT_RETRY: 'ต้องแนบสลิปใหม่', CREDIT_REVIEW: 'รอตรวจสอบเครดิต',
+  STORE_ACCEPTED: 'ร้านค้ารับออร์เดอร์', PREPARING: 'กำลังเตรียมสินค้า', RIDER_PICKUP: 'ไรเดอร์กำลังไปรับ',
+  ARRIVED_STORE: 'ถึงร้านค้า', COLLECTED: 'รับสินค้าแล้ว', DELIVERING: 'กำลังไปส่ง', COMPLETED: 'สำเร็จแล้ว', CANCELLED: 'ยกเลิก',
+})
+const ORDER_TRANSITIONS: Record<string, string[]> = {
+  [ORDER_STATUS.PAYMENT_REVIEW]: [ORDER_STATUS.STORE_ACCEPTED, ORDER_STATUS.PAYMENT_RETRY, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.PAYMENT_RETRY]: [ORDER_STATUS.PAYMENT_REVIEW, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.CREDIT_REVIEW]: [ORDER_STATUS.STORE_ACCEPTED, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.STORE_ACCEPTED]: [ORDER_STATUS.PREPARING, ORDER_STATUS.RIDER_PICKUP, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.PREPARING]: [ORDER_STATUS.RIDER_PICKUP, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.RIDER_PICKUP]: [ORDER_STATUS.ARRIVED_STORE, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.ARRIVED_STORE]: [ORDER_STATUS.COLLECTED, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.COLLECTED]: [ORDER_STATUS.DELIVERING, ORDER_STATUS.COMPLETED, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.DELIVERING]: [ORDER_STATUS.COMPLETED, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.COMPLETED]: [], [ORDER_STATUS.CANCELLED]: [],
+}
+const TERMINAL_ORDER_STATUSES = new Set([ORDER_STATUS.COMPLETED, ORDER_STATUS.CANCELLED])
+const EDITABLE_ORDER_STATUSES = new Set([ORDER_STATUS.PAYMENT_REVIEW, ORDER_STATUS.PAYMENT_RETRY, ORDER_STATUS.CREDIT_REVIEW, ORDER_STATUS.STORE_ACCEPTED, ORDER_STATUS.PREPARING])
 
 const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers: corsHeaders })
 const isRole = (value: unknown): value is Role => value === 'rider' || value === 'store_owner'
@@ -298,6 +319,92 @@ Deno.serve(async (request) => {
       if (authUpdates.email) await admin.from('stores').update({ owner_email: authUpdates.email, updated_at: new Date().toISOString() }).eq('id', entityId)
       await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'store_account_updated', after_state: { store_id: entityId, fields: Object.keys(input) } })
       return json({ ok: true, entity_id: entityId })
+    }
+
+    if (body.action === 'manage_delivery_order') {
+      const orderId = text(body.order_id)
+      const operation = text(body.operation)
+      const reason = text(body.reason)
+      const input = (body.data && typeof body.data === 'object' ? body.data : {}) as Record<string, unknown>
+      if (!orderId || !['status', 'assign_rider', 'items'].includes(operation)) return json({ error: 'กรุณาระบุออร์เดอร์และคำสั่งจัดการที่ถูกต้อง' }, 400)
+      const { data: order, error: orderError } = await admin.from('delivery_orders').select('id,status,total,payable,delivery_fee,credit_used,rider_id,rider_name,accepted_at,delivery_started_at,completed_at').eq('id', orderId).maybeSingle()
+      if (orderError) return json({ error: orderError.message }, 400)
+      if (!order) return json({ error: 'ไม่พบออร์เดอร์ที่ต้องการจัดการ' }, 404)
+      const now = new Date().toISOString()
+      const writeAudit = async (action: string, beforeState: Record<string, unknown>, afterState: Record<string, unknown>) => {
+        const { error } = await admin.from('admin_action_audit').insert({ actor_id: caller.id, action, reason: reason || null, before_state: beforeState, after_state: afterState })
+        if (error) throw new Error(`บันทึกประวัติผู้ดูแลไม่สำเร็จ: ${error.message}`)
+      }
+
+      if (operation === 'status') {
+        const nextStatus = text(input.status)
+        if (!nextStatus || !(ORDER_TRANSITIONS[String(order.status)] || []).includes(nextStatus)) return json({ error: `ไม่อนุญาตให้เปลี่ยนจาก “${text(order.status)}” เป็น “${nextStatus}”` }, 409)
+        const updates: Record<string, unknown> = { status: nextStatus, updated_at: now }
+        if (nextStatus === ORDER_STATUS.STORE_ACCEPTED && !order.accepted_at) updates.accepted_at = now
+        if (nextStatus === ORDER_STATUS.DELIVERING && !order.delivery_started_at) updates.delivery_started_at = now
+        if (nextStatus === ORDER_STATUS.COMPLETED && !order.completed_at) updates.completed_at = now
+        const { data: updated, error: updateError } = await admin.from('delivery_orders').update(updates).eq('id', orderId).select('id,status,accepted_at,delivery_started_at,completed_at,updated_at').single()
+        if (updateError) return json({ error: updateError.message }, 400)
+        const { error: eventError } = await admin.from('order_status_events').insert({ order_id: orderId, status: nextStatus, actor_id: caller.id, actor_label: 'Admin' })
+        if (eventError) return json({ error: `บันทึกประวัติสถานะไม่สำเร็จ: ${eventError.message}` }, 400)
+        await writeAudit('order_status_updated', { order_id: orderId, status: order.status }, { order_id: orderId, status: nextStatus })
+        return json({ ok: true, operation, order: updated })
+      }
+
+      if (operation === 'assign_rider') {
+        if (TERMINAL_ORDER_STATUSES.has(String(order.status))) return json({ error: 'ออร์เดอร์ที่ปิดงานแล้วไม่สามารถเปลี่ยน Rider ได้' }, 409)
+        const riderId = text(input.rider_id) || null
+        let riderName: string | null = null
+        if (riderId) {
+          const { data: rider, error: riderError } = await admin.from('riders').select('id,name,status,ride_available,compliance_status').eq('id', riderId).maybeSingle()
+          if (riderError) return json({ error: riderError.message }, 400)
+          if (!rider) return json({ error: 'ไม่พบ Rider ที่เลือก' }, 404)
+          const ready = rider.status === 'พร้อมรับงาน' || rider.ride_available === true
+          if (!ready || ['suspended', 'expired'].includes(String(rider.compliance_status || '').toLowerCase())) return json({ error: 'Rider ที่เลือกยังไม่พร้อมรับงานหรือถูกระงับ' }, 409)
+          riderName = text(rider.name) || null
+        }
+        if (reason.length < 3) return json({ error: 'กรุณาระบุเหตุผลการมอบหมายหรือยกเลิก Rider อย่างน้อย 3 ตัวอักษร' }, 400)
+        const { data: updated, error: updateError } = await admin.from('delivery_orders').update({ rider_id: riderId, rider_name: riderName, updated_at: now }).eq('id', orderId).select('id,rider_id,rider_name,updated_at').single()
+        if (updateError) return json({ error: updateError.message }, 400)
+        await writeAudit('order_rider_assigned', { order_id: orderId, rider_id: order.rider_id, rider_name: order.rider_name }, { order_id: orderId, rider_id: riderId, rider_name: riderName })
+        return json({ ok: true, operation, order: updated })
+      }
+
+      if (operation !== 'items') return json({ error: 'คำสั่งจัดการออร์เดอร์นี้ไม่รองรับ' }, 400)
+      if (!EDITABLE_ORDER_STATUSES.has(String(order.status))) return json({ error: 'แก้ไขรายการได้ก่อนเข้าสู่ขั้นรับสินค้าเท่านั้น' }, 409)
+      if (reason.length < 3) return json({ error: 'กรุณาระบุเหตุผลการแก้ไขรายการอย่างน้อย 3 ตัวอักษร' }, 400)
+      const submitted = Array.isArray(input.items) ? input.items.slice(0, 60) as OrderItemInput[] : []
+      if (!submitted.length) return json({ error: 'ออร์เดอร์ต้องมีรายการอย่างน้อยหนึ่งรายการ' }, 400)
+      const { data: existingRows, error: itemsError } = await admin.from('delivery_order_items').select('id,order_id,item_id,name,emoji,unit_price,quantity,options').eq('order_id', orderId).order('id', { ascending: true })
+      if (itemsError) return json({ error: itemsError.message }, 400)
+      const existingById = new Map((existingRows || []).map(row => [String(row.id), row]))
+      const seenIds = new Set<string>()
+      const items = submitted.map((row, index) => {
+        const id = text(row.id)
+        if (id && (!existingById.has(id) || seenIds.has(id))) throw new Error('พบรายการออร์เดอร์ที่อ้างอิงไม่ถูกต้องหรือซ้ำ')
+        if (id) seenIds.add(id)
+        const name = text(row.name)
+        const unitPrice = Number(row.unit_price)
+        const quantity = Number(row.quantity)
+        if (!name || name.length > 160 || !Number.isFinite(unitPrice) || unitPrice < 0 || unitPrice > 1_000_000 || !Number.isInteger(quantity) || quantity < 1 || quantity > 200) throw new Error(`ข้อมูลรายการที่ ${index + 1} ไม่ถูกต้อง`)
+        return { id: id || null, order_id: orderId, item_id: text(row.item_id) || null, name, emoji: text(row.emoji, '🍽️').slice(0, 12) || '🍽️', unit_price: unitPrice, quantity, options: row.options && typeof row.options === 'object' ? row.options : {} }
+      })
+      const subtotal = items.reduce((sum, row) => sum + Number(row.unit_price) * Number(row.quantity), 0)
+      const deliveryFee = Math.max(0, Number(order.delivery_fee || 0))
+      const creditUsed = Math.min(Math.max(0, Number(order.credit_used || 0)), subtotal + deliveryFee)
+      const total = subtotal + deliveryFee
+      const payable = Math.max(0, total - creditUsed)
+      for (const row of items) {
+        const payload = { order_id: row.order_id, item_id: row.item_id, name: row.name, emoji: row.emoji, unit_price: row.unit_price, quantity: row.quantity, options: row.options }
+        const { error } = row.id ? await admin.from('delivery_order_items').update(payload).eq('id', row.id).eq('order_id', orderId) : await admin.from('delivery_order_items').insert(payload)
+        if (error) return json({ error: error.message }, 400)
+      }
+      const removedIds = (existingRows || []).map(row => String(row.id)).filter(id => !seenIds.has(id))
+      if (removedIds.length) { const { error } = await admin.from('delivery_order_items').delete().eq('order_id', orderId).in('id', removedIds); if (error) return json({ error: error.message }, 400) }
+      const { data: updated, error: updateError } = await admin.from('delivery_orders').update({ total, credit_used: creditUsed, payable, updated_at: now }).eq('id', orderId).select('id,total,credit_used,payable,updated_at').single()
+      if (updateError) return json({ error: updateError.message }, 400)
+      await writeAudit('order_items_updated', { order_id: orderId, total: order.total, payable: order.payable, item_count: (existingRows || []).length }, { order_id: orderId, total, payable, item_count: items.length })
+      return json({ ok: true, operation, order: updated, item_count: items.length })
     }
 
     if (body.action !== 'provision') return json({ error: 'Unsupported action' }, 400)
