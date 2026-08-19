@@ -117,6 +117,7 @@
     const items = M.cart.read();
     app('stores', `<div class="mpa-page-head"><div><h1>ตรวจสอบและสั่งซื้อ</h1><p>ล็อกอินก่อนยืนยันออร์เดอร์ ระบบจะบันทึกตาม RLS ของลูกค้า</p></div><a class="mpa-button mpa-button-secondary" href="stores.html">เพิ่มสินค้า</a></div><div class="mpa-grid" style="grid-template-columns:minmax(0,1.25fr) minmax(290px,.75fr)"><section class="mpa-card"><div class="mpa-table-wrap"><table class="mpa-table"><thead><tr><th>รายการ</th><th>ราคา</th><th>จำนวน</th><th>รวม</th></tr></thead><tbody id="cartRows">${items.length ? cartRows(items) : `<tr><td colspan="4">ตะกร้ายังว่าง</td></tr>`}</tbody></table></div></section><aside class="mpa-card"><h2 style="margin-top:0">รายละเอียดจัดส่ง</h2><form id="checkoutForm"><div class="mpa-field"><label>ที่อยู่จัดส่ง</label><textarea id="deliveryAddress" required rows="3" placeholder="บ้านเลขที่ ถนน ตำบล อำเภอ"></textarea></div><div class="mpa-field"><label>วิธีชำระเงิน</label><select id="paymentMethod"><option>เงินสดปลายทาง (COD)</option><option>โอนผ่าน QR / แนบสลิป</option></select></div><section id="slipPanel" hidden style="margin:12px 0;padding:14px;border:1px solid var(--ap-line);border-radius:12px"><h3 style="margin:0 0 6px">แนบสลิปโอนเงิน</h3><div id="paymentQr" class="mpa-muted" aria-live="polite">กำลังตรวจสอบข้อมูล QR จากผู้ดูแลระบบ…</div><p class="mpa-muted">เลือกรูปจากคลังหรือถ่ายจากกล้อง ระบบบีบอัดไม่เกิน 1 MB และส่งเข้าคิวตรวจสอบของผู้ดูแล</p><label class="mpa-button mpa-button-secondary" style="display:inline-block">เลือกจากคลัง<input id="slipLibrary" type="file" accept="image/jpeg,image/png,image/webp" hidden></label><label class="mpa-button mpa-button-secondary" style="display:inline-block;margin-left:8px">ถ่ายจากกล้อง<input id="slipCamera" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" hidden></label><p id="slipStatus" class="mpa-muted" aria-live="polite">ยังไม่ได้เลือกสลิป</p></section><p class="mpa-muted">ยอดรวมสินค้า <strong id="cartTotal">${M.ui.baht(M.cart.total())}</strong></p><button class="mpa-button" type="submit" style="width:100%">ยืนยันออร์เดอร์</button></form></aside></div>`);
     void window.APServiceCustomerLocation?.mountCheckout?.();
+    void window.APServiceCustomerAddressBook?.mountCheckout?.();
     const update = () => { const current = M.cart.read(); $('#cartRows').innerHTML = current.length ? cartRows(current) : `<tr><td colspan="4">ตะกร้ายังว่าง</td></tr>`; $('#cartTotal').textContent = M.ui.baht(M.cart.total()); document.querySelectorAll('[data-plus]').forEach(btn => btn.onclick = () => changeQty(btn.dataset.plus, 1)); document.querySelectorAll('[data-minus]').forEach(btn => btn.onclick = () => changeQty(btn.dataset.minus, -1)); };
     const changeQty = (id, amount) => { const current = M.cart.read(); const item = current.find(row => row.id === id); if (!item) return; item.qty += amount; M.cart.write(current.filter(row => row.qty > 0)); update(); };
     update();
@@ -134,8 +135,17 @@
       const address = $('#deliveryAddress').value.trim(), paymentMethod = $('#paymentMethod').value, isTransfer = paymentMethod === 'โอนผ่าน QR / แนบสลิป';
       const deliveryLocation = await window.APServiceCustomerLocation?.ensureForCheckout?.({ user });
       if (!deliveryLocation) return;
+      const deliveryAddress = await window.APServiceCustomerAddressBook?.ensureForCheckout?.({ user, location: deliveryLocation });
+      if (!deliveryAddress?.id) return M.ui.setNotice('กรุณาเลือกหรือบันทึกที่อยู่จัดส่งก่อนยืนยันออร์เดอร์', 'error');
       if (isTransfer && !slipFile) return M.ui.setNotice('กรุณาแนบสลิปโอนเงินก่อนยืนยันออร์เดอร์', 'error');
       const groups = Object.values(current.reduce((all, row) => { (all[row.storeId] ||= []).push(row); return all; }, {}));
+      const submitButton = event.currentTarget.querySelector('[type="submit"]');
+      const attemptStorageKey = 'apservice.customer.checkout.attempt.v2';
+      const attemptFingerprint = JSON.stringify({ addressId: deliveryAddress.id, paymentMethod, groups: groups.map(group => group.map(item => [item.storeId, item.id, item.qty])) });
+      let checkoutNonce = '';
+      try { const stored = JSON.parse(sessionStorage.getItem(attemptStorageKey) || 'null'); if (stored?.fingerprint === attemptFingerprint && typeof stored?.nonce === 'string') checkoutNonce = stored.nonce; } catch (_) { }
+      if (!checkoutNonce) { checkoutNonce = crypto.randomUUID ? crypto.randomUUID() : `checkout-${Date.now()}-${Math.random().toString(36).slice(2)}`; try { sessionStorage.setItem(attemptStorageKey, JSON.stringify({ nonce: checkoutNonce, fingerprint: attemptFingerprint })); } catch (_) { } }
+      if (submitButton) submitButton.disabled = true;
       try {
         let uploadedSlip = null;
         if (isTransfer) {
@@ -144,14 +154,14 @@
           uploadedSlip = await window.APServiceMedia.uploadPrivateImage(slipFile, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: (await M.auth.refreshSession(false))?.access_token, actorId: user.id, bucket: 'payment-slips', scope: `checkout-${Date.now()}`, mediaType: 'PAYMENT_SLIP' });
           $('#slipStatus').textContent = 'อัปโหลดและตรวจสอบสลิปแล้ว กำลังสร้างออร์เดอร์…';
         }
-        const createdOrders = await Promise.all(groups.map(async group => {
-          const created = await M.request('rpc/create_food_order', { method: 'POST', private: true, body: JSON.stringify({ p_store_id: group[0].storeId, p_items: group.map(item => ({ item_id: item.id, quantity: item.qty })), p_delivery_address: address, p_payment_method: paymentMethod, p_customer_name: user.user_metadata?.display_name || '' }) });
+        const createdOrders = await Promise.all(groups.map(async (group, groupIndex) => {
+          const created = await M.request('rpc/create_food_order_v2', { method: 'POST', private: true, body: JSON.stringify({ p_store_id: group[0].storeId, p_items: group.map(item => ({ item_id: item.id, quantity: item.qty })), p_address_id: deliveryAddress.id, p_payment_method: paymentMethod, p_idempotency_key: `${checkoutNonce}-${groupIndex}` }) });
           const order = Array.isArray(created) ? created[0] : created, orderId = order?.id; if (!orderId) throw new Error('ระบบสร้างออร์เดอร์ไม่สำเร็จ');
-          if (uploadedSlip) await M.request('payment_slip_reviews', { method: 'POST', private: true, headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ order_id: orderId, customer_id: user.id, slip_path: uploadedSlip.storageRef, expected_amount: order.payable, status: 'pending', preliminary_status: 'file_valid', preliminary_result: { source: 'customer_checkout', bytes: uploadedSlip.bytes, mime_type: uploadedSlip.mimeType }, uploaded_at: M.ui.nowIso(), reviewer_note: '' }) });
+          if (uploadedSlip) await M.request('payment_slip_reviews?on_conflict=order_id', { method: 'POST', private: true, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ order_id: orderId, customer_id: user.id, slip_path: uploadedSlip.storageRef, expected_amount: order.payable, status: 'pending', preliminary_status: 'file_valid', preliminary_result: { source: 'customer_checkout', bytes: uploadedSlip.bytes, mime_type: uploadedSlip.mimeType }, uploaded_at: M.ui.nowIso(), reviewer_note: '' }) });
           return order;
         }));
-        const finalPayable = createdOrders.reduce((sum, order) => sum + Number(order.payable || 0), 0); M.cart.clear(); M.ui.setNotice(isTransfer ? `ส่งออร์เดอร์แล้ว ยอดชำระ ${M.ui.baht(finalPayable)} รอการตรวจสอบสลิป` : `ส่งออร์เดอร์ให้ร้านค้าแล้ว ยอดรวม ${M.ui.baht(finalPayable)}`); location.assign('orders.html');
-      } catch (err) { M.ui.setNotice(err.message, 'error'); }
+        const finalPayable = createdOrders.reduce((sum, order) => sum + Number(order.payable || 0), 0); try { sessionStorage.removeItem(attemptStorageKey); } catch (_) { } M.cart.clear(); M.ui.setNotice(isTransfer ? `ส่งออร์เดอร์แล้ว ยอดชำระ ${M.ui.baht(finalPayable)} รอการตรวจสอบสลิป` : `ส่งออร์เดอร์ให้ร้านค้าแล้ว ยอดรวม ${M.ui.baht(finalPayable)}`); location.assign('orders.html');
+      } catch (err) { if (submitButton) submitButton.disabled = false; M.ui.setNotice(err.message, 'error'); }
     });
   }
 

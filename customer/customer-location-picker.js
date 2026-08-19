@@ -78,5 +78,5 @@
     const user = await getUser(); if (user) { try { await loadProfile(user); } catch (_) { status(describe(savedLocation)); } } else status('เข้าสู่ระบบก่อนบันทึกพิกัดจัดส่ง ระบบจะแสดงพิกัดเดิมเมื่อคุณเข้าสู่ระบบ');
   };
   const ensureForCheckout = async ({ user }) => { try { await loadProfile(user); } catch (_) { /* The save action below still validates current cached/profile state. */ } if (validPoint(savedLocation)) return savedLocation; status('กรุณาระบุตำแหน่งจัดส่งก่อนยืนยันออร์เดอร์'); $('#checkoutLocationStatus')?.closest('.customer-location-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); M.ui.setNotice('กรุณาใช้ GPS เลือกพิกัดบนแผนที่ หรือกรอกพิกัดเองก่อนยืนยันออร์เดอร์', 'error'); return null; };
-  window.APServiceCustomerLocation = { mountCheckout, ensureForCheckout };
+  window.APServiceCustomerLocation = { mountCheckout, ensureForCheckout, getSelectedLocation: () => selectedPoint || savedLocation, setSelectedLocation: point => { if (!validPoint(point)) return false; savedLocation = { ...point, lat: Number(point.lat), lng: Number(point.lng) }; return setSelectedPoint(savedLocation); } };
 })();
