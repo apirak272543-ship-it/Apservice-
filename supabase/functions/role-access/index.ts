@@ -414,6 +414,18 @@ Deno.serve(async (request) => {
       return json({ ok: true, entity_id: entityId })
     }
 
+    if (body.action === 'resolve_order_cancellation') {
+      const requestId = text(body.request_id)
+      const decision = text(body.decision)
+      const reason = text(body.reason)
+      const refundDecision = text(body.refund_decision, 'no_refund')
+      const idempotencyKey = text(body.idempotency_key)
+      if (!requestId || !['approve', 'reject'].includes(decision) || !reason || !idempotencyKey) return json({ error: 'กรุณาระบุคำขอ ผลพิจารณา เหตุผล และรหัสยืนยันให้ครบถ้วน' }, 400)
+      const { data, error } = await callerDb.rpc('admin_resolve_order_cancellation', { p_request_id: requestId, p_action: decision, p_resolution_reason: reason, p_refund_decision: refundDecision, p_idempotency_key: idempotencyKey })
+      if (error) return json({ error: error.message }, 400)
+      return json({ ok: true, cancellation: data })
+    }
+
     if (body.action === 'manage_delivery_order') {
       const orderId = text(body.order_id)
       const operation = text(body.operation)
