@@ -34,13 +34,15 @@
 
 ## Admin Control Plane Completeness
 
-- [ ] ตรวจและขยายการแก้ไขร้านให้แก้ข้อมูลร้านเป็นรายการ ทั้งข้อมูลติดต่อ เจ้าของ ที่อยู่ พิกัด เอกสาร สื่อ และการตั้งค่าการปฏิบัติงาน
-- [ ] ตรวจและขยายฟอร์มเพิ่มร้าน/บัญชี Merchant ให้เก็บข้อมูลจำเป็นของร้านอย่างครบถ้วนโดยไม่เขียนทับฟิลด์ที่ไม่เกี่ยวข้อง
-- [ ] ออกแบบและพัฒนา workflow คำขอถอนเงินที่แสดงข้อมูลผู้รับ บัญชี/QR ที่ลงทะเบียน หลักฐานการโอน และ audit trail ก่อนบันทึกจ่าย
-- [ ] ตรวจและขยายการจัดการบัญชีรายบุคคล ทั้งบทบาท สิทธิ์ การระงับ ข้อมูลติดต่อ และค่าทางการเงินตาม server authorization
+- [x] ตรวจและขยายการแก้ไขร้านให้แก้ข้อมูลร้านเป็นรายการ ทั้งข้อมูลติดต่อ เจ้าของ ที่อยู่ พิกัด เอกสาร สื่อ และการตั้งค่าการปฏิบัติงาน
+- [x] ตรวจและขยายฟอร์มเพิ่มร้าน/บัญชี Merchant ให้เก็บข้อมูลจำเป็นของร้านอย่างครบถ้วนโดยไม่เขียนทับฟิลด์ที่ไม่เกี่ยวข้อง
+- [x] ออกแบบและพัฒนา workflow คำขอถอนเงินที่แสดงข้อมูลผู้รับ บัญชี/QR ที่ลงทะเบียน หลักฐานการโอน และ audit trail ก่อนบันทึกจ่าย
+- [x] ตรวจและขยายการจัดการบัญชีรายบุคคล ทั้งบทบาท สิทธิ์ การระงับ ข้อมูลติดต่อ และค่าทางการเงินตาม server authorization
 - [ ] ลดหน้า Login ทุกแอปให้เหลือเฉพาะข้อมูลและ controls ที่จำเป็น ไม่มีข้อความเทคนิคหรือคำอธิบายระบบ
-- [ ] ทำ capability audit เทียบ legacy, schema และ workflow จริง เพื่อเพิ่มฟังก์ชัน Admin Control Plane ที่จำเป็นแต่ยังขาดโดยไม่รอคำสั่งรายจุด
-- [ ] เพิ่ม regression tests, ตรวจผลกระทบ 5 Web Apps/4 WebView APK และเผยแพร่ Admin Control Plane completeness
+- [x] ลดหน้า Login ของ Admin ให้เหลือเฉพาะ form และ controls ที่จำเป็น ไม่มีข้อความเทคนิคหรือคำอธิบายระบบ
+- [ ] ตรวจและลดข้อความระบบในหน้า Login ของ Customer, Merchant, Rider และ AP Retail POS
+- [x] ทำ capability audit เทียบ legacy, schema และ workflow จริง เพื่อเพิ่มฟังก์ชัน Admin Control Plane ที่จำเป็นแต่ยังขาดโดยไม่รอคำสั่งรายจุด
+- [x] เพิ่ม regression tests, ตรวจผลกระทบ 5 Web Apps/4 WebView APK และเผยแพร่ Admin Control Plane completeness
 
 - [x] Re-group Admin navigation into four user-approved work categories
 - [x] Move payment-slip verification into งานและออร์เดอร์ and separate incoming, in-progress, completed order views
