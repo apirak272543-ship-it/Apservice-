@@ -5,7 +5,8 @@ const media = fs.readFileSync('shared/ap-service-media.js', 'utf8');
 const migration = fs.readFileSync('supabase/migrations/20260818_central_media_assets.sql', 'utf8');
 const customer = fs.readFileSync('customer/customer-app.js', 'utf8');
 
-assert.match(media, /version: 'shared-media-v4'/, 'Customer ต้องใช้ Shared Media Service v4 จาก runtime กลาง');
+assert.match(media, /const DEFAULT_MAX_DIMENSION = 1200;/, 'Customer ต้องจำกัดขนาดภาพจาก runtime กลางไม่เกิน 1200px');
+assert.match(media, /const FIXED_JPEG_QUALITY = 0\.82;/, 'Customer ต้องบีบอัดภาพจาก runtime กลางเป็น JPEG quality 0.82');
 assert.match(media, /MEDIA_PROFILES/, 'ต้องมี media profile กลาง');
 assert.match(media, /STORE_LOGO:[\s\S]*maxDimension: 200[\s\S]*square: true/, 'Store logo ต้องใช้ profile 200×200 crop');
 assert.match(media, /RIDER_AVATAR:[\s\S]*maxDimension: 200[\s\S]*square: true/, 'Rider avatar ต้องใช้ profile 200×200 crop');
