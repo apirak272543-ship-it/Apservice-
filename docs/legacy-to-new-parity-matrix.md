@@ -106,3 +106,25 @@ Legacy Merchant เรียก `DELETE menu_items` โดยตรงจาก 
 | Customer Location/Bill MPA | Production active | Customer GitHub Pages อ้าง `customer-location-picker.js` แล้ว |
 | Rider Delivery GPS/Map MPA | Production active | Rider GitHub Pages อ้าง `rider-delivery-location.js` แล้ว |
 | Admin Store Control Plane | Backend active | Supabase `role-access` version 13, `verify_jwt=true`, active; deployed 19 สิงหาคม 2026 พร้อม GP range validation และ allow-listed `update_store_section` |
+
+## Deployment Evidence รอบต่อเนื่อง — 19 สิงหาคม 2026
+
+| รายการ | สถานะ | หลักฐานและขอบเขตที่ยืนยัน |
+|---|---|---|
+| Admin Order Control Plane | Backend active | `role-access` version 14 เพิ่ม `manage_delivery_order` สำหรับสถานะ มอบหมาย Rider และแก้รายการ โดยตรวจ Admin JWT, lifecycle, Rider readiness, item validation, audit/event; smoke test แบบไม่แก้ข้อมูลผ่านแล้ว |
+| Rider live location, readiness และ profile | Backend active + Rider production active | `role-access` version 15 เพิ่ม `update_rider_presence` ซึ่งผูก Rider กับ JWT ของตนเอง, validate พิกัด, ห้าม Rider ที่ยังไม่อนุมัติเปิดรับงาน, และ allow-list เฉพาะ profile fields; Rider MPA และ native/WebView API เรียก action เดียวกัน |
+| Rider earnings และ withdrawal | ผ่าน source/regression | Rider MPA อ่าน `rider_earnings` และ wallet/withdrawal RPC จาก server; ข้อมูลยอดเงินยังไม่ใช้ตัวเลขจำลอง และหลักฐานถอนอยู่ภายใต้ RLS/storage policy |
+| Merchant sales analytics รายวัน–รายเดือน | Merchant production active | หน้า `merchant/finance.html` แสดงยอดวันนี้ เดือนนี้ และย้อนหลัง 12 เดือนจาก `delivery_orders` ที่สถานะสำเร็จเท่านั้น ใช้ยอดชำระจาก server และ timezone `Asia/Bangkok`; settlement/withdrawal เดิมยังอยู่ครบ |
+| Thai-first navigation copy | Customer, Merchant และ Rider production active | Customer แปล default tagline และ hero eyebrow; Merchant/Rider คง legacy link ไว้แต่แสดง `ระบบเดิม` แทนคำเทคนิค `Fallback`; regression และ asset production verification ผ่าน |
+| AP Retail POS Thai-first sign-in shell | Source/regression ผ่าน, production pending | หน้า login แปลหัวข้อและคำอธิบายสิทธิ์เป็นไทย; runtime, schema, checkout และ logout contracts ผ่าน แต่ GitHub Pages workflow ของ commit `10faa45` ยังอยู่ในคิว ณ เวลาตรวจ |
+
+### ข้อจำกัดการทดสอบที่ยังเปิดอยู่
+
+| รายการ | สถานะ | การดำเนินการที่ต้องทำเมื่อ browser/อุปกรณ์พร้อม |
+|---|---|---|
+| Admin Order Control Plane | Blocked ชั่วคราว | Login ด้วย AImanus Admin แล้วตรวจ action sheet แบบ read-only และทดสอบ mutation กับข้อมูลทดสอบที่อนุญาตเท่านั้น |
+| Rider presence | Blocked ชั่วคราว | ทดสอบ permission GPS อนุญาต/ปฏิเสธ, readiness ที่ผ่าน/ไม่ผ่าน compliance และ native WebView APK บนอุปกรณ์จริง |
+| Merchant sales analytics | Blocked ชั่วคราว | ตรวจ responsive layout หน้าการเงินบนมือถือ และเทียบยอดกับออร์เดอร์สำเร็จของร้าน audit |
+| AP Retail POS release | Pending | รอ GitHub Pages workflow ออกจากคิว แล้วตรวจ asset production และ WebView APK |
+
+> รอบนี้ไม่ลบ legacy entrypoint, ไม่เปลี่ยน schema ธุรกิจกลาง และไม่เขียนยอดเงินจาก client; ทุกการปรับ UI คงลิงก์และ source of truth เดิมไว้
