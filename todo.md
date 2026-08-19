@@ -24,6 +24,14 @@
 - [ ] ตรวจ WebView-facing production routes ที่เกี่ยวข้องโดยไม่ทำ mutation
 - [ ] บันทึกผลทดสอบและข้อจำกัดที่ยังเหลือใน parity matrix
 
+## Admin Screenshot-Verified Fixes
+
+- [x] หาและแก้ root cause ที่ปุ่มยืนยันออกจากระบบไม่จบ session หลังผู้ใช้กดยืนยัน
+- [x] ย้ายการจัดการภาพหน้า Login เข้าแท็บ/หมวดคลังสื่อที่เหมาะสม โดยคงหน้าจอเดิมเป็นเส้นทางเข้าถึงได้
+- [x] ตรวจและแก้เมนูสามจุดของ Admin ทุกลิงก์ที่ไปผิดหน้า 404 หรือไม่สอดคล้องกับหน้าที่ใช้งาน
+- [ ] เพิ่ม regression tests และเผยแพร่การแก้ไข Admin screenshot-verified fixes
+- [ ] ทดสอบการกด Logout, แท็บสื่อหน้า Login และเมนูสามจุดบนอุปกรณ์จริงหลัง production เผยแพร่
+
 - [x] Re-group Admin navigation into four user-approved work categories
 - [x] Move payment-slip verification into งานและออร์เดอร์ and separate incoming, in-progress, completed order views
 - [x] Move customer chat, admin management, store/menu management, rider management, rider applications, and AI Workspace into บัญชีและโปรไฟล์
