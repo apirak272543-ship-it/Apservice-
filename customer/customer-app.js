@@ -7,6 +7,7 @@
   const h = M.ui.escapeHtml;
   if (!document.getElementById('customer-legacy-parity-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-legacy-parity-style" rel="stylesheet" href="customer-legacy-parity.css?v=customer-parity-v1">');
   if (!document.getElementById('customer-legacy-media-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-legacy-media-style" rel="stylesheet" href="customer-legacy-media.css?v=legacy-media-v1">');
+  if (!document.getElementById('customer-modern-theme-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-modern-theme-style" rel="stylesheet" href="customer-modern-theme.css?v=customer-soft-art-v1">');
   const pageScope = name => { const scope = M.network.createScope(name); addEventListener('pagehide', () => scope.dispose(), { once: true }); return scope; };
   const publicImage = value => /^https:\/\//i.test(String(value || '')) ? String(value) : '';
   const legacyVisualImage = value => { const image = String(value || ''); return publicImage(image) || (/^data:image\/(?:jpeg|png|webp);base64,/i.test(image) && image.length <= 1_400_000 ? image : ''); };

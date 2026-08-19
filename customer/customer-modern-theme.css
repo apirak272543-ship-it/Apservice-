@@ -1,0 +1,101 @@
+/* Customer role theme — additive soft-art skin for the existing MPA runtime. */
+:root {
+  --ap-brand: #2563eb;
+  --ap-brand-deep: #163b77;
+  --ap-brand-soft: #eaf2ff;
+  --ap-ink: #17324d;
+  --ap-muted: #64768c;
+  --ap-line: #d9e6f7;
+  --ap-paper: #ffffff;
+  --ap-canvas: #f6f9ff;
+  --ap-danger: #d94a5d;
+  --ap-radius: 22px;
+  --ap-shadow: 0 18px 42px rgba(37, 99, 235, .13);
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% -8%, rgba(143, 190, 255, .30), transparent 28rem),
+    radial-gradient(circle at 100% 18%, rgba(119, 223, 242, .19), transparent 27rem),
+    var(--ap-canvas);
+}
+.customer-topbar {
+  min-height: 78px;
+  background: rgba(255, 255, 255, .90);
+  border-color: rgba(151, 185, 235, .45);
+  box-shadow: 0 9px 24px rgba(34, 87, 164, .07);
+}
+.customer-brand-mark {
+  background: linear-gradient(145deg, #5b9cff, #2563eb 58%, #1748ae);
+  border: 2px solid rgba(255, 255, 255, .86);
+  box-shadow: 0 9px 22px rgba(37, 99, 235, .27);
+}
+.customer-brand-name { color: #173b79; }
+.customer-account {
+  background: #f7faff;
+  border-color: #d5e4fa;
+  color: #2861c2;
+  transition: transform var(--soft-ease), background var(--soft-ease), box-shadow var(--soft-ease);
+}
+.customer-account:hover { transform: translateY(-2px); background: #eaf2ff; box-shadow: 0 8px 16px rgba(37, 99, 235, .13); }
+.customer-nav-wrap { border-color: #dce8f8; background: rgba(255, 255, 255, .83); }
+.customer-nav-wrap .mpa-nav a { border-radius: 999px; padding: 9px 13px; }
+.customer-nav-wrap .mpa-nav a.active,.customer-nav-wrap .mpa-nav a:hover { color: #1b4ca5; background: #e5efff; }
+.customer-page { background-image: none !important; }
+.customer-hero {
+  border: 1px solid rgba(255, 255, 255, .45);
+  background:
+    radial-gradient(circle at 79% 19%, rgba(255, 255, 255, .34), transparent 14rem),
+    radial-gradient(circle at 89% 82%, rgba(128, 229, 255, .34), transparent 16rem),
+    linear-gradient(132deg, #163d80, #2563eb 55%, #4c9dff);
+  box-shadow: 0 23px 48px rgba(32, 86, 185, .25);
+}
+.customer-hero:before {
+  content: "";
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  right: 27%;
+  top: 12%;
+  border: 2px dashed rgba(255, 255, 255, .35);
+  border-radius: 31% 69% 58% 42% / 43% 44% 56% 57%;
+  transform: rotate(21deg);
+}
+.customer-hero:after { border-color: rgba(255, 255, 255, .32); }
+.customer-eyebrow { color: #d9ecff; }
+.customer-hero p { color: #e6f2ff; }
+.customer-hero .mpa-button-secondary { border-color: rgba(255,255,255,.78); color: #174289; background: rgba(255,255,255,.96); }
+.customer-hero-art span { filter: drop-shadow(0 18px 16px rgba(13, 47, 109, .32)); }
+.customer-service,.customer-store-card {
+  border-color: #dbe8fa;
+  box-shadow: 0 12px 26px rgba(31, 87, 178, .07);
+}
+.customer-service { border-radius: 22px; background: linear-gradient(155deg, #fff, #f8fbff); }
+.customer-service:hover { border-color: #a8c7fb; box-shadow: var(--soft-shadow-hover); }
+.customer-service-icon { background: linear-gradient(145deg, #eaf2ff, #dceaff); color: #1d58c4; }
+.customer-store-card { border-radius: 22px; }
+.customer-store-visual { background: linear-gradient(135deg, #e5f0ff, #b9d5ff); }
+.customer-store-meta { border-color: #e1ebfa; }
+.customer-filters,.customer-category-chips { scrollbar-color: #aac5f6 transparent; }
+.customer-search { border-color: #d4e2f7; background: rgba(255, 255, 255, .92); }
+.customer-search:focus { outline: 3px solid rgba(37, 99, 235, .14); border-color: #2563eb; }
+.customer-category-chip { border-color: #d6e4f8; background: #fff; }
+.customer-category-chip.active,.customer-category-chip:hover { color: #1d4fa5; background: #eaf2ff; border-color: #afccf8; }
+.customer-promotions__track { gap: 16px; }
+.customer-promotion,.customer-promotion-empty { border-radius: 24px; box-shadow: 0 12px 26px rgba(31, 87, 178, .08); }
+.customer-cart-fab { background: linear-gradient(145deg, #4b8cff, #2563eb); border: 3px solid rgba(255,255,255,.83); box-shadow: 0 16px 30px rgba(37, 99, 235, .30); transition: transform var(--soft-ease), box-shadow var(--soft-ease); }
+.customer-cart-fab:hover { transform: translateY(-3px) rotate(-4deg); box-shadow: 0 20px 36px rgba(37, 99, 235, .35); }
+.mpa-page-head h1,.mpa-page-head h2,.customer-section-head h2 { color: #163b77; }
+.mpa-card:not(.customer-store-card) { border-color: #dbe8fa; }
+.mpa-button-secondary { color: #1b4ca5; border-color: #bfd5f8; background: #f9fbff; }
+.mpa-button-secondary:hover { background: #eaf2ff; }
+@media (max-width: 760px) {
+  .customer-topbar { min-height: 66px; }
+  .customer-page { padding-bottom: 100px; }
+  .customer-hero { padding: 26px; box-shadow: 0 16px 32px rgba(32, 86, 185, .20); }
+  .customer-hero:before { right: 9%; top: 8%; width: 72px; height: 72px; }
+  .customer-service,.customer-store-card { border-radius: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customer-account,.customer-cart-fab,.customer-service,.mpa-button { transition: none; }
+}
