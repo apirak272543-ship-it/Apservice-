@@ -50,6 +50,12 @@ const loginIdIsValid = (value: string) => /^[a-z0-9][a-z0-9._-]{2,31}$/.test(val
 const text = (value: unknown, fallback = '') => String(value ?? fallback).trim()
 const number = (value: unknown) => Math.max(0, Number(value) || 0)
 const validDate = (value: unknown) => { const date = new Date(String(value || '')); return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString() }
+const riderLocation = (value: unknown) => {
+  const source = value && typeof value === 'object' ? value as Record<string, unknown> : {}
+  const lat = Number(source.lat), lng = Number(source.lng), accuracy = Number(source.accuracy)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null
+  return { lat, lng, accuracy: Number.isFinite(accuracy) ? Math.min(50_000, Math.max(0, accuracy)) : null, captured_at: validDate(source.captured_at), source: 'rider-device' }
+}
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -87,6 +93,40 @@ Deno.serve(async (request) => {
     const { data: callerResult, error: callerError } = await admin.auth.getUser(accessToken)
     const caller = callerResult.user
     if (callerError || !caller) return json({ error: 'ไม่สามารถยืนยันผู้ดูแลระบบได้' }, 401)
+
+    if (body.action === 'update_rider_presence') {
+      const { data: riderRole } = await admin.from('user_roles').select('role').eq('user_id', caller.id).eq('role', 'rider').maybeSingle()
+      if (!riderRole) return json({ error: 'เฉพาะบัญชี Rider ที่ยืนยันตัวตนแล้วเท่านั้นที่อัปเดตสถานะหรือพิกัดได้' }, 403)
+      const { data: rider, error: riderError } = await admin.from('riders').select('id,user_id,name,phone,vehicle,status,ride_available,last_location,compliance_status,updated_at').eq('user_id', caller.id).maybeSingle()
+      if (riderError) return json({ error: riderError.message }, 400)
+      if (!rider) return json({ error: 'ไม่พบโปรไฟล์ Rider ที่ผูกกับบัญชีนี้' }, 404)
+      const operation = text(body.operation)
+      const input = (body.data && typeof body.data === 'object' ? body.data : {}) as Record<string, unknown>
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+
+      if (operation === 'location') {
+        const location = riderLocation(input.location)
+        if (!location) return json({ error: 'พิกัดตำแหน่งไม่ถูกต้อง กรุณาเปิด GPS แล้วลองใหม่' }, 400)
+        updates.last_location = location
+      } else if (operation === 'availability') {
+        if (typeof input.available !== 'boolean') return json({ error: 'กรุณาระบุสถานะพร้อมรับงานให้ถูกต้อง' }, 400)
+        if (input.available && rider.compliance_status !== 'approved') return json({ error: 'บัญชี Rider ยังไม่ผ่านการอนุมัติ จึงยังเปิดรับงานไม่ได้' }, 409)
+        updates.ride_available = input.available
+        updates.status = input.available ? 'พร้อมรับงาน' : 'ไม่พร้อมรับงาน'
+      } else if (operation === 'profile') {
+        const name = text(input.name), phone = text(input.phone), vehicle = text(input.vehicle)
+        if (!name || name.length > 120) return json({ error: 'ชื่อ Rider ต้องมีความยาว 1–120 ตัวอักษร' }, 400)
+        if (phone.length > 32 || vehicle.length > 80) return json({ error: 'ข้อมูลติดต่อหรือยานพาหนะยาวเกินกำหนด' }, 400)
+        updates.name = name
+        updates.phone = phone
+        updates.vehicle = vehicle
+      } else return json({ error: 'คำสั่งอัปเดตข้อมูล Rider ไม่รองรับ' }, 400)
+
+      const { data: updated, error: updateError } = await admin.from('riders').update(updates).eq('id', rider.id).select('id,user_id,name,phone,vehicle,status,ride_available,last_location,compliance_status,updated_at').single()
+      if (updateError) return json({ error: updateError.message }, 400)
+      return json({ ok: true, operation, rider: updated })
+    }
+
     const { data: adminRole } = await admin.from('user_roles').select('role').eq('user_id', caller.id).eq('role', 'admin').maybeSingle()
     if (!adminRole) return json({ error: 'เฉพาะผู้ดูแลระบบที่มีสิทธิ์ใน Supabase เท่านั้นที่ดำเนินการได้' }, 403)
     const callerDb = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false }, global: { headers: { Authorization: `Bearer ${accessToken}` } } })
