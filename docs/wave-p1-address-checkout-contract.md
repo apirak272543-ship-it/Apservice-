@@ -30,13 +30,13 @@ Checkout จะมี selector ที่อยู่ที่บันทึก�
 
 ## Acceptance criteria
 
-- [ ] ลูกค้าเพิ่ม/แก้/ตั้ง default/เก็บที่อยู่ของตนเองได้ และอ่านของผู้อื่นไม่ได้
-- [ ] checkout ใช้ที่อยู่ที่เลือกและบันทึก recipient/location snapshot ใน order
-- [ ] แก้ profile หรือ address หลังซื้อแล้วไม่เปลี่ยน order เก่า
-- [ ] ส่ง `idempotency_key` เดิมซ้ำแล้วได้ order เดิม ไม่เกิด order item หรือ payment review ซ้ำ
-- [ ] store ปิด, เมนูไม่พร้อมขาย, pิกัดผิด, address ไม่ใช่ของผู้ใช้ และ payload ผิด ถูกปฏิเสธจาก server
-- [ ] Customer Web และ Customer APK ยังใช้ GPS/แผนที่/manual coordinate fallback ได้
-- [ ] checkout QR/slip, COD, multi-store UI และ legacy escape hatch ที่มีอยู่ไม่ถูกลบ; multi-store grouping/fee policy ยังคงเป็น Wave P1.2 ก่อนถือว่า multi-store production-ready
+- [x] ลูกค้าเพิ่ม/แก้/ตั้ง default/เก็บที่อยู่ของตนเองได้ และอ่านของผู้อื่นไม่ได้
+- [x] checkout ใช้ที่อยู่ที่เลือกและบันทึก recipient/location snapshot ใน order
+- [x] แก้ profile หรือ address หลังซื้อแล้วไม่เปลี่ยน order เก่า
+- [x] ส่ง `idempotency_key` เดิมซ้ำแล้วได้ order เดิม ไม่เกิด order item หรือ payment review ซ้ำ
+- [x] store ปิด, เมนูไม่พร้อมขาย, pิกัดผิด, address ไม่ใช่ของผู้ใช้ และ payload ผิด ถูกปฏิเสธจาก server
+- [x] Customer Web ยังใช้ GPS/แผนที่/manual coordinate fallback ได้ตาม regression contract; Customer APK ยังต้องยืนยันบนอุปกรณ์จริง
+- [x] checkout QR/slip, COD, multi-store UI และ legacy escape hatch ที่มีอยู่ไม่ถูกลบ; multi-store grouping/fee policy ยังคงเป็น Wave P1.2 ก่อนถือว่า multi-store production-ready
 
 ## Explicit non-goals of Wave P1
 
