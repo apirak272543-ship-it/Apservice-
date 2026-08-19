@@ -55,6 +55,16 @@
 | P1 | Merchant | fallback มี delete menu และ error report; MPA มี create/edit/availability/media/order/finance แล้ว แต่ต้องตัดสิน policy ก่อนย้าย delete เพราะ Golden Rules ห้ามลบความสามารถเดิมโดยไม่อนุมัติ และ delete มีความเสี่ยงต่อข้อมูล | ทำ discovery UI/permission ก่อนเสนอ soft-delete หรือ retained legacy action |
 | P1 | Admin | legacy มี map picker และ operational commands จำนวนมาก; MPA มี control plane/section action จำนวนมากเช่นกัน แต่ยังต้อง trace action ต่อ action ไม่ใช่เทียบจากชื่อ function | ทำ section-level functional mapping โดยใช้ Admin audit account และ server action log |
 
+### Merchant Menu Delete Policy Decision
+
+Legacy Merchant เรียก `DELETE menu_items` โดยตรงจาก `deleteMenu` ขณะที่ MPA ใหม่มีการแก้ไขเมนู, รูปภาพ, สต็อก และสวิตช์ `available` ซึ่งเป็นการปิดขายแบบรักษาประวัติอยู่แล้ว จึง **ยังไม่ย้าย destructive delete** ในรอบ parity นี้ เพราะจะทำลายข้อมูลอ้างอิงของออร์เดอร์และขัดกับกฎไม่ลบข้อมูลโดยไม่มีอนุมัติ
+
+| ทางเลือก | สถานะ |
+|---|---|
+| ปิดขาย/สต็อกเป็นศูนย์ผ่าน MPA | พร้อมใช้งาน และเป็นทางเลือกปลอดภัยในปัจจุบัน |
+| legacy hard delete | คงไว้เป็น fallback เดิม ห้ามลบ entrypoint |
+| soft archive แบบ server-authorized พร้อม audit trail | รอการอนุมัติ policy และ migration แยกก่อนเริ่มพัฒนา |
+
 ## Active fallback/go-back links ที่พบ
 
 | แอปใหม่ | Link ที่ยัง active | ความหมายในการย้าย |
