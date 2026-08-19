@@ -5,36 +5,28 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
-const compile = (source, filename) => new vm.Script(source, { filename });
-const inlineScripts = (html, filename) => {
+const compileInlineScripts = (html, filename) => {
   const matcher = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;
-  for (const match of html.matchAll(matcher)) compile(match[1], `${filename}:inline-script`);
+  for (const match of html.matchAll(matcher)) new vm.Script(match[1], { filename: `${filename}:inline-script` });
 };
 
-const index = read('index.html');
-const floatingCart = read('admin_floating_cart_patch.js');
-const rider = read('rider.html');
-const store = read('store.html');
+const entry = read('customer/index.html');
+const checkout = read('customer/checkout.html');
+const customer = read('customer/customer-app.js');
 const migration = read('supabase/migrations/20260817_secure_pending_payment_orders.sql');
 
-compile(floatingCart, 'admin_floating_cart_patch.js');
-inlineScripts(index, 'index.html');
-inlineScripts(rider, 'rider.html');
-inlineScripts(store, 'store.html');
-
-assert.match(index, /รับคำสั่งซื้อแล้ว กำลังตรวจสอบการชำระเงิน/);
-assert.match(floatingCart, /const PaymentSlipReview/);
-assert.match(floatingCart, /installPaymentSlipOrderGuard/);
-assert.match(floatingCart, /order\.status\s*=\s*'รอตรวจสอบการชำระเงิน'/);
-assert.match(floatingCart, /payment_slip_reviews\?select=/);
-assert.match(floatingCart, /status=eq\.pending/);
-assert.match(floatingCart, /reviewPaymentSlip/);
-assert.match(rider, /visibleRows=rows\.filter\(row=>row\.status!==['"]รอตรวจสอบการชำระเงิน['"]&&row\.status!==['"]ต้องแนบสลิปใหม่['"]\)/);
-assert.match(store, /status','not\.in\.\(\"รอตรวจสอบการชำระเงิน\",\"ต้องแนบสลิปใหม่\"\)/);
-assert.match(migration, /create policy orders_read_participant/);
-assert.match(migration, /status not in \('รอตรวจสอบการชำระเงิน', 'ต้องแนบสลิปใหม่'\)/);
-assert.match(migration, /or customer_id = auth\.uid\(\)/);
+compileInlineScripts(entry, 'customer/index.html');
+compileInlineScripts(checkout, 'customer/checkout.html');
+assert.match(entry, /shared\/ap-service-mpa\.js/, 'Customer entry ต้องใช้ Shared MPA runtime');
+assert.match(checkout, /shared\/ap-service-mpa\.js/, 'Customer checkout ต้องใช้ Shared MPA runtime');
+assert.match(customer, /create_food_order/, 'Customer checkout ต้องสร้าง order ผ่าน server RPC');
+assert.match(migration, /create policy orders_read_participant/, 'ต้องมี policy อ่าน order สำหรับ participant');
+assert.match(migration, /status not in \('รอตรวจสอบการชำระเงิน', 'ต้องแนบสลิปใหม่'\)/, 'ไรเดอร์และร้านต้องไม่เห็น order ที่รอตรวจสลิป');
+assert.match(migration, /or customer_id = auth\.uid\(\)/, 'ลูกค้าต้องอ่าน order ของตนได้');
 const updatePolicy = migration.split('create policy orders_participant_update')[1] || '';
-assert.doesNotMatch(updatePolicy, /customer_id = auth\.uid\(\)/);
+assert.doesNotMatch(updatePolicy, /customer_id = auth\.uid\(\)/, 'ลูกค้าห้ามเปลี่ยน status order ผ่าน participant update policy');
+for (const legacyFile of ['admin_floating_cart_patch.js', 'rider.html', 'store.html']) {
+  assert.equal(fs.existsSync(path.join(root, legacyFile)), false, `Customer payment contract ห้ามพึ่ง ${legacyFile} ที่เลิกใช้`);
+}
 
-console.log('Payment-slip contract checks passed.');
+console.log('payment-slip contract: PASS');

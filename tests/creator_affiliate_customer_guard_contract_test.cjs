@@ -1,15 +1,16 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+
 const root = path.resolve(__dirname, '..');
-const creator = fs.readFileSync(path.join(root, 'creator_affiliate_patch.js'), 'utf8');
-const navigation = fs.readFileSync(path.join(root, 'admin_contact_ui_patch.js'), 'utf8');
+const sharedMpa = fs.readFileSync(path.join(root, 'shared/ap-service-mpa.js'), 'utf8');
+const customer = fs.readFileSync(path.join(root, 'customer/customer-app.js'), 'utf8');
+const entry = fs.readFileSync(path.join(root, 'customer/index.html'), 'utf8');
 
-assert.match(creator, /isAdminView\(\)/, 'Creator Affiliate must know whether the Admin page is active');
-assert.match(creator, /!this\.isAdminView\(\)/, 'Creator Affiliate load must not run on customer pages');
-assert.match(creator, /!this\.session\(\)\?\.access_token/, 'Creator Affiliate load must not start without an active Admin session');
-assert.match(creator, /activate\(\)/, 'Creator Affiliate must expose an explicit Admin activation hook');
-assert.match(creator, /init\(\) \{ this\.ensureSection\(\); \}/, 'Initial page boot must only install the hidden Admin section');
-assert.match(navigation, /name === 'creator-affiliates'.*CreatorAffiliate\?\.activate/, 'Admin next-page navigation must activate Creator Affiliate only when opened');
+assert.match(sharedMpa, /function currentUser\(\)/, 'Customer MPA ต้องอ่าน authenticated user ผ่าน shared auth');
+assert.match(sharedMpa, /function requireRole\(/, 'Customer MPA ต้องมี role guard กลาง');
+assert.match(entry, /shared\/ap-service-mpa\.js/, 'Customer entry ต้องโหลด shared MPA runtime');
+assert.match(customer, /APServiceMPA/, 'Customer runtime ต้องใช้ shared auth/runtime ไม่ใช่ patch แบบ monolith');
+assert.equal(fs.existsSync(path.join(root, 'admin_contact_ui_patch.js')), false, 'Customer guard ไม่ควรเรียก Admin-only UI หลังแยก repository');
 
-console.log('creator_affiliate_customer_guard_contract_test: PASS');
+console.log('creator affiliate customer guard contract: PASS');

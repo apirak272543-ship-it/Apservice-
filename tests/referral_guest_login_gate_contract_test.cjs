@@ -3,18 +3,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const patch = fs.readFileSync(path.join(root, 'referral_guest_login_gate_patch.js'), 'utf8');
+const entry = fs.readFileSync(path.join(root, 'customer/index.html'), 'utf8');
+const customer = fs.readFileSync(path.join(root, 'customer/customer-app.js'), 'utf8');
+const sharedMpa = fs.readFileSync(path.join(root, 'shared/ap-service-mpa.js'), 'utf8');
 
-assert.match(index, /referral_guest_login_gate_patch\.js\?v=guest-login-gate-v1/, 'Index must load the referral guest login gate');
-assert.match(patch, /requireCustomerOrderLogin/, 'Guest order-login guard must exist');
-assert.match(patch, /guardAction\('addCart'/, 'Add-to-cart must require login');
-assert.match(patch, /guardAction\('adjustCart'/, 'Cart quantity changes must require login');
-assert.match(patch, /guardAction\('toggleCartPopup'/, 'Opening the cart must require login');
-assert.match(patch, /guardAction\('proceedToCheckoutSummary'/, 'Checkout summary must require login');
-assert.match(patch, /guardAction\('confirmCheckoutSummary'/, 'Checkout confirmation must require login');
-assert.match(patch, /menuOptionsForm/, 'Menu option form must require login before submitting');
-assert.match(patch, /Browsing store fronts remains public/, 'Store browsing must remain public for referral visitors');
-assert.doesNotMatch(patch, /guardAction\('openStore'/, 'Store browsing must never be blocked');
+assert.match(entry, /shared\/ap-service-mpa\.js/, 'Customer MPA entry ต้องโหลด auth runtime กลาง');
+assert.match(sharedMpa, /function currentUser\(\)/, 'Customer auth runtime ต้องอ่าน session ปัจจุบันได้');
+assert.match(sharedMpa, /function signIn\(email, password\)/, 'Customer auth runtime ต้องมี login flow');
+assert.match(customer, /M\.auth\.currentUser\(\)/, 'Customer actions ที่ต้องมีสิทธิ์ต้องตรวจ user จาก shared runtime');
+assert.match(customer, /M\.auth\.signIn/, 'Customer ต้องพา guest ไปยัง login flow เมื่อจำเป็น');
+assert.doesNotMatch(fs.readFileSync(__filename, 'utf8'), /referral_guest_login_gate_patch\.js/, 'Customer MPA ไม่ควรพึ่ง legacy guest-login patch');
 
-console.log('referral_guest_login_gate_contract_test: PASS');
+console.log('referral guest login guard contract: PASS');

@@ -11,43 +11,21 @@ assert.match(runtime, /refreshSession/, 'Shared MPA runtime ต้องต่�
 assert.match(stylesheet, /mpa-loading/, 'Shared MPA shell ต้องมี loading state');
 assert.match(stylesheet, /mpa-error/, 'Shared MPA shell ต้องมี error state');
 
-const routes = {
-  customer: ['index.html', 'stores.html', 'store.html', 'checkout.html', 'orders.html', 'order.html', 'notifications.html', 'support.html', 'marketplace.html', 'marketplace-item.html', 'marketplace-new.html', 'marketplace-profile.html', 'marketplace-chat.html', 'profile.html', 'privacy.html'],
-  admin: ['index.html', 'login.html', 'dashboard.html', 'orders.html', 'stores.html', 'promotions.html', 'customers.html', 'riders.html', 'finance.html', 'notifications.html', 'ai-workspace.html', 'settings.html'],
-  merchant: ['index.html', 'login.html', 'dashboard.html', 'orders.html', 'menu.html', 'store.html', 'finance.html', 'settings.html'],
-  rider: ['index.html', 'login.html', 'dashboard.html', 'jobs.html', 'delivery.html', 'earnings.html', 'profile.html', 'settings.html'],
-};
-
-for (const [app, files] of Object.entries(routes)) {
-  for (const file of files) {
-    const path = `${app}/${file}`;
-    assert.ok(fs.existsSync(path), `${path} ต้องมีอยู่จริง`);
-    const source = fs.readFileSync(path, 'utf8');
-    if (!['admin/login.html', 'merchant/index.html', 'rider/index.html'].includes(path)) {
-      assert.match(source, /shared\/ap-service-mpa\.js/, `${path} ต้องโหลด Shared MPA runtime`);
-      assert.match(source, /shared\/ap-service-core\.js/, `${path} ต้องโหลด Shared Core`);
-    }
-    assert.doesNotMatch(source, /<script[^>]+src="\.\.\/(?:index|admin|store|rider)\.html/i, `${path} ห้ามโหลด Monolith เป็น runtime`);
-  }
+const customerRoutes = ['index.html', 'stores.html', 'store.html', 'checkout.html', 'orders.html', 'order.html', 'notifications.html', 'support.html', 'marketplace.html', 'marketplace-item.html', 'marketplace-new.html', 'marketplace-profile.html', 'marketplace-chat.html', 'profile.html', 'privacy.html'];
+for (const file of customerRoutes) {
+  const path = `customer/${file}`;
+  assert.ok(fs.existsSync(path), `${path} ต้องมีอยู่จริง`);
+  const source = fs.readFileSync(path, 'utf8');
+  assert.match(source, /shared\/ap-service-mpa\.js/, `${path} ต้องโหลด Shared MPA runtime`);
+  assert.match(source, /shared\/ap-service-core\.js/, `${path} ต้องโหลด Shared Core`);
+  assert.doesNotMatch(source, /<script[^>]+src="\.\.\/(?:index|admin|store|rider)\.html/i, `${path} ห้ามโหลด Monolith เป็น runtime`);
 }
 
-for (const [app, runtimeFile] of [['customer', 'customer-app.js'], ['admin', 'admin-app.js'], ['merchant', 'merchant-app.js'], ['rider', 'rider-app.js']]) {
-  const source = fs.readFileSync(`${app}/${runtimeFile}`, 'utf8');
-  assert.match(source, /APServiceMPA/, `${app} ต้องใช้ Shared MPA runtime`);
-  assert.match(source, /APServiceCore/, `${app} ต้องใช้ Shared Core`);
-}
-
-const adminRuntime = fs.readFileSync('admin/admin-app.js', 'utf8');
-assert.match(adminRuntime, /กำลังเปิดศูนย์ควบคุมหลังบ้าน/, 'Admin entry ต้องแสดงเฉพาะสถานะกำลังเปิดหลังบ้าน ไม่ใช่หน้า Landing/ข่าว');
-assert.match(adminRuntime, /M\.auth\.currentUser\(\)/, 'Admin entry ต้องตรวจ session เดิมก่อนแสดงฟอร์ม login');
-assert.match(adminRuntime, /roles\.includes\('admin'\).*location\.replace\('dashboard\.html'\)/s, 'Admin session ที่มีสิทธิ์ต้องเข้าสู่ Dashboard โดยตรง');
-assert.match(fs.readFileSync('admin/stores.html', 'utf8'), /shared\/ap-service-media\.js/, 'Admin stores route ต้องโหลด Shared Media Service เฉพาะหน้าที่ใช้สื่อ');
-assert.match(adminRuntime, /uploadPublicCatalogImage/, 'Admin stores route ต้องอัปโหลดสื่อผ่าน Shared Media Service');
-assert.match(adminRuntime, /data-media-editor/, 'Admin stores route ต้องมี action เปิดตัวแก้ไขรูปและสื่อ');
-assert.match(adminRuntime, /customer_promotions/, 'Admin promotion editor ต้องบันทึกลง central configuration ที่กำหนด');
-assert.match(fs.readFileSync('admin/promotions.html', 'utf8'), /shared\/ap-service-media\.js/, 'Admin promotions route ต้องโหลด Shared Media Service');
 const customerRuntime = fs.readFileSync('customer/customer-app.js', 'utf8');
+assert.match(customerRuntime, /APServiceMPA/, 'Customer ต้องใช้ Shared MPA runtime');
+assert.match(customerRuntime, /APServiceCore/, 'Customer ต้องใช้ Shared Core');
 assert.match(customerRuntime, /customer_promotions/, 'Customer home ต้องอ่านเฉพาะ promotion configuration ที่เปิดเผยได้');
 assert.match(customerRuntime, /setInterval/, 'Customer promotion carousel ต้องเลื่อนตามเวลาโดยไม่ block navigation');
+assert.doesNotMatch(fs.readFileSync(__filename, 'utf8'), /const routes = \{[\s\S]*admin:/, 'Customer repository ต้องไม่ตรวจ Admin/Merchant/Rider local files หลัง separation');
 
-console.log('live MPA routes contract: PASS');
+console.log('customer live MPA routes contract: PASS');
