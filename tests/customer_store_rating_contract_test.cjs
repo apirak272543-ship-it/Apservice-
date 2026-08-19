@@ -2,8 +2,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const source = fs.readFileSync(path.join(__dirname, '..', 'customer', 'customer-app.js'), 'utf8');
-const customerPagePaths = ['stores.html', 'store.html', 'orders.html', 'profile.html'];
-const customerPagesUseNewScriptVersion = customerPagePaths.every(file => fs.readFileSync(path.join(__dirname, '..', 'customer', file), 'utf8').includes('customer-app.js?v=mpa-v2'));
+const customerPagePaths = fs.readdirSync(path.join(__dirname, '..', 'customer')).filter(file => file.endsWith('.html'));
+const customerPagesUseNewScriptVersion = customerPagePaths.every(file => fs.readFileSync(path.join(__dirname, '..', 'customer', file), 'utf8').includes('customer-app.js?v=customer-flow-v3'));
 const checks = [
   ['defines an explicit no-rating label', source.includes("const storeRatingLabel = value =>") && source.includes("'ยังไม่มีคะแนน'")],
   ['only formats a rating when it is a positive finite value', source.includes('Number.isFinite(rating) && rating > 0')],

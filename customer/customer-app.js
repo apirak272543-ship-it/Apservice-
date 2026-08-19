@@ -137,7 +137,7 @@
         if (isTransfer) {
           if (!window.APServiceMedia?.uploadPrivateImage) throw new Error('ระบบอัปโหลดสลิปยังโหลดไม่พร้อม กรุณารีเฟรชแล้วลองใหม่');
           $('#slipStatus').textContent = 'กำลังบีบอัดและอัปโหลดสลิป…';
-          uploadedSlip = await window.APServiceMedia.uploadPrivateImage(slipFile, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: (await M.auth.refreshSession(false))?.access_token, actorId: user.id, bucket: 'payment-slips', scope: `checkout-${Date.now()}` });
+          uploadedSlip = await window.APServiceMedia.uploadPrivateImage(slipFile, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: (await M.auth.refreshSession(false))?.access_token, actorId: user.id, bucket: 'payment-slips', scope: `checkout-${Date.now()}`, mediaType: 'PAYMENT_SLIP' });
           $('#slipStatus').textContent = 'อัปโหลดและตรวจสอบสลิปแล้ว กำลังสร้างออร์เดอร์…';
         }
         const createdOrders = await Promise.all(groups.map(async group => {
