@@ -52,6 +52,7 @@
   async function storePage() {
     const id = q.get('id');
     if (!id) { app('stores', M.ui.error('ไม่พบรหัสร้านค้า', 'กรุณากลับไปเลือกร้านค้าใหม่')); return; }
+    if (window.APServiceStoreDetail?.mount) return window.APServiceStoreDetail.mount({ id, app, pageScope, image: legacyVisualImage, escape: h });
     app('stores', `<div id="storePage">${M.ui.loading('กำลังโหลดร้านและเมนู…')}</div>`);
     const scope = pageScope('customer:store');
     if (!document.getElementById('customer-menu-table-style')) {
