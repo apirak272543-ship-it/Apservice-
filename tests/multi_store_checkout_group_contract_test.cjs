@@ -1,0 +1,28 @@
+const fs = require('fs');
+const assert = require('assert');
+const migration = fs.readFileSync('supabase/migrations/20260820_multi_store_checkout_group.sql', 'utf8');
+const customer = fs.readFileSync('customer/customer-app.js', 'utf8');
+const contract = fs.readFileSync('docs/wave-p3-multi-store-checkout-contract.md', 'utf8');
+
+assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.checkout_group_payments/);
+assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.checkout_group_events/);
+assert.match(migration, /CREATE OR REPLACE FUNCTION public\.create_food_checkout_group_v3/);
+assert.match(migration, /pg_advisory_xact_lock\(hashtext\(v_customer_id::text \|\| ':checkout-group:'/);
+assert.match(migration, /WHERE customer_id = v_customer_id AND idempotency_key = btrim\(p_idempotency_key\)/);
+assert.match(migration, /private\.store_accepts_food_orders/);
+assert.match(migration, /private\.checkout_haversine_km/);
+assert.match(migration, /platform_configs WHERE key = 'business_rules'/);
+assert.match(migration, /p_payment_method = 'โอนผ่าน QR \/ แนบสลิป'/);
+assert.match(migration, /\^payment-slips\//);
+assert.match(migration, /owner_id = v_customer_id/);
+assert.match(migration, /CREATE OR REPLACE FUNCTION public\.admin_review_checkout_group_payment/);
+assert.match(migration, /checkout_group_payment_reviewed/);
+assert.match(migration, /sync_checkout_group_aggregate_after_order_change/);
+assert.match(migration, /sync_checkout_group_payment_after_change/);
+assert.match(customer, /rpc\/create_food_checkout_group_v3/);
+assert.match(customer, /p_orders: groups\.map/);
+assert.match(customer, /p_slip_path: uploadedSlip\?\.storageRef \|\| null/);
+assert.doesNotMatch(customer, /Promise\.all\(groups\.map\(async \(group, groupIndex\)/);
+assert.match(contract, /5 Web Apps และ 4 WebView APK/);
+assert.match(contract, /server/i);
+console.log('multi-store checkout group contract: PASS');

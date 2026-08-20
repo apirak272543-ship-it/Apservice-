@@ -7,6 +7,7 @@ const locationPicker = fs.readFileSync('customer/customer-location-picker.js', '
 const checkoutHtml = fs.readFileSync('customer/checkout.html', 'utf8');
 const migration = fs.readFileSync('supabase/migrations/20260819_customer_address_book_checkout_integrity.sql', 'utf8');
 const grantFix = fs.readFileSync('supabase/migrations/20260819_customer_address_book_rpc_grants.sql', 'utf8');
+const groupMigration = fs.readFileSync('supabase/migrations/20260820_multi_store_checkout_group.sql', 'utf8');
 
 assert.match(checkoutHtml, /customer-address-book\.js/, 'Checkout ต้องโหลด Address Book ก่อน runtime หลัก');
 assert.match(addressBook, /rpc\/save_customer_address/, 'Address Book ต้องบันทึกผ่าน server RPC');
@@ -16,11 +17,12 @@ assert.match(addressBook, /recipient_phone/, 'Address Book ต้องเก็
 assert.match(locationPicker, /setSelectedLocation/, 'Address Book ต้องส่งพิกัดที่เลือกเข้า legacy location fallback ได้');
 assert.match(app, /APServiceCustomerAddressBook\?\.mountCheckout/, 'Checkout ต้องแสดง Address Book');
 assert.match(app, /APServiceCustomerAddressBook\?\.ensureForCheckout/, 'Checkout ต้องยืนยัน address snapshot ก่อนสร้าง order');
-assert.match(app, /rpc\/create_food_order_v2/, 'Checkout ต้องสร้าง order ผ่าน RPC รุ่นที่ตรวจ address/idempotency');
+assert.match(app, /rpc\/create_food_checkout_group_v3/, 'Checkout ต้องสร้าง order ผ่าน group RPC ที่ตรวจ address/idempotency');
 assert.match(app, /p_address_id: deliveryAddress\.id/, 'Checkout ต้องส่งเฉพาะ address id ไม่ส่ง snapshot ที่ client แต่งเอง');
 assert.match(app, /p_idempotency_key:/, 'Checkout ต้องส่ง idempotency key ให้ server');
 assert.match(app, /sessionStorage\.getItem\(attemptStorageKey\)/, 'การ retry ใน session เดิมต้องใช้ attempt key เดิม');
-assert.match(app, /on_conflict=order_id/, 'สลิปของ order เดิมต้อง upsert เพื่อป้องกัน review ซ้ำ');
+assert.match(app, /p_slip_path: uploadedSlip\?\.storageRef \|\| null/, 'สลิปต้องส่งให้ server group payment เพียงครั้งเดียว');
+assert.doesNotMatch(app, /on_conflict=order_id/, 'Customer ต้องไม่สร้าง slip review แยกต่อ order หลังเปลี่ยนเป็น group payment');
 assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.customer_addresses/, 'ต้องมีตาราง Address Book แยกจาก profile');
 assert.match(migration, /customer_addresses_one_default_per_user/, 'ต้องบังคับ default address ได้หนึ่งรายการต่อ customer');
 assert.match(migration, /CREATE OR REPLACE FUNCTION public\.save_customer_address/, 'ต้องมี RPC บันทึก Address Book แบบตรวจ server');
@@ -36,5 +38,7 @@ assert.match(migration, /delivery_recipient_phone/, 'Order ต้อง snapshot
 assert.match(migration, /payment_slip_reviews_one_per_order_idx/, 'ต้องป้องกัน slip review ซ้ำต่อหนึ่ง order');
 assert.match(grantFix, /FROM anon/, 'RPC security-definer ต้อง revoke สิทธิ์ anon โดยตรง');
 assert.match(grantFix, /TO authenticated/, 'RPC checkout ต้องเปิดเฉพาะ authenticated role');
+assert.match(groupMigration, /CREATE OR REPLACE FUNCTION public\.create_food_checkout_group_v3/, 'ต้องมี group RPC ที่ตรวจ server');
+assert.match(groupMigration, /checkout_group_payments/, 'สลิปต้องอยู่บน payment group');
 
 console.log('customer address and checkout integrity contract: PASS');
