@@ -95,12 +95,23 @@
     state.mounted = true;
     $('#deliveryAddress')?.closest('.mpa-field')?.insertAdjacentHTML('afterend', `<section class="customer-address-book" aria-labelledby="customerAddressBookTitle"><h3 id="customerAddressBookTitle">ที่อยู่จัดส่งและผู้รับ</h3><p class="mpa-muted">เลือกที่อยู่เดิม หรือกรอกรายละเอียดใหม่ ระบบจะเก็บ snapshot ของผู้รับและจุดส่งไว้กับออร์เดอร์นี้</p><div class="mpa-field"><label for="savedAddressSelect">ที่อยู่ที่บันทึกไว้</label><select id="savedAddressSelect"><option value="">ใช้รายละเอียดที่กำลังกรอก</option></select></div><div class="mpa-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"><div class="mpa-field"><label for="addressLabel">ชื่อเรียกที่อยู่</label><input id="addressLabel" maxlength="80" value="ที่อยู่จัดส่ง" placeholder="เช่น บ้าน / ที่ทำงาน"></div><div class="mpa-field"><label for="deliveryRecipientName">ชื่อผู้รับ</label><input id="deliveryRecipientName" maxlength="160" required autocomplete="name"></div><div class="mpa-field"><label for="deliveryRecipientPhone">เบอร์โทรผู้รับ</label><input id="deliveryRecipientPhone" maxlength="32" required inputmode="tel" autocomplete="tel"></div></div><div class="mpa-field"><label for="deliveryNote">รายละเอียดจุดส่ง</label><textarea id="deliveryNote" rows="2" maxlength="1000" placeholder="เช่น รอหน้าประตู หรือโทรก่อนถึง"></textarea></div><div class="customer-location-actions"><button class="mpa-button mpa-button-secondary" type="button" id="saveAddress">บันทึกที่อยู่นี้</button><button class="mpa-button mpa-button-secondary" type="button" id="setDefaultAddress">ตั้งเป็นที่อยู่หลัก</button><button class="mpa-button mpa-button-secondary" type="button" id="archiveAddress">เก็บที่อยู่</button></div><p id="customerAddressBookStatus" class="mpa-muted" aria-live="polite">กำลังโหลดที่อยู่ที่บันทึกไว้…</p></section>`);
     const user = await M.auth.currentUser();
-    if (!user) { status('เข้าสู่ระบบก่อนเลือกหรือบันทึกที่อยู่จัดส่ง'); return; }
+    if (!user) {
+      status('เข้าสู่ระบบก่อนเลือกหรือบันทึกที่อยู่จัดส่ง');
+      const loginUrl = `profile.html?next=${encodeURIComponent('checkout.html')}`;
+      const showLogin = () => { M.ui.setNotice('กรุณาเข้าสู่ระบบก่อนจัดการที่อยู่จัดส่ง', 'error'); location.assign(loginUrl); };
+      $('#saveAddress').onclick = showLogin;
+      $('#setDefaultAddress').onclick = showLogin;
+      $('#archiveAddress').onclick = showLogin;
+      return;
+    }
     state.userId = user.id;
     try { await loadProfileDefaults(user); await loadAddresses(user); } catch (error) { status('ยังโหลดที่อยู่ที่บันทึกไว้ไม่ได้ คุณยังกรอกและบันทึกใหม่ได้เมื่อเชื่อมต่อแล้ว'); }
     $('#savedAddressSelect').onchange = event => { state.selectedId = event.target.value; applyAddress(state.addresses.find(row => row.id === state.selectedId)); };
-    $('#saveAddress').onclick = async () => { try { const address = await saveCurrent({ user }); M.ui.setNotice(`บันทึก ${address.label || 'ที่อยู่จัดส่ง'} แล้ว`); } catch (error) { M.ui.setNotice(error.message, 'error'); } };
-    $('#setDefaultAddress').onclick = async () => { try { const address = await saveCurrent({ user, forceDefault: true }); M.ui.setNotice(`ตั้ง ${address.label || 'ที่อยู่จัดส่ง'} เป็นที่อยู่หลักแล้ว`); } catch (error) { M.ui.setNotice(error.message, 'error'); } };
+    $('#saveAddress').setAttribute('aria-describedby', 'customerAddressBookStatus');
+    $('#setDefaultAddress').setAttribute('aria-describedby', 'customerAddressBookStatus');
+    $('#archiveAddress').setAttribute('aria-describedby', 'customerAddressBookStatus');
+    $('#saveAddress').onclick = async () => { const button = $('#saveAddress'); button.disabled = true; status('กำลังบันทึกที่อยู่…'); try { const address = await saveCurrent({ user }); const message = `บันทึก ${address.label || 'ที่อยู่จัดส่ง'} แล้ว`; status(message); M.ui.setNotice(message); } catch (error) { status(error.message || 'บันทึกที่อยู่ไม่สำเร็จ'); M.ui.setNotice(error.message || 'บันทึกที่อยู่ไม่สำเร็จ', 'error'); } finally { button.disabled = false; } };
+    $('#setDefaultAddress').onclick = async () => { const button = $('#setDefaultAddress'); button.disabled = true; status('กำลังตั้งที่อยู่หลัก…'); try { const address = await saveCurrent({ user, forceDefault: true }); const message = `ตั้ง ${address.label || 'ที่อยู่จัดส่ง'} เป็นที่อยู่หลักแล้ว`; status(message); M.ui.setNotice(message); } catch (error) { status(error.message || 'ตั้งที่อยู่หลักไม่สำเร็จ'); M.ui.setNotice(error.message || 'ตั้งที่อยู่หลักไม่สำเร็จ', 'error'); } finally { button.disabled = false; } };
     $('#archiveAddress').onclick = async () => { try { await archiveSelected(user); } catch (error) { M.ui.setNotice(error.message, 'error'); } };
   };
   const ensureForCheckout = async ({ user, location }) => {
