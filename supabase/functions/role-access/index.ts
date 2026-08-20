@@ -98,6 +98,32 @@ Deno.serve(async (request) => {
     const caller = callerResult.user
     if (callerError || !caller) return json({ error: 'ไม่สามารถยืนยันผู้ดูแลระบบได้' }, 401)
 
+    if (body.action === 'report_rider_delivery_issue') {
+      const orderId = text(body.order_id)
+      const issueType = text(body.issue_type)
+      const detail = text(body.detail)
+      const evidencePath = text(body.evidence_path)
+      const allowedIssueTypes = new Set(['vehicle_breakdown', 'customer_unreachable', 'accident', 'incorrect_pin', 'severe_weather', 'other'])
+      if (!orderId || !allowedIssueTypes.has(issueType)) return json({ error: 'กรุณาเลือกรายการงานและประเภทปัญหาที่ถูกต้อง' }, 400)
+      if (detail.length > 500 || (issueType === 'other' && detail.length < 3)) return json({ error: issueType === 'other' ? 'กรุณาระบุรายละเอียดปัญหาอย่างน้อย 3 ตัวอักษร' : 'รายละเอียดปัญหายาวเกิน 500 ตัวอักษร' }, 400)
+      const { data: riderRole } = await admin.from('user_roles').select('role').eq('user_id', caller.id).eq('role', 'rider').maybeSingle()
+      if (!riderRole) return json({ error: 'เฉพาะบัญชี Rider ที่ยืนยันตัวตนแล้วเท่านั้นที่แจ้งปัญหาระหว่างส่งได้' }, 403)
+      const { data: rider, error: riderError } = await admin.from('riders').select('id,user_id').eq('user_id', caller.id).maybeSingle()
+      if (riderError) return json({ error: riderError.message }, 400)
+      if (!rider) return json({ error: 'ไม่พบโปรไฟล์ Rider ที่ผูกกับบัญชีนี้' }, 404)
+      const { data: order, error: orderError } = await admin.from('delivery_orders').select('id,rider_id,status').eq('id', orderId).maybeSingle()
+      if (orderError) return json({ error: orderError.message }, 400)
+      if (!order || order.rider_id !== rider.id) return json({ error: 'ไม่พบงานที่เป็นของ Rider บัญชีนี้' }, 404)
+      if (['สำเร็จแล้ว', 'ยกเลิก'].includes(String(order.status || ''))) return json({ error: 'งานนี้ปิดแล้ว จึงแจ้งปัญหาระหว่างส่งไม่ได้' }, 409)
+      if (evidencePath) {
+        const allowedPrefix = `delivery-proofs/${caller.id}/${orderId}-issue/`
+        if (evidencePath.length > 1024 || !evidencePath.startsWith(allowedPrefix)) return json({ error: 'หลักฐานต้องเป็นไฟล์ private ที่ Rider อัปโหลดสำหรับงานนี้เท่านั้น' }, 400)
+      }
+      const { data: issue, error: issueError } = await admin.from('rider_delivery_issues').insert({ order_id: orderId, rider_id: rider.id, reported_by: caller.id, issue_type: issueType, detail, evidence_path: evidencePath || null, status: 'open' }).select('id,order_id,rider_id,issue_type,detail,evidence_path,status,created_at').single()
+      if (issueError) return json({ error: issueError.message }, 400)
+      return json({ ok: true, issue })
+    }
+
     if (body.action === 'update_rider_presence') {
       const { data: riderRole } = await admin.from('user_roles').select('role').eq('user_id', caller.id).eq('role', 'rider').maybeSingle()
       if (!riderRole) return json({ error: 'เฉพาะบัญชี Rider ที่ยืนยันตัวตนแล้วเท่านั้นที่อัปเดตสถานะหรือพิกัดได้' }, 403)
