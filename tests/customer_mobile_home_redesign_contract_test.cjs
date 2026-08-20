@@ -8,7 +8,7 @@ const css = fs.readFileSync('customer/customer-home-mobile.css', 'utf8');
 const home = app.slice(app.indexOf('async function home()'), app.indexOf('async function storesPage()'));
 
 assert.match(index, /customer-app\.js\?v=customer-home-v10/);
-assert.match(index, /customer-home-mobile\.css\?v=home-mobile-v1/);
+assert.match(index, /customer-home-mobile\.css\?v=home-mobile-v2/);
 assert.match(index, /customer-home-mobile\.js\?v=home-mobile-v1/);
 assert.match(runtime, /homeDeliveryLabel/);
 assert.match(runtime, /homeStoreSearch/);
@@ -18,6 +18,7 @@ assert.match(runtime, /cart\.hidden = !count/);
 assert.match(runtime, /#storeList'\)\?\.closest\('section'\)\?\.remove/);
 assert.match(css, /customer-top-actions>a\[href\*="mode=register"\]/);
 assert.match(css, /customer-bottom-cart/);
+assert.match(css, /customer-bottom-cart\[hidden\]\{display:none!important\}/);
 assert.match(css, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 assert.doesNotMatch(home, /ร้านค้ายอดนิยม/);
 assert.doesNotMatch(home, /id="storeList"/);
