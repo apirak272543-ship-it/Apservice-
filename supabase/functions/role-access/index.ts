@@ -496,6 +496,30 @@ Deno.serve(async (request) => {
       return json({ ok: true, cancellation: data })
     }
 
+    if (body.action === 'process_order_refund') {
+      const refundId = text(body.refund_id)
+      const action = text(body.refund_action)
+      const reason = text(body.reason)
+      const idempotencyKey = text(body.idempotency_key)
+      const approvedAmount = body.approved_amount === null || body.approved_amount === undefined || body.approved_amount === '' ? null : Number(body.approved_amount)
+      const paidAmount = body.paid_amount === null || body.paid_amount === undefined || body.paid_amount === '' ? null : Number(body.paid_amount)
+      if (!refundId || !['approve', 'reject', 'mark_paid'].includes(action) || reason.length < 10 || !idempotencyKey) return json({ error: 'กรุณาระบุคำขอคืนเงิน คำสั่ง เหตุผลอย่างน้อย 10 ตัวอักษร และรหัสยืนยันให้ครบถ้วน' }, 400)
+      if (approvedAmount !== null && !Number.isFinite(approvedAmount)) return json({ error: 'ยอดอนุมัติคืนเงินไม่ถูกต้อง' }, 400)
+      if (paidAmount !== null && !Number.isFinite(paidAmount)) return json({ error: 'ยอดโอนคืนไม่ถูกต้อง' }, 400)
+      const { data, error } = await callerDb.rpc('admin_process_order_refund', {
+        p_refund_id: refundId,
+        p_action: action,
+        p_approved_amount: approvedAmount,
+        p_paid_amount: paidAmount,
+        p_payment_reference: text(body.payment_reference) || null,
+        p_proof_image_url: text(body.proof_image_url) || null,
+        p_reason: reason,
+        p_idempotency_key: idempotencyKey,
+      })
+      if (error) return json({ error: error.message }, 400)
+      return json({ ok: true, refund: data })
+    }
+
     if (body.action === 'manage_delivery_order') {
       const orderId = text(body.order_id)
       const operation = text(body.operation)
