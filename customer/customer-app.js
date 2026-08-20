@@ -35,7 +35,7 @@
   }
 
   async function storesPage() {
-    app('stores', `<div class="customer-section-head"><div><h1>ร้านค้าทั้งหมด</h1><p>เลือกร้านที่ใช่ แล้วเริ่มสั่งได้เลย</p></div><a class="mpa-button mpa-button-secondary" href="checkout.html">ตะกร้า <span id="cartCount"></span></a></div><div class="customer-filters"><input id="storeSearch" class="customer-search" type="search" placeholder="ค้นหาร้านค้า เมนู หรือหมวดหมู่" autocomplete="off"><span class="mpa-muted" id="storeResultCount"></span></div><div id="categoryChips" class="customer-category-chips" aria-label="หมวดหมู่ร้านค้า">${M.ui.loading('กำลังโหลดหมวดหมู่…')}</div><div id="storeList" class="mpa-grid cards">${M.ui.loading('กำลังโหลดร้านค้า…')}</div>`);
+    app('stores', `<div class="customer-section-head"><div><h1>ร้านค้าทั้งหมด</h1><p>เลือกร้านที่ใช่ แล้วเริ่มสั่งได้เลย</p></div><a class="mpa-button mpa-button-secondary" href="checkout.html">ตะกร้า <span id="cartCount"></span></a></div><div class="customer-filters"><input id="storeSearch" class="customer-search" type="search" placeholder="ค้นหาร้านค้า เมนู หรือหมวดหมู่" autocomplete="off" value="${h(q.get('search') || '')}"><span class="mpa-muted" id="storeResultCount"></span></div><div id="categoryChips" class="customer-category-chips" aria-label="หมวดหมู่ร้านค้า">${M.ui.loading('กำลังโหลดหมวดหมู่…')}</div><div id="storeList" class="mpa-grid cards">${M.ui.loading('กำลังโหลดร้านค้า…')}</div>`);
     const setCount = () => { const count = M.cart.read().reduce((sum, item) => sum + item.qty, 0); const el = $('#cartCount'); if (el) el.textContent = count ? `(${count})` : ''; };
     setCount(); addEventListener('apservice:cart', setCount);
     const scope = pageScope('customer:stores');
