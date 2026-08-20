@@ -16,4 +16,7 @@ assert.match(roleAccess, /body\.action === 'process_order_refund'/, 'Role Access
 assert.match(roleAccess, /admin_process_order_refund/, 'Role Access must call the audited refund RPC');
 assert.match(refundMigration, /CREATE FUNCTION public\.admin_process_order_refund/, 'Backend must define the audited refund RPC');
 assert.match(refundMigration, /idempotency_key/, 'Refund workflow must preserve idempotency');
+assert.match(roleAccess, /body\.action === 'support_conversation'/, 'Role Access must expose the Support Inbox action');
+assert.match(roleAccess, /support_messages/, 'Support action must write messages through the central server');
+assert.match(roleAccess, /deep_link: 'support\.html'/, 'Support action must send Customer deep-link notifications');
 console.log('customer_financial_state_contract_test: PASS');
