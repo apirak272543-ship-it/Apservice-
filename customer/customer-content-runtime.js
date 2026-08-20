@@ -49,10 +49,10 @@
     return list.map((item, index) => {
       const starts = item?.starts_at ? Date.parse(item.starts_at) : NaN;
       const ends = item?.ends_at ? Date.parse(item.ends_at) : NaN;
-      const active = item?.active !== false && (!Number.isFinite(starts) || starts <= now) && (!Number.isFinite(ends) || ends >= now);
+      const active = item?.placement === 'customer_home_sponsored' && item?.approval_status === 'approved' && item?.active !== false && Number.isFinite(starts) && Number.isFinite(ends) && starts <= now && now <= ends;
       const imageUrl = validImage(item?.image_url || item?.imageUrl || item?.banner_url || item?.bannerUrl);
       const href = validHref(item?.link_url || item?.linkUrl || item?.destination_url || item?.destinationUrl || item?.href);
-      if (!active || (!imageUrl && !String(item?.icon || '').trim() && !String(item?.title || '').trim())) return null;
+      if (!active || !imageUrl || !href) return null;
       return { id: String(item?.id || `promotion-${index + 1}`), imageUrl, href, openInNewTab: item?.open_in_new_tab === true, badge: String(item?.badge || 'AD'), eyebrow: String(item?.eyebrow || ''), title: String(item?.title || item?.name || 'บริการพิเศษจาก AP Service'), description: String(item?.description || ''), altText: String(item?.alt_text || item?.title || 'ภาพโฆษณา'), icon: String(item?.icon || ''), overlay: validOverlay(item?.overlay), backgroundColor: validColor(item?.background_color, '#0b8c7c'), textColor: validColor(item?.text_color, '#ffffff'), borderColor: validColor(item?.border_color, ''), fit: ['cover', 'contain', 'fill', 'none', 'scale-down'].includes(item?.fit) ? item.fit : 'cover', position: String(item?.position || 'center'), buttonEnabled: item?.button_enabled !== false, buttonLabel: String(item?.button_label || 'ดูรายละเอียด'), priority: Number(item?.priority || index + 1), maxWidth: Math.max(280, Math.min(1200, Number(item?.max_width || 720))), minHeight: Math.max(160, Math.min(720, Number(item?.min_height || 300))) };
     }).filter(Boolean).sort((a, b) => a.priority - b.priority);
   }
@@ -106,11 +106,11 @@
   }
 
   function applyPromotions(items) {
-    const host = document.querySelector('#promotionList');
+    const host = document.querySelector('#sponsoredList');
     if (!host) return;
-    const section = host.closest('.customer-promotions'); if (section) section.hidden = false;
-    const count = document.querySelector('#promotionCount'); if (count) count.textContent = `${items.length} รายการ`;
-    if (!items.length) { host.innerHTML = '<div class="customer-promotion-empty" role="status"><strong>ยังไม่มีโฆษณาที่เปิดใช้งาน</strong><span>ผู้ดูแลระบบสามารถเพิ่ม Banner จากหลังบ้าน แล้วลูกค้าจะเห็นเมื่อเผยแพร่สำเร็จ</span></div>'; return; }
+    const section = host.closest('.customer-sponsored'); if (section) section.hidden = false;
+    const count = document.querySelector('#sponsoredCount'); if (count) count.textContent = `${items.length} รายการ`;
+    if (!items.length) { host.innerHTML = '<div class="customer-promotion-empty" role="status"><strong>ยังไม่มีโฆษณาสปอนเซอร์ในขณะนี้</strong><span>พื้นที่นี้จะแสดงเฉพาะรายการที่ผู้ดูแลอนุมัติและกำหนดช่วงเวลาแล้ว</span></div>'; return; }
     const slides = items.map((item, index) => { const visual = item.imageUrl ? `<img src="${h(item.imageUrl)}" alt="${h(item.altText)}" loading="${index === 0 ? 'eager' : 'lazy'}" style="object-fit:${h(item.fit)};object-position:${h(item.position)}">` : `<span class="customer-promotion__legacy-icon" aria-hidden="true">${h(item.icon || 'AD')}</span>`; const inner = `${visual}<div class="customer-promotion__copy" style="color:${item.textColor}"><small>${h(item.badge)}</small>${item.eyebrow ? `<em>${h(item.eyebrow)}</em>` : ''}<h2>${h(item.title)}</h2>${item.description ? `<p>${h(item.description)}</p>` : ''}${item.buttonEnabled && item.href ? `<span class="mpa-button mpa-button-secondary">${h(item.buttonLabel)}</span>` : ''}</div>`; const style = `background-color:${item.backgroundColor};min-height:${item.minHeight}px;max-width:${item.maxWidth}px;border-color:${item.borderColor || 'transparent'};${item.imageUrl ? `background-image:linear-gradient(${item.overlay},${item.overlay}),url("${item.imageUrl}");background-size:cover;background-position:${item.position}` : ''}`; const card = item.href ? `<a class="customer-promotion customer-promotion-slide" data-promotion-slide="${index}" href="${h(item.href)}" style="${style}"${item.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''}>${inner}</a>` : `<article class="customer-promotion customer-promotion-slide" data-promotion-slide="${index}" style="${style}">${inner}</article>`; return `<div class="customer-promotion-frame" role="group" aria-roledescription="slide" aria-label="${index + 1} จาก ${items.length}">${card}</div>`; }).join('');
     const controls = items.length > 1 ? `<div class="customer-promotion-controls" aria-label="ควบคุมแบนเนอร์"><button type="button" data-promotion-prev aria-label="แบนเนอร์ก่อนหน้า">‹</button><div class="customer-promotion-dots">${items.map((_, index) => `<button type="button" data-promotion-dot="${index}" aria-label="ดูแบนเนอร์ที่ ${index + 1}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`).join('')}</div><button type="button" data-promotion-next aria-label="แบนเนอร์ถัดไป">›</button></div>` : '';
     host.innerHTML = `<div class="customer-promotion-carousel" data-promotion-carousel>${slides}</div>${controls}`;
