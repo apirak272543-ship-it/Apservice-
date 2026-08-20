@@ -9,8 +9,8 @@ assert.match(migration, /TO anon, authenticated/, 'promotion public-read policy 
 assert.match(migration, /key = 'customer_promotions'/, 'policy ต้องเปิดเผยเฉพาะ customer promotions');
 assert.match(customer, /platform_configs\?select=value&key=eq.customer_promotions/, 'Customer home ต้องอ่าน promotion configuration ที่ Admin บันทึกเป็น source กลาง');
 assert.match(customer, /campaigns\?select=id,name,description,campaign_type,active,starts_at,ends_at,metadata/, 'Customer home ต้องมี campaign fallback เมื่อ config หลักว่าง');
-assert.match(customer, /legacyDefaultPromotions/, 'Customer home ต้องคืน promotion fallback เมื่อยังไม่มีข้อมูล');
-assert.match(customer, /customer-promotion--legacy/, 'legacy promotion ต้อง render เป็น card visual ไม่ใช่ Data URL');
+assert.doesNotMatch(customer, /legacyDefaultPromotions/, 'Customer home ห้ามสร้าง promotion fallback เทียมเมื่อยังไม่มีข้อมูลจริง');
+assert.match(customer, /customer-promotion--legacy/, 'legacy promotion ที่มาจากข้อมูลจริงต้อง render เป็น card visual ไม่ใช่ Data URL');
 assert.match(customer, /customer-promotion-empty/, 'Customer home ต้องคงพื้นที่ AD พร้อม empty state');
 assert.match(customer, /promotionLink/, 'Customer home ต้องตรวจปลายทาง banner ก่อน render ลิงก์');
 assert.match(customer, /void promotions\(scope.request\)/, 'การโหลด AD ต้องไม่ block การแสดงร้านค้า');
