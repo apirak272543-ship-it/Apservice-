@@ -5,7 +5,9 @@
   const h = value => M.ui.escapeHtml(String(value ?? ''));
   const $ = selector => document.querySelector(selector);
   const safeHref = value => { try { const url = new URL(String(value || ''), location.href); return url.protocol === 'https:' || url.origin === location.origin ? url.href : ''; } catch (_) { return ''; } };
+  const safeImage = value => /^https:\/\//i.test(String(value || '').trim()) ? String(value).trim() : '';
   const terminal = new Set(['สำเร็จ', 'ยกเลิก', 'cancelled', 'completed', 'delivered']);
+  const storeFields = 'id,name,emoji,description,rating,review_count,eta,icon_url,background_url,category_id,category_name,category_icon,active,status';
 
   function renderCart() {
     const cart = $('.customer-cart-fab'); if (!cart) return;
@@ -14,6 +16,17 @@
     cart.hidden = !count;
     cart.style.display = count ? 'flex' : 'none';
     cart.innerHTML = `<span aria-hidden="true">🛒</span><strong>ดูตะกร้าสินค้า</strong><b>${count}</b>`;
+  }
+
+  function enhanceNavigation(nav) {
+    if (!nav || nav.querySelector('a[href*="notifications.html"]')) return;
+    const link = document.createElement('a');
+    link.href = 'notifications.html';
+    link.textContent = 'แจ้งเตือน';
+    link.dataset.homeNav = 'notifications';
+    link.setAttribute('aria-label', 'การแจ้งเตือน');
+    const profile = nav.querySelector('a[href*="profile.html"]');
+    nav.insertBefore(link, profile || null);
   }
 
   async function loadDelivery() {
@@ -38,6 +51,51 @@
     } catch (_) { host.hidden = true; }
   }
 
+  function storeReady(store) {
+    if (store?.active === false) return false;
+    const status = String(store?.status || '').trim().toLowerCase();
+    return !['closed', 'inactive', 'offline', 'unavailable'].includes(status);
+  }
+
+  function storeVisual(store, className = 'customer-home-store-card__visual') {
+    const background = safeImage(store?.background_url);
+    const icon = safeImage(store?.icon_url);
+    const emoji = String(store?.emoji || '🍽️').slice(0, 12);
+    return `<span class="${className}${background ? ' has-background' : ''}">${background ? `<img class="${className}-background" src="${h(background)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}${icon ? `<img class="${className}-icon" src="${h(icon)}" alt="โลโก้ ${h(store?.name || 'ร้านค้า')}" loading="lazy" decoding="async" onerror="this.remove()">` : `<span class="${className}-emoji" aria-hidden="true">${h(emoji)}</span>`}</span>`;
+  }
+
+  function storeCard(store, featured = false) {
+    const href = `store.html?id=${encodeURIComponent(store.id)}`;
+    const rating = Number(store.rating);
+    const ratingLabel = Number.isFinite(rating) && rating > 0 ? `★ ${rating.toFixed(1)}` : 'ยังไม่มีคะแนน';
+    const stateLabel = storeReady(store) ? 'เปิด' : 'ปิด';
+    return `<a class="customer-home-store-card${featured ? ' customer-home-store-card--featured' : ''}" href="${h(href)}" aria-label="ดูเมนูร้าน ${h(store.name || 'ร้านค้า')}">${storeVisual(store)}<span class="customer-home-store-card__body"><span class="customer-home-store-card__state ${storeReady(store) ? 'is-open' : 'is-closed'}">${stateLabel}</span><strong>${h(store.name || 'ร้านค้า')}</strong><span class="customer-home-store-card__meta">${h(ratingLabel)} · ${h(store.eta || (storeReady(store) ? 'พร้อมให้บริการ' : 'ปิดชั่วคราว'))}</span></span></a>`;
+  }
+
+  function renderDiscovery(host, stores, categories) {
+    const usable = (stores || []).slice().sort((a, b) => Number(storeReady(b)) - Number(storeReady(a)) || Number(b.rating || 0) - Number(a.rating || 0) || String(a.name || '').localeCompare(String(b.name || ''), 'th'));
+    const featured = usable.slice(0, 8);
+    const groups = new Map();
+    usable.forEach(store => { const id = String(store.category_id || store.category_name || 'uncategorized'); const current = groups.get(id) || { id, name: String(store.category_name || 'ร้านค้าอื่น ๆ'), icon: String(store.category_icon || '🏪'), stores: [] }; current.stores.push(store); groups.set(id, current); });
+    const categoryList = (categories || []).map(item => ({ id: String(item.id || item.category_id || ''), name: String(item.name || item.category_name || item.title || ''), icon: String(item.icon || item.category_icon || '🏷️') })).filter(item => item.id && item.name);
+    categoryList.forEach(item => { if (!groups.has(item.id)) groups.set(item.id, { ...item, stores: [] }); });
+    const populated = [...groups.values()].filter(group => group.stores.length).sort((a, b) => b.stores.length - a.stores.length || a.name.localeCompare(b.name, 'th')).slice(0, 5);
+    if (!featured.length) { host.hidden = true; return; }
+    host.hidden = false;
+    host.innerHTML = `<section class="customer-home-discovery" aria-labelledby="homeFeaturedTitle"><div class="customer-section-head customer-section-head--home"><div><small class="customer-content-eyebrow">FEATURED STORES</small><h2 id="homeFeaturedTitle">ร้านแนะนำใกล้คุณ</h2><p>คัดเลือกจากข้อมูลร้านจริงในระบบ</p></div><a class="customer-home-see-all" href="stores.html">ดูทั้งหมด <span aria-hidden="true">›</span></a></div><div class="customer-home-featured-rail" aria-label="ร้านแนะนำ">${featured.map(store => storeCard(store, true)).join('')}</div></section><section class="customer-home-categories" aria-labelledby="homeCategoriesTitle"><div class="customer-section-head customer-section-head--home"><div><small class="customer-content-eyebrow">EXPLORE BY CATEGORY</small><h2 id="homeCategoriesTitle">หมวดหมู่ร้านค้า</h2><p>เลือกดูร้านตามสิ่งที่คุณกำลังมองหา</p></div><a class="customer-home-see-all" href="stores.html">ดูทั้งหมด <span aria-hidden="true">›</span></a></div><div class="customer-home-category-rail">${populated.map(group => `<a class="customer-home-category-chip" href="stores.html?category=${encodeURIComponent(group.id)}"><span aria-hidden="true">${h(group.icon)}</span><strong>${h(group.name)}</strong><small>${group.stores.length} ร้าน</small></a>`).join('')}</div></section>`;
+  }
+
+  async function loadDiscovery() {
+    const host = $('#homeDiscoveryMount'); if (!host) return;
+    try {
+      const [storeRows, categoryRows] = await Promise.all([
+        M.request(`catalog_stores?select=${storeFields}&order=rating.desc&limit=300`, { cacheTtlMs: 30_000, cacheKey: 'customer-home-discovery-stores' }),
+        M.request('store_categories?select=id,name,icon&active=eq.true&order=sort_order.asc,name.asc', { cacheTtlMs: 60_000, cacheKey: 'customer-home-discovery-categories' }).catch(() => []),
+      ]);
+      renderDiscovery(host, Array.isArray(storeRows) ? storeRows : [], Array.isArray(categoryRows) ? categoryRows : []);
+    } catch (_) { host.hidden = true; }
+  }
+
   async function loadSponsored() {
     const section = $('.customer-sponsored'); const host = $('#sponsoredList'); if (!section || !host) return;
     try {
@@ -53,15 +111,16 @@
   function enhance() {
     const page = $('.customer-page'); const nav = $('.customer-nav-wrap .mpa-nav'); if (!page || !nav || page.dataset.homeMobileEnhanced) return false;
     page.dataset.homeMobileEnhanced = 'true';
+    enhanceNavigation(nav);
     $('.customer-top-actions a[href*="mode=register"]')?.setAttribute('hidden', '');
-    [...nav.querySelectorAll('a')].forEach(link => { link.dataset.homeNav = link.href.includes('stores.html') ? 'stores' : link.href.includes('orders.html') ? 'orders' : link.href.includes('profile.html') ? 'profile' : 'home'; });
+    [...nav.querySelectorAll('a')].forEach(link => { link.dataset.homeNav = link.href.includes('stores.html') ? 'stores' : link.href.includes('orders.html') ? 'orders' : link.href.includes('notifications.html') ? 'notifications' : link.href.includes('profile.html') ? 'profile' : 'home'; });
     $('#storeList')?.closest('section')?.remove();
     $('#promotionList')?.closest('.customer-promotions')?.remove();
     page.insertAdjacentHTML('afterbegin', `<section class="customer-home-tools" aria-label="ค้นหาและที่อยู่จัดส่ง"><a class="customer-delivery-picker" href="profile.html?next=index.html"><span class="customer-delivery-picker__icon" aria-hidden="true">⌖</span><span class="customer-delivery-picker__copy"><small>ส่งไปที่</small><strong id="homeDeliveryLabel">กำลังตรวจสอบที่อยู่จัดส่ง…</strong></span><span class="customer-delivery-picker__chevron" aria-hidden="true">›</span></a><form class="customer-home-search" id="homeStoreSearch"><span aria-hidden="true">⌕</span><input id="homeStoreSearchInput" type="search" maxlength="100" placeholder="ค้นหาร้านค้า หรือเมนูอาหาร" autocomplete="off"><button type="submit" aria-label="ค้นหา">→</button></form></section>`);
     const services = $('.customer-services'); const serviceSection = services?.closest('section');
-    if (serviceSection) serviceSection.insertAdjacentHTML('afterend', `<section id="homeOrderTracker" hidden></section><section class="customer-promotions customer-sponsored" aria-label="พื้นที่สปอนเซอร์หน้าแรก" hidden><div class="customer-section-head"><div><h2>ข้อเสนอจากร้านสปอนเซอร์</h2><p>โฆษณาที่ผ่านการอนุมัติจาก AP Service</p></div><span id="sponsoredCount" class="mpa-badge">กำลังโหลด</span></div><div id="sponsoredList" class="customer-promotions__track"></div></section>`);
+    if (serviceSection) serviceSection.insertAdjacentHTML('afterend', `<section id="homeOrderTracker" hidden></section><section id="homeDiscoveryMount" hidden></section><section class="customer-promotions customer-sponsored" aria-label="พื้นที่สปอนเซอร์หน้าแรก" hidden><div class="customer-section-head"><div><h2>ข้อเสนอจากร้านสปอนเซอร์</h2><p>โฆษณาที่ผ่านการอนุมัติจาก AP Service</p></div><span id="sponsoredCount" class="mpa-badge">กำลังโหลด</span></div><div id="sponsoredList" class="customer-promotions__track"></div></section>`);
     $('#homeStoreSearch')?.addEventListener('submit', event => { event.preventDefault(); const needle = $('#homeStoreSearchInput')?.value.trim(); location.assign(`stores.html${needle ? `?search=${encodeURIComponent(needle)}` : ''}`); });
-    loadDelivery(); loadActiveOrder(); loadSponsored(); renderCart(); addEventListener('apservice:cart', renderCart);
+    loadDelivery(); loadActiveOrder(); loadDiscovery(); loadSponsored(); renderCart(); addEventListener('apservice:cart', renderCart);
     return true;
   }
   let attempts = 0;
