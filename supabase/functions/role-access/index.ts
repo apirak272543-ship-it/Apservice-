@@ -496,6 +496,33 @@ Deno.serve(async (request) => {
       return json({ ok: true, cancellation: data })
     }
 
+    if (body.action === 'support_conversation') {
+      const conversationId = text(body.conversation_id)
+      const supportAction = text(body.support_action)
+      const message = text(body.body)
+      const idempotencyKey = text(body.idempotency_key)
+      if (!conversationId || !['reply', 'close', 'reopen'].includes(supportAction) || !idempotencyKey) return json({ error: 'กรุณาระบุบทสนทนา คำสั่ง และรหัสยืนยันให้ครบถ้วน' }, 400)
+      if (supportAction === 'reply' && (message.length < 1 || message.length > 1500)) return json({ error: 'ข้อความตอบกลับต้องมีความยาว 1–1500 ตัวอักษร' }, 400)
+      if (supportAction !== 'reply' && (message.length < 3 || message.length > 500)) return json({ error: 'เหตุผลการเปลี่ยนสถานะต้องมีความยาว 3–500 ตัวอักษร' }, 400)
+      const { data: existing, error: conversationError } = await admin.from('support_conversations').select('id,customer_id,customer_name,status').eq('id', conversationId).maybeSingle()
+      if (conversationError) return json({ error: conversationError.message }, 400)
+      if (!existing) return json({ error: 'ไม่พบบทสนทนาศูนย์ช่วยเหลือ' }, 404)
+      if (await admin.from('admin_action_audit').select('id').eq('target_id', conversationId).eq('action', `support_${supportAction}`).eq('metadata->>idempotency_key`, idempotencyKey).maybeSingle().then(result => result.data)) return json({ ok: true, conversation_id: conversationId, status: existing.status, replayed: true })
+      const now = new Date().toISOString()
+      if (supportAction === 'reply') {
+        const { error: messageError } = await admin.from('support_messages').insert({ conversation_id: conversationId, sender_id: caller.id, sender_role: 'admin', body: message, created_at: now })
+        if (messageError) return json({ error: messageError.message }, 400)
+      }
+      const nextStatus = supportAction === 'close' ? 'closed' : 'open'
+      const { data: updated, error: updateError } = await admin.from('support_conversations').update({ status: nextStatus, last_message_at: now }).eq('id', conversationId).select('id,customer_id,customer_name,status,last_message_at').single()
+      if (updateError) return json({ error: updateError.message }, 400)
+      await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: existing.customer_id || null, target_type: 'support_conversation', target_id: conversationId, action: `support_${supportAction}`, reason: message, before_state: existing, after_state: updated, metadata: { idempotency_key: idempotencyKey } })
+      if (supportAction === 'reply' || supportAction === 'close') {
+        await admin.from('mobile_notifications').insert({ recipient_id: existing.customer_id, recipient_role: 'customer', title: supportAction === 'reply' ? 'มีข้อความใหม่จากศูนย์ช่วยเหลือ' : 'บทสนทนาศูนย์ช่วยเหลือถูกปิดแล้ว', body: supportAction === 'reply' ? message.slice(0, 240) : 'หากต้องการความช่วยเหลือเพิ่มเติม สามารถเปิดบทสนทนาใหม่ได้จากศูนย์ช่วยเหลือ', data: { conversation_id: conversationId, deep_link: 'support.html' }, status: 'sent', created_at: now, sent_at: now })
+      }
+      return json({ ok: true, conversation: updated, replayed: false })
+    }
+
     if (body.action === 'process_order_refund') {
       const refundId = text(body.refund_id)
       const action = text(body.refund_action)
