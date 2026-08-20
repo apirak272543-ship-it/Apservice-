@@ -119,9 +119,15 @@
     $('#sponsoredList')?.closest('.customer-sponsored')?.remove();
     page.insertAdjacentHTML('afterbegin', `<section class="customer-home-tools" aria-label="ค้นหาและที่อยู่จัดส่ง"><a class="customer-delivery-picker" href="profile.html?next=index.html"><span class="customer-delivery-picker__icon" aria-hidden="true">⌖</span><span class="customer-delivery-picker__copy"><small>ส่งไปที่</small><strong id="homeDeliveryLabel">กำลังตรวจสอบที่อยู่จัดส่ง…</strong></span><span class="customer-delivery-picker__chevron" aria-hidden="true">›</span></a><form class="customer-home-search" id="homeStoreSearch"><span aria-hidden="true">⌕</span><input id="homeStoreSearchInput" type="search" maxlength="100" placeholder="ค้นหาร้านค้า หรือเมนูอาหาร" autocomplete="off"><button type="submit" aria-label="ค้นหา">→</button></form></section>`);
     const services = $('.customer-services'); const serviceSection = services?.closest('section');
-    if (serviceSection) serviceSection.insertAdjacentHTML('afterend', `<section id="homeOrderTracker" hidden></section><section id="homeDiscoveryMount" hidden></section><section class="customer-promotions customer-sponsored" aria-label="พื้นที่สปอนเซอร์หน้าแรก" hidden><div class="customer-section-head"><div><h2>ข้อเสนอจากร้านสปอนเซอร์</h2><p>โฆษณาที่ผ่านการอนุมัติจาก AP Service</p></div><span id="sponsoredCount" class="mpa-badge">กำลังโหลด</span></div><div id="sponsoredList" class="customer-promotions__track"></div></section>`);
+    if (serviceSection) {
+      const additions = [];
+      if (!page.querySelector('#homeOrderTracker')) additions.push('<section id="homeOrderTracker" hidden></section>');
+      if (!page.querySelector('#homeDiscoveryMount')) additions.push('<section id="homeDiscoveryMount" hidden></section>');
+      if (!page.querySelector('.customer-sponsored')) additions.push('<section class="customer-promotions customer-sponsored" aria-label="พื้นที่สปอนเซอร์หน้าแรก" hidden><div class="customer-section-head"><div><h2>ข้อเสนอจากร้านสปอนเซอร์</h2><p>โฆษณาที่ผ่านการอนุมัติจาก AP Service</p></div><span id="sponsoredCount" class="mpa-badge">กำลังโหลด</span></div><div id="sponsoredList" class="customer-promotions__track"></div></section>');
+      if (additions.length) serviceSection.insertAdjacentHTML('afterend', additions.join(''));
+    }
     $('#homeStoreSearch')?.addEventListener('submit', event => { event.preventDefault(); const needle = $('#homeStoreSearchInput')?.value.trim(); location.assign(`stores.html${needle ? `?search=${encodeURIComponent(needle)}` : ''}`); });
-    loadDelivery(); loadActiveOrder(); loadDiscovery(); loadSponsored(); renderCart(); addEventListener('apservice:cart', renderCart);
+    loadDelivery(); loadActiveOrder(); loadDiscovery(); renderCart(); addEventListener('apservice:cart', renderCart);
     return true;
   }
   let attempts = 0;
