@@ -270,7 +270,9 @@ Deno.serve(async (request) => {
       const entityId = text(body.entity_id)
       const section = text(body.section)
       const input = (body.data && typeof body.data === 'object' ? body.data : {}) as Record<string, unknown>
-      if (!entityId || !['general', 'identity', 'addresses', 'documents', 'appearance', 'operations'].includes(section)) return json({ error: 'กรุณาระบุร้านค้าและหมวดข้อมูลที่ต้องการบันทึก' }, 400)
+      const allowedStoreSections = ['general', 'appearance', 'operations']
+      const legacyStoreSections = ['identity', 'addresses', 'documents']
+      if (!entityId || ![...allowedStoreSections, ...legacyStoreSections].includes(section)) return json({ error: 'กรุณาระบุร้านค้าและหมวดข้อมูลที่ต้องการบันทึก' }, 400)
       const { data: existing, error: existingError } = await admin.from('stores').select('id,name').eq('id', entityId).maybeSingle()
       if (existingError) return json({ error: existingError.message }, 400)
       if (!existing) return json({ error: 'ไม่พบร้านค้าที่ต้องการแก้ไข' }, 404)
