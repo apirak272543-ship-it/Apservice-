@@ -507,7 +507,9 @@ Deno.serve(async (request) => {
       const { data: existing, error: conversationError } = await admin.from('support_conversations').select('id,customer_id,customer_name,status').eq('id', conversationId).maybeSingle()
       if (conversationError) return json({ error: conversationError.message }, 400)
       if (!existing) return json({ error: 'ไม่พบบทสนทนาศูนย์ช่วยเหลือ' }, 404)
-      if (await admin.from('admin_action_audit').select('id').eq('target_id', conversationId).eq('action', `support_${supportAction}`).eq('metadata->>idempotency_key`, idempotencyKey).maybeSingle().then(result => result.data)) return json({ ok: true, conversation_id: conversationId, status: existing.status, replayed: true })
+      const { data: replayAudit, error: replayAuditError } = await admin.from('admin_action_audit').select('id').eq('target_id', conversationId).eq('action', `support_${supportAction}`).eq('metadata->>idempotency_key', idempotencyKey).maybeSingle()
+      if (replayAuditError) return json({ error: replayAuditError.message }, 400)
+      if (replayAudit) return json({ ok: true, conversation_id: conversationId, status: existing.status, replayed: true })
       const now = new Date().toISOString()
       if (supportAction === 'reply') {
         const { error: messageError } = await admin.from('support_messages').insert({ conversation_id: conversationId, sender_id: caller.id, sender_role: 'admin', body: message, created_at: now })
@@ -553,13 +555,20 @@ Deno.serve(async (request) => {
       const reason = text(body.reason)
       const evidencePath = text(body.evidence_path)
       const input = (body.data && typeof body.data === 'object' ? body.data : {}) as Record<string, unknown>
-      if (!orderId || !['status', 'assign_rider', 'items'].includes(operation)) return json({ error: 'กรุณาระบุออร์เดอร์และคำสั่งจัดการที่ถูกต้อง' }, 400)
+      if (!orderId || !['status', 'assign_rider', 'dispatch', 'items'].includes(operation)) return json({ error: 'กรุณาระบุออร์เดอร์และคำสั่งจัดการที่ถูกต้อง' }, 400)
       if (reason.length < 10) return json({ error: 'กรุณาระบุเหตุผลการจัดการอย่างน้อย 10 ตัวอักษร' }, 400)
       if (evidencePath && !evidencePath.startsWith(`admin-override-evidence/${caller.id}/override/`)) return json({ error: 'หลักฐานต้องเป็นไฟล์ private ของ Admin ผู้ดำเนินการเท่านั้น' }, 400)
-      const { data: order, error: orderError } = await admin.from('delivery_orders').select('id,customer_id,status,total,payable,delivery_fee,credit_used,rider_id,rider_name,accepted_at,delivery_started_at,completed_at').eq('id', orderId).maybeSingle()
+      const idempotencyKey = text(body.idempotency_key)
+      if (['assign_rider', 'dispatch'].includes(operation) && idempotencyKey.length < 12) return json({ error: 'รหัสยืนยัน Dispatch ไม่ถูกต้อง' }, 400)
+      const { data: order, error: orderError } = await admin.from('delivery_orders').select('id,customer_id,status,total,payable,delivery_fee,credit_used,rider_id,rider_name,accepted_at,delivery_started_at,completed_at,dispatch_status,assigned_at,estimated_arrival_at,eta_source,dispatch_note,dispatch_updated_at').eq('id', orderId).maybeSingle()
       if (orderError) return json({ error: orderError.message }, 400)
       if (!order) return json({ error: 'ไม่พบออร์เดอร์ที่ต้องการจัดการ' }, 404)
       const now = new Date().toISOString()
+      if (['assign_rider', 'dispatch'].includes(operation)) {
+        const { data: replayEvent, error: replayError } = await admin.from('delivery_dispatch_events').select('id,order_id,dispatch_status,estimated_arrival_at').eq('order_id', orderId).eq('idempotency_key', idempotencyKey).maybeSingle()
+        if (replayError) return json({ error: replayError.message }, 400)
+        if (replayEvent) return json({ ok: true, operation, order: { id: orderId, dispatch_status: replayEvent.dispatch_status, estimated_arrival_at: replayEvent.estimated_arrival_at }, replayed: true })
+      }
       const writeAudit = async (action: string, beforeState: Record<string, unknown>, afterState: Record<string, unknown>) => {
         const { error } = await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: order.customer_id || null, target_type: 'order', target_id: orderId, action, reason, evidence_path: evidencePath || null, before_state: beforeState, after_state: afterState, metadata: { override: true, operation } })
         if (error) throw new Error(`บันทึกประวัติผู้ดูแลไม่สำเร็จ: ${error.message}`)
@@ -583,19 +592,42 @@ Deno.serve(async (request) => {
       if (operation === 'assign_rider') {
         if (TERMINAL_ORDER_STATUSES.has(String(order.status))) return json({ error: 'ออร์เดอร์ที่ปิดงานแล้วไม่สามารถเปลี่ยน Rider ได้' }, 409)
         const riderId = text(input.rider_id) || null
-        let riderName: string | null = null
-        if (riderId) {
-          const { data: rider, error: riderError } = await admin.from('riders').select('id,name,status,ride_available,compliance_status').eq('id', riderId).maybeSingle()
-          if (riderError) return json({ error: riderError.message }, 400)
-          if (!rider) return json({ error: 'ไม่พบ Rider ที่เลือก' }, 404)
-          const ready = rider.status === 'พร้อมรับงาน' || rider.ride_available === true
-          if (!ready || ['suspended', 'expired'].includes(String(rider.compliance_status || '').toLowerCase())) return json({ error: 'Rider ที่เลือกยังไม่พร้อมรับงานหรือถูกระงับ' }, 409)
-          riderName = text(rider.name) || null
-        }
-        const { data: updated, error: updateError } = await admin.from('delivery_orders').update({ rider_id: riderId, rider_name: riderName, updated_at: now }).eq('id', orderId).select('id,rider_id,rider_name,updated_at').single()
+        const { data: updated, error: updateError } = await callerDb.rpc('admin_update_order_dispatch', {
+          p_order_id: orderId,
+          p_dispatch_status: riderId ? 'assigned' : 'unassigned',
+          p_rider_id: riderId,
+          p_eta_minutes: null,
+          p_update_eta: false,
+          p_dispatch_note: '',
+          p_reason: reason,
+          p_idempotency_key: idempotencyKey,
+        })
         if (updateError) return json({ error: updateError.message }, 400)
-        await writeAudit('order_rider_assigned', { order_id: orderId, rider_id: order.rider_id, rider_name: order.rider_name }, { order_id: orderId, rider_id: riderId, rider_name: riderName })
-        return json({ ok: true, operation, order: updated })
+        return json({ ok: true, operation, order: updated, replayed: Boolean(updated?.replayed) })
+      }
+
+      if (operation === 'dispatch') {
+        if (TERMINAL_ORDER_STATUSES.has(String(order.status))) return json({ error: 'ออร์เดอร์ที่ปิดงานแล้วไม่สามารถแก้ Dispatch/ETA ได้' }, 409)
+        const dispatchStatus = text(input.dispatch_status)
+        const riderId = text(input.rider_id) || order.rider_id || null
+        const updateEta = input.update_eta === true
+        const etaMinutes = input.eta_minutes === null || input.eta_minutes === undefined || input.eta_minutes === '' ? null : Number(input.eta_minutes)
+        const dispatchNote = text(input.dispatch_note)
+        if (!['unassigned', 'assigned', 'en_route', 'arrived_pickup', 'picked_up', 'delivering', 'delivered', 'exception'].includes(dispatchStatus)) return json({ error: 'สถานะ Dispatch ไม่ถูกต้อง' }, 400)
+        if (updateEta && etaMinutes !== null && (!Number.isInteger(etaMinutes) || etaMinutes < 0 || etaMinutes > 1440)) return json({ error: 'ETA ต้องเป็นจำนวนเต็ม 0–1440 นาที' }, 400)
+        if (dispatchNote.length > 500) return json({ error: 'หมายเหตุ Dispatch ยาวเกิน 500 ตัวอักษร' }, 400)
+        const { data: updated, error: updateError } = await callerDb.rpc('admin_update_order_dispatch', {
+          p_order_id: orderId,
+          p_dispatch_status: dispatchStatus,
+          p_rider_id: riderId,
+          p_eta_minutes: etaMinutes,
+          p_update_eta: updateEta,
+          p_dispatch_note: dispatchNote,
+          p_reason: reason,
+          p_idempotency_key: idempotencyKey,
+        })
+        if (updateError) return json({ error: updateError.message }, 400)
+        return json({ ok: true, operation, order: updated, replayed: Boolean(updated?.replayed) })
       }
 
       if (operation !== 'items') return json({ error: 'คำสั่งจัดการออร์เดอร์นี้ไม่รองรับ' }, 400)
