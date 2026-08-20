@@ -12,6 +12,7 @@
     const count = M.cart.read().reduce((total, item) => total + Number(item.qty || 0), 0);
     cart.classList.add('customer-bottom-cart');
     cart.hidden = !count;
+    cart.style.display = count ? 'flex' : 'none';
     cart.innerHTML = `<span aria-hidden="true">🛒</span><strong>ดูตะกร้าสินค้า</strong><b>${count}</b>`;
   }
 

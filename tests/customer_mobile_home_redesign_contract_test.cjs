@@ -9,12 +9,13 @@ const home = app.slice(app.indexOf('async function home()'), app.indexOf('async 
 
 assert.match(index, /customer-app\.js\?v=customer-home-v10/);
 assert.match(index, /customer-home-mobile\.css\?v=home-mobile-v2/);
-assert.match(index, /customer-home-mobile\.js\?v=home-mobile-v1/);
+assert.match(index, /customer-home-mobile\.js\?v=home-mobile-v2/);
 assert.match(runtime, /homeDeliveryLabel/);
 assert.match(runtime, /homeStoreSearch/);
 assert.match(runtime, /customer-home-tracker/);
 assert.match(runtime, /customer_home_sponsored/);
 assert.match(runtime, /cart\.hidden = !count/);
+assert.match(runtime, /cart\.style\.display = count \? 'flex' : 'none'/);
 assert.match(runtime, /#storeList'\)\?\.closest\('section'\)\?\.remove/);
 assert.match(css, /customer-top-actions>a\[href\*="mode=register"\]/);
 assert.match(css, /customer-bottom-cart/);
