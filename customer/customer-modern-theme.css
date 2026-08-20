@@ -99,3 +99,61 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .customer-account,.customer-cart-fab,.customer-service,.mpa-button { transition: none; }
 }
+
+/* Compact store cards: retain the established menu link and make its hit area span the card. */
+.customer-store-card {
+  position: relative;
+  display: block;
+  min-height: 0;
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.customer-store-card:hover {
+  transform: translateY(-2px);
+  border-color: #aac9fb;
+  box-shadow: var(--soft-shadow-hover);
+}
+.customer-store-visual {
+  height: 82px;
+  place-items: center start;
+  padding: 10px 13px;
+}
+.customer-store-visual img,
+.customer-store-visual span {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+.customer-store-copy { padding: 10px 12px 11px; }
+.customer-store-copy h3 {
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.customer-store-copy p {
+  min-height: 0;
+  margin: 3px 0 7px;
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+.customer-store-meta { padding-top: 7px; }
+.customer-store-meta .mpa-button {
+  padding: 7px 9px;
+  font-size: 10px;
+}
+.customer-store-card:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, .38);
+  outline-offset: 2px;
+}
+@media (max-width: 760px) {
+  .customer-store-card { border-radius: 17px; }
+  .customer-store-visual { height: 76px; padding: 9px 11px; }
+  .customer-store-copy { padding: 9px 10px 10px; }
+}

@@ -1,5 +1,13 @@
 # AP Service Project TODO
 
+## Customer Compact Store Card Layout
+
+- [x] ยืนยันลำดับ DOM และปลายทางหน้าเมนูของการ์ดร้านค้าแต่ละใบ
+- [x] ย้ายไอคอนร้านค้าไปชิดซ้ายของภาพปก และลดความสูงการ์ดโดยไม่เปลี่ยนข้อมูลร้าน
+- [x] ทำให้พื้นที่ทั้งหมดของการ์ดร้านค้าเปิดหน้าเมนูร้านได้ พร้อมคง accessibility และไม่ทำให้การกดซ้อนกัน
+- [x] ทดสอบการแสดงผลบนมือถือ การนำทาง และ regression ของหน้า Customer
+- [ ] ตรวจ diff บันทึก commit และ push การเปลี่ยนแปลงหลังอัปเดตจากงานร่วม
+
 - [x] Modular Architecture Refactor & Legacy Bridge
 - [x] Sanitized LocalStorage Cache for Large Base64 Images
 - [x] Admin-only AI Collaboration Workspace Schema & UI
