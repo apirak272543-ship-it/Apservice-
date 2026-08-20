@@ -19,7 +19,7 @@ compileInlineScripts(entry, 'customer/index.html');
 compileInlineScripts(checkout, 'customer/checkout.html');
 assert.match(entry, /shared\/ap-service-mpa\.js/, 'Customer entry ต้องใช้ Shared MPA runtime');
 assert.match(checkout, /shared\/ap-service-mpa\.js/, 'Customer checkout ต้องใช้ Shared MPA runtime');
-assert.match(customer, /create_food_order/, 'Customer checkout ต้องสร้าง order ผ่าน server RPC');
+assert.match(customer, /create_food_checkout_group_v3/, 'Customer checkout ต้องสร้าง order ผ่าน checkout group RPC ที่ตรวจ server');
 assert.match(migration, /create policy orders_read_participant/, 'ต้องมี policy อ่าน order สำหรับ participant');
 assert.match(migration, /status not in \('รอตรวจสอบการชำระเงิน', 'ต้องแนบสลิปใหม่'\)/, 'ไรเดอร์และร้านต้องไม่เห็น order ที่รอตรวจสลิป');
 assert.match(migration, /or customer_id = auth\.uid\(\)/, 'ลูกค้าต้องอ่าน order ของตนได้');
