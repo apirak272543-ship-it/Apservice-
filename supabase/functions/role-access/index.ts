@@ -154,6 +154,21 @@ Deno.serve(async (request) => {
       return json({ ok: true, rider: updated })
     }
 
+    if (body.action === 'update_store_gp_rate') {
+      const storeId = text(body.store_id), gpPercent = Number(body.gp_percent), reason = text(body.reason)
+      if (!storeId || !Number.isFinite(gpPercent) || gpPercent < 0 || gpPercent > 100 || reason.length < 3 || reason.length > 500) return json({ error: 'กรุณาระบุร้าน อัตรา GP 0–100 และเหตุผล 3–500 ตัวอักษร' }, 400)
+      const { data: store, error: storeError } = await admin.from('stores').select('id,owner_id,settlement_gp_percent').eq('id', storeId).maybeSingle()
+      if (storeError) return json({ error: storeError.message }, 400)
+      if (!store) return json({ error: 'ไม่พบร้านค้าที่ต้องการตั้งค่า GP' }, 404)
+      const normalized = Math.round(gpPercent * 100) / 100
+      const { error: updateError } = await admin.from('stores').update({ settlement_gp_percent: normalized, updated_at: new Date().toISOString() }).eq('id', storeId)
+      if (updateError) return json({ error: updateError.message }, 400)
+      const { error: historyError } = await admin.from('store_gp_rate_history').insert({ store_id: storeId, previous_gp_percent: Number(store.settlement_gp_percent || 0), gp_percent: normalized, reason, changed_by: caller.id })
+      if (historyError) return json({ error: historyError.message }, 400)
+      await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: store.owner_id || null, action: 'store_gp_rate_updated', reason, before_state: { store_id: storeId, gp_percent: Number(store.settlement_gp_percent || 0) }, after_state: { store_id: storeId, gp_percent: normalized } })
+      return json({ ok: true, store_id: storeId, gp_percent: normalized })
+    }
+
     if (body.action === 'migrate_orders') {
       const source = Array.isArray(body.orders) ? body.orders.slice(0, 100) as LocalOrder[] : []
       if (!source.length) return json({ imported: 0 })
