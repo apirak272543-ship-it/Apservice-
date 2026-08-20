@@ -81,7 +81,13 @@
     $('#checkoutLocationGps').onclick = useGps; $('#checkoutLocationMap').onclick = openMap; $('#checkoutLocationManualToggle').onclick = openManual; $('#checkoutLocationManualSave').onclick = saveManual; $('#checkoutLocationMapClose').onclick = closeMap; $('#checkoutLocationMapSave').onclick = saveMap; $('#checkoutLocationMapProvider').onclick = () => mountTiles(true); $('#checkoutLocationMapRetry').onclick = () => mountTiles(true); $('#checkoutLocationMapGps').onclick = async () => { try { const point = await requestGps(); setSelectedPoint(point); status(`โฟกัสที่ตำแหน่งปัจจุบันแล้ว · ความแม่นยำประมาณ ${Math.round(point.accuracy || 0)} เมตร`); if (map) map.setView([point.lat, point.lng], 17, { animate: false }); } catch (error) { fallback(error.message); } };
     const user = await getUser(); if (user) { try { await loadProfile(user); } catch (_) { status(describe(savedLocation)); } } else status('เข้าสู่ระบบก่อนบันทึกพิกัดจัดส่ง ระบบจะแสดงพิกัดเดิมเมื่อคุณเข้าสู่ระบบ');
   };
-  const ensureForCheckout = async ({ user }) => { try { await loadProfile(user); } catch (_) { /* The save action below still validates current cached/profile state. */ } if (validPoint(savedLocation)) return savedLocation; status('กรุณาระบุตำแหน่งจัดส่งก่อนยืนยันออร์เดอร์'); $('#checkoutLocationStatus')?.closest('.customer-location-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); M.ui.setNotice('กรุณาใช้ GPS เลือกพิกัดบนแผนที่ หรือกรอกพิกัดเองก่อนยืนยันออร์เดอร์', 'error'); return null; };
+  const ensureForCheckout = async ({ user, location } = {}) => {
+    try { await loadProfile(user); } catch (_) { /* The save action below still validates current cached/profile state. */ }
+    if (validPoint(location)) { savedLocation = { ...location, lat: Number(location.lat), lng: Number(location.lng) }; setSelectedPoint(savedLocation); return savedLocation; }
+    if (validPoint(selectedPoint)) return selectedPoint;
+    if (validPoint(savedLocation)) return savedLocation;
+    status('กรุณาระบุตำแหน่งจัดส่งก่อนยืนยันออร์เดอร์'); $('#checkoutLocationStatus')?.closest('.customer-location-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); M.ui.setNotice('กรุณาใช้ GPS เลือกพิกัดบนแผนที่ หรือกรอกพิกัดเองก่อนยืนยันออร์เดอร์', 'error'); return null;
+  };
   const mountParcel = ({ host, id, title, helper = '', initialPoint = null, onChange = () => {} } = {}) => {
     if (!host || !id || host.dataset.locationPickerMounted) return null;
     host.dataset.locationPickerMounted = 'true';

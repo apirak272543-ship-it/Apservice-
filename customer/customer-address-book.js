@@ -45,8 +45,8 @@
     if (!$('#deliveryAddress').value.trim()) $('#deliveryAddress').value = profile.address || '';
     return profile;
   };
-  const loadAddresses = async user => {
-    const rows = await M.request(`customer_addresses?select=id,label,recipient_name,recipient_phone,address_line,delivery_note,location,is_default,updated_at&user_id=eq.${encodeURIComponent(user.id)}&archived_at=is.null&order=is_default.desc,updated_at.desc&limit=50`, { private: true, cacheTtlMs: 8_000, cacheKey: `customer-addresses:${user.id}` });
+  const loadAddresses = async (user, { forceFresh = false } = {}) => {
+    const rows = await M.request(`customer_addresses?select=id,label,recipient_name,recipient_phone,address_line,delivery_note,location,is_default,updated_at&user_id=eq.${encodeURIComponent(user.id)}&archived_at=is.null&order=is_default.desc,updated_at.desc&limit=50`, { private: true, forceFresh, cacheTtlMs: 8_000, cacheKey: `customer-addresses:${user.id}` });
     state.addresses = rows || [];
     if (!state.addresses.some(row => row.id === state.selectedId)) state.selectedId = state.addresses.find(row => row.is_default)?.id || '';
     renderSelect();
@@ -114,7 +114,19 @@
       selected.address_line !== current.addressLine || (selected.delivery_note || '') !== current.deliveryNote ||
       !validPoint(selected.location) || Number(selected.location.lat) !== Number(point.lat) || Number(selected.location.lng) !== Number(point.lng)
     );
-    if (!selected || differs) return saveCurrent({ user, location: point });
+    if (!selected || differs) {
+      try {
+        return await saveCurrent({ user, location: point });
+      } catch (error) {
+        // A cached/archived selected id must not block checkout. Refresh the active address list,
+        // keep the user's current form values, and retry once against the current active record.
+        await loadAddresses(user, { forceFresh: true });
+        const latest = state.addresses.find(row => row.id === state.selectedId) || state.addresses.find(row => row.is_default) || state.addresses[0];
+        if (!latest) throw error;
+        state.selectedId = latest.id;
+        try { return await saveCurrent({ user, location: point }); } catch (_) { throw error; }
+      }
+    }
     return selected;
   };
   window.APServiceCustomerAddressBook = { mountCheckout, ensureForCheckout };
