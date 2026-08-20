@@ -44,8 +44,8 @@
       const form = document.querySelector('#parcelForm'), submit = document.querySelector('#parcelSubmit'), modal = document.querySelector('#parcelReceiptModal'), receiptBody = document.querySelector('#parcelReceiptBody'), receiptStatus = document.querySelector('#parcelReceiptStatus'), confirm = document.querySelector('#parcelReceiptConfirm');
       const closeReceipt = () => { modal.hidden = true; modal.setAttribute('aria-hidden', 'true'); receiptDraft = null; };
       const buildDraft = () => ({
-        pickupAddress: document.querySelector('#parcelPickupAddress').value.trim(), pickupPoint,
-        dropoffAddress: document.querySelector('#parcelDropoffAddress').value.trim(), dropoffPoint,
+        pickupAddress: document.querySelector('#parcelPickupAddress').value.trim(), pickupPoint: pickupPoint || pickupPicker.getPoint?.(),
+        dropoffAddress: document.querySelector('#parcelDropoffAddress').value.trim(), dropoffPoint: dropoffPoint || dropoffPicker.getPoint?.(),
         recipientName: document.querySelector('#parcelRecipientName').value.trim(), recipientPhone: document.querySelector('#parcelRecipientPhone').value.trim(),
         description: document.querySelector('#parcelDescription').value.trim(), note: document.querySelector('#parcelNote').value.trim(), paymentMethod: document.querySelector('#parcelPayment').value, idempotencyKey: idempotency(), quote: null,
       });
