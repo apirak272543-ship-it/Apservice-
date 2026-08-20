@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:customer-contract": "node tests/customer_flow_experience_contract_test.cjs && node tests/customer_location_picker_contract_test.cjs && node tests/customer_media_golden_rule_contract_test.cjs && node tests/customer_compact_store_card_contract_test.cjs",
+    "test:customer-contract": "node tests/customer_flow_experience_contract_test.cjs && node tests/customer_location_picker_contract_test.cjs && node tests/customer_media_golden_rule_contract_test.cjs && node tests/customer_compact_store_card_contract_test.cjs && node tests/customer_featured_store_carousel_contract_test.cjs",
     "test": "npm run test:customer-contract"
   }
 }
