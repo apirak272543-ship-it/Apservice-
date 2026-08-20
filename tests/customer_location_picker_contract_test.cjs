@@ -17,7 +17,7 @@ assert.match(picker, /navigator\.geolocation/, 'ต้องมี GPS flow');
 assert.match(picker, /user_profiles\?on_conflict=user_id/, 'ต้อง persist location เข้า profile');
 assert.match(app, /mountCheckout/, 'Checkout runtime ต้อง mount location card');
 assert.match(app, /ensureForCheckout/, 'Checkout ต้อง block การสร้าง order เมื่อไม่มีพิกัด');
-assert.match(app, /rpc\/create_food_order/, 'ยังต้องสร้าง order ผ่าน server RPC');
+assert.match(app, /rpc\/create_food_checkout_group_v3/, 'ยังต้องสร้าง order ผ่าน server RPC รุ่นปัจจุบัน');
 assert.doesNotMatch(picker, /delivery_fee\s*:/, 'Location picker ห้ามคำนวณหรือ hardcode ค่าส่งฝั่ง client');
 
 console.log('customer location picker contract: PASS');
