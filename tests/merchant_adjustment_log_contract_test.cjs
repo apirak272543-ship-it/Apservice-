@@ -1,0 +1,11 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const migration = fs.readFileSync('supabase/migrations/20260820_merchant_order_adjustment_log.sql', 'utf8');
+assert.match(migration, /merchant_list_order_adjustment_log/, 'ต้องมี read-only adjustment log RPC');
+assert.match(migration, /private\.has_role\('store_owner'\)/, 'RPC ต้องยืนยันบทบาทร้านค้า');
+assert.match(migration, /s\.owner_id = v_merchant_id/, 'RPC ต้องยืนยันเจ้าของร้านก่อนอ่าน');
+assert.match(migration, /order_status_events/, 'log ต้องแสดง event สถานะ');
+assert.match(migration, /order_cancellation_requests/, 'log ต้องแสดง cancellation request');
+assert.match(migration, /order_financial_events/, 'log ต้องแสดง financial action แบบไม่แก้ไข');
+assert.match(migration, /REVOKE ALL[\s\S]*GRANT EXECUTE[\s\S]*authenticated/, 'RPC ต้องไม่เปิด public execution');
+console.log('merchant adjustment log contract: PASS');
