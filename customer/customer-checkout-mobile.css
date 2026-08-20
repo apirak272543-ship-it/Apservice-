@@ -1,0 +1,34 @@
+/* Customer checkout: mobile-first containment and one-handed controls. */
+body[data-page="checkout"]{overflow-x:clip}
+body[data-page="checkout"] .customer-page{max-width:100%;min-width:0;overflow-x:clip}
+body[data-page="checkout"] .customer-page>.mpa-grid[style*="1.25fr"]{width:100%;min-width:0}
+body[data-page="checkout"] .customer-page>.mpa-grid[style*="1.25fr"]>*{min-width:0}
+body[data-page="checkout"] #checkoutForm,.customer-address-book,.customer-location-card{min-width:0}
+body[data-page="checkout"] .customer-address-book .mpa-grid[style*="minmax(180px"]{min-width:0}
+@media(max-width:760px){
+  body[data-page="checkout"] .customer-page>.mpa-grid[style*="1.25fr"]{grid-template-columns:minmax(0,1fr)!important;gap:12px}
+  body[data-page="checkout"] .customer-page>.mpa-grid[style*="1.25fr"]>.mpa-card{padding:14px;min-width:0}
+  body[data-page="checkout"] .mpa-page-head{align-items:stretch;flex-wrap:wrap}
+  body[data-page="checkout"] .mpa-page-head>.mpa-button{width:100%}
+  body[data-page="checkout"] .mpa-table-wrap{max-width:100%;overscroll-behavior-x:contain}
+  body[data-page="checkout"] .customer-address-book .mpa-grid[style*="minmax(180px"]{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  body[data-page="checkout"] .customer-location-actions{display:grid;grid-template-columns:1fr;gap:8px}
+  body[data-page="checkout"] .customer-location-actions .mpa-button{width:100%;min-height:48px;white-space:normal}
+  body[data-page="checkout"] #slipPanel{min-width:0;padding:12px!important}
+  body[data-page="checkout"] #slipPanel .mpa-button{display:flex!important;width:100%;margin:8px 0 0!important;min-height:46px;white-space:normal}
+}
+@media(max-width:480px){
+  .customer-topbar{min-height:58px;padding:8px 12px;gap:8px;align-items:center}
+  .customer-brand{gap:8px;flex:1 1 auto;min-width:0}
+  .customer-brand-mark{width:36px;height:36px;flex-basis:36px;border-radius:11px}
+  .customer-brand-name{font-size:15px;white-space:nowrap}
+  .customer-brand-tag{display:none}
+  .customer-top-actions{gap:5px;flex:0 0 auto}
+  .customer-top-actions>.mpa-button{width:60px;min-height:36px;padding:8px 7px;font-size:0;border-radius:11px}
+  .customer-top-actions>.mpa-button::after{content:'สมัคร';font-size:12px;line-height:1;font-weight:900}
+  .customer-account{width:36px;height:36px;border-radius:11px}
+  body[data-page="checkout"] .customer-page{padding-left:10px;padding-right:10px}
+  body[data-page="checkout"] .mpa-card{border-radius:16px}
+  body[data-page="checkout"] .customer-address-book .mpa-grid[style*="minmax(180px"]{grid-template-columns:minmax(0,1fr)!important}
+  body[data-page="checkout"] .mpa-field input,body[data-page="checkout"] .mpa-field select,body[data-page="checkout"] .mpa-field textarea{min-width:0;font-size:16px}
+}
