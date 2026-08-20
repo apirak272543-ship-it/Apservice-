@@ -409,19 +409,19 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === 'set_account_control') {
-      const { data, error } = await callerDb.rpc('admin_set_account_control', { p_user_id: text(body.user_id), p_status: text(body.status, 'active'), p_feature_overrides: body.feature_overrides && typeof body.feature_overrides === 'object' ? body.feature_overrides : {}, p_reason: text(body.reason) })
+      const { data, error } = await callerDb.rpc('admin_set_account_control', { p_user_id: text(body.user_id), p_status: text(body.status, 'active'), p_feature_overrides: body.feature_overrides && typeof body.feature_overrides === 'object' ? body.feature_overrides : {}, p_reason: text(body.reason), p_evidence_path: text(body.evidence_path) || null })
       if (error) return json({ error: error.message }, 400); return json({ ok: true, control: data })
     }
 
     if (body.action === 'set_user_roles') {
       const roles = Array.isArray(body.roles) ? body.roles : []
       if (!roles.length || roles.some(role => !isManagedRole(role))) return json({ error: 'กรุณาเลือกบทบาทที่ระบบรองรับอย่างน้อยหนึ่งรายการ' }, 400)
-      const { data, error } = await callerDb.rpc('admin_set_user_roles', { p_user_id: text(body.user_id), p_roles: roles, p_reason: text(body.reason) })
+      const { data, error } = await callerDb.rpc('admin_set_user_roles', { p_user_id: text(body.user_id), p_roles: roles, p_reason: text(body.reason), p_evidence_path: text(body.evidence_path) || null })
       if (error) return json({ error: error.message }, 400); return json({ ok: true, roles: data?.roles || [] })
     }
 
     if (body.action === 'adjust_customer_wallet') {
-      const { data, error } = await callerDb.rpc('admin_adjust_customer_wallet', { p_customer_id: text(body.user_id), p_direction: text(body.direction), p_amount: Number(body.amount), p_reason: text(body.reason) })
+      const { data, error } = await callerDb.rpc('admin_adjust_customer_wallet', { p_customer_id: text(body.user_id), p_direction: text(body.direction), p_amount: Number(body.amount), p_reason: text(body.reason), p_evidence_path: text(body.evidence_path) || null })
       if (error) return json({ error: error.message }, 400); return json({ ok: true, wallet: data })
     }
 
@@ -462,8 +462,8 @@ Deno.serve(async (request) => {
       const reason = text(body.reason)
       const refundDecision = text(body.refund_decision, 'no_refund')
       const idempotencyKey = text(body.idempotency_key)
-      if (!requestId || !['approve', 'reject'].includes(decision) || !reason || !idempotencyKey) return json({ error: 'กรุณาระบุคำขอ ผลพิจารณา เหตุผล และรหัสยืนยันให้ครบถ้วน' }, 400)
-      const { data, error } = await callerDb.rpc('admin_resolve_order_cancellation', { p_request_id: requestId, p_action: decision, p_resolution_reason: reason, p_refund_decision: refundDecision, p_idempotency_key: idempotencyKey })
+      if (!requestId || !['approve', 'reject'].includes(decision) || reason.length < 10 || !idempotencyKey) return json({ error: 'กรุณาระบุคำขอ ผลพิจารณา และเหตุผลอย่างน้อย 10 ตัวอักษรให้ครบถ้วน' }, 400)
+      const { data, error } = await callerDb.rpc('admin_resolve_order_cancellation', { p_request_id: requestId, p_action: decision, p_resolution_reason: reason, p_refund_decision: refundDecision, p_idempotency_key: idempotencyKey, p_evidence_path: text(body.evidence_path) || null })
       if (error) return json({ error: error.message }, 400)
       return json({ ok: true, cancellation: data })
     }
@@ -472,14 +472,17 @@ Deno.serve(async (request) => {
       const orderId = text(body.order_id)
       const operation = text(body.operation)
       const reason = text(body.reason)
+      const evidencePath = text(body.evidence_path)
       const input = (body.data && typeof body.data === 'object' ? body.data : {}) as Record<string, unknown>
       if (!orderId || !['status', 'assign_rider', 'items'].includes(operation)) return json({ error: 'กรุณาระบุออร์เดอร์และคำสั่งจัดการที่ถูกต้อง' }, 400)
-      const { data: order, error: orderError } = await admin.from('delivery_orders').select('id,status,total,payable,delivery_fee,credit_used,rider_id,rider_name,accepted_at,delivery_started_at,completed_at').eq('id', orderId).maybeSingle()
+      if (reason.length < 10) return json({ error: 'กรุณาระบุเหตุผลการจัดการอย่างน้อย 10 ตัวอักษร' }, 400)
+      if (evidencePath && !evidencePath.startsWith(`admin-override-evidence/${caller.id}/override/`)) return json({ error: 'หลักฐานต้องเป็นไฟล์ private ของ Admin ผู้ดำเนินการเท่านั้น' }, 400)
+      const { data: order, error: orderError } = await admin.from('delivery_orders').select('id,customer_id,status,total,payable,delivery_fee,credit_used,rider_id,rider_name,accepted_at,delivery_started_at,completed_at').eq('id', orderId).maybeSingle()
       if (orderError) return json({ error: orderError.message }, 400)
       if (!order) return json({ error: 'ไม่พบออร์เดอร์ที่ต้องการจัดการ' }, 404)
       const now = new Date().toISOString()
       const writeAudit = async (action: string, beforeState: Record<string, unknown>, afterState: Record<string, unknown>) => {
-        const { error } = await admin.from('admin_action_audit').insert({ actor_id: caller.id, action, reason: reason || null, before_state: beforeState, after_state: afterState })
+        const { error } = await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: order.customer_id || null, target_type: 'order', target_id: orderId, action, reason, evidence_path: evidencePath || null, before_state: beforeState, after_state: afterState, metadata: { override: true, operation } })
         if (error) throw new Error(`บันทึกประวัติผู้ดูแลไม่สำเร็จ: ${error.message}`)
       }
 
@@ -510,7 +513,6 @@ Deno.serve(async (request) => {
           if (!ready || ['suspended', 'expired'].includes(String(rider.compliance_status || '').toLowerCase())) return json({ error: 'Rider ที่เลือกยังไม่พร้อมรับงานหรือถูกระงับ' }, 409)
           riderName = text(rider.name) || null
         }
-        if (reason.length < 3) return json({ error: 'กรุณาระบุเหตุผลการมอบหมายหรือยกเลิก Rider อย่างน้อย 3 ตัวอักษร' }, 400)
         const { data: updated, error: updateError } = await admin.from('delivery_orders').update({ rider_id: riderId, rider_name: riderName, updated_at: now }).eq('id', orderId).select('id,rider_id,rider_name,updated_at').single()
         if (updateError) return json({ error: updateError.message }, 400)
         await writeAudit('order_rider_assigned', { order_id: orderId, rider_id: order.rider_id, rider_name: order.rider_name }, { order_id: orderId, rider_id: riderId, rider_name: riderName })
@@ -519,7 +521,6 @@ Deno.serve(async (request) => {
 
       if (operation !== 'items') return json({ error: 'คำสั่งจัดการออร์เดอร์นี้ไม่รองรับ' }, 400)
       if (!EDITABLE_ORDER_STATUSES.has(String(order.status))) return json({ error: 'แก้ไขรายการได้ก่อนเข้าสู่ขั้นรับสินค้าเท่านั้น' }, 409)
-      if (reason.length < 3) return json({ error: 'กรุณาระบุเหตุผลการแก้ไขรายการอย่างน้อย 3 ตัวอักษร' }, 400)
       const submitted = Array.isArray(input.items) ? input.items.slice(0, 60) as OrderItemInput[] : []
       if (!submitted.length) return json({ error: 'ออร์เดอร์ต้องมีรายการอย่างน้อยหนึ่งรายการ' }, 400)
       const { data: existingRows, error: itemsError } = await admin.from('delivery_order_items').select('id,order_id,item_id,name,emoji,unit_price,quantity,options').eq('order_id', orderId).order('id', { ascending: true })
