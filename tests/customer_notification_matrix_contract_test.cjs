@@ -1,0 +1,11 @@
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const app = fs.readFileSync(path.join(root, 'customer/customer-app.js'), 'utf8');
+assert.match(app, /mobile_notifications\?select=id,title,body,data,status,read_at,created_at&recipient_id=/, 'Customer must read notification read state scoped to the current user');
+assert.match(app, /data-mark-notification-read/, 'Customer must support Mark Read');
+assert.match(app, /read_at: M\.ui\.nowIso\(\)/, 'Customer Mark Read must write only the read timestamp');
+assert.match(app, /safeDeepLink/, 'Customer must validate generic deep links');
+assert.match(app, /customer-notice-unread/, 'Customer must visually distinguish unread notifications');
+console.log('customer_notification_matrix_contract_test: PASS');

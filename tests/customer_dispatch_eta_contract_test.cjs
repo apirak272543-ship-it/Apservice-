@@ -1,0 +1,18 @@
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const page = fs.readFileSync(path.join(root, 'customer/order.html'), 'utf8');
+const patch = fs.readFileSync(path.join(root, 'customer/customer-order-dispatch-state.js'), 'utf8');
+const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260820_dispatch_eta_workflow.sql'), 'utf8');
+const roleAccess = fs.readFileSync(path.join(root, 'supabase/functions/role-access/index.ts'), 'utf8');
+assert.match(page, /customer-order-dispatch-state\.js/, 'Customer Order Detail must load the Dispatch/ETA patch');
+assert.match(patch, /delivery_dispatch_events\?select=/, 'Customer must read Dispatch event history');
+assert.match(patch, /estimated_arrival_at/, 'Customer must display ETA state');
+assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.delivery_dispatch_events/, 'Migration must create Dispatch event history');
+assert.match(migration, /admin_update_order_dispatch/, 'Migration must create the server Dispatch RPC');
+assert.match(migration, /dispatch_events_customer_read/, 'Migration must include Customer RLS read policy');
+assert.match(migration, /dispatch_events_rider_read/, 'Migration must include Rider RLS read policy');
+assert.match(roleAccess, /operation === 'dispatch'/, 'Role Access must expose Dispatch operation');
+assert.match(roleAccess, /admin_update_order_dispatch/, 'Role Access must call the Dispatch RPC');
+console.log('customer_dispatch_eta_contract_test: PASS');
