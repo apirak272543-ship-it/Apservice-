@@ -124,6 +124,14 @@ Deno.serve(async (request) => {
         updates.name = name
         updates.phone = phone
         updates.vehicle = vehicle
+      } else if (operation === 'documents') {
+        const fields = ['identity_document_image_url', 'license_image_url', 'vehicle_registration_image_url', 'insurance_image_url']
+        let submitted = 0
+        const documentRefs: Record<string, string> = {}
+        for (const field of fields) { const ref = text(input[field]); if (!ref) continue; if (ref.length > 600 || !ref.startsWith(`rider-${rider.id}/`)) return json({ error: 'ตำแหน่งเอกสาร Rider ไม่ถูกต้อง' }, 400); documentRefs[field] = ref; submitted += 1 }
+        if (!submitted) return json({ error: 'กรุณาเลือกเอกสารอย่างน้อยหนึ่งรายการก่อนส่งตรวจ' }, 400)
+        Object.assign(updates, documentRefs)
+        updates.compliance_status = 'pending'; updates.compliance_note = 'Rider ส่งเอกสารใหม่ รอผู้ดูแลตรวจ'; updates.compliance_reviewed_by = null; updates.compliance_reviewed_at = null; updates.ride_available = false; updates.status = 'ไม่พร้อมรับงาน'
       } else return json({ error: 'คำสั่งอัปเดตข้อมูล Rider ไม่รองรับ' }, 400)
 
       const { data: updated, error: updateError } = await admin.from('riders').update(updates).eq('id', rider.id).select('id,user_id,name,phone,vehicle,status,ride_available,last_location,compliance_status,updated_at').single()
