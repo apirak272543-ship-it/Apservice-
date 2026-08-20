@@ -1,0 +1,47 @@
+/* Customer UI system: one soft, rounded language across all public routes. */
+:root{
+  --customer-radius-xl:28px;
+  --customer-radius-lg:23px;
+  --customer-radius-md:17px;
+  --customer-radius-sm:13px;
+  --customer-space-1:8px;
+  --customer-space-2:12px;
+  --customer-space-3:16px;
+  --customer-space-4:22px;
+  --customer-shadow:0 12px 28px rgba(32,77,142,.09);
+  --customer-shadow-hover:0 16px 34px rgba(32,77,142,.14);
+}
+body[data-page]{background:radial-gradient(circle at 8% -10%,rgba(187,216,255,.42),transparent 29rem),radial-gradient(circle at 100% 22%,rgba(198,244,239,.28),transparent 24rem),#f5f8fe;color:#17324d}
+body[data-page] .customer-page{padding:clamp(14px,3vw,26px) clamp(13px,3.5vw,28px) 106px;max-width:1100px}
+body[data-page] .customer-topbar{border-bottom-color:rgba(190,210,239,.72);border-radius:0 0 var(--customer-radius-lg) var(--customer-radius-lg)}
+body[data-page] .customer-top-actions{gap:9px}.customer-account{border-radius:var(--customer-radius-md)!important}
+body[data-page]:not([data-page="profile"]) .customer-top-actions>a[href*="mode=register"]{display:none!important}
+body[data-page] .mpa-nav a{border-radius:var(--customer-radius-md)!important;min-height:38px;display:inline-flex;align-items:center;justify-content:center}
+body[data-page] .mpa-card,body[data-page] .customer-store-card,body[data-page] .customer-service,body[data-page] .customer-promotion,body[data-page] .customer-promotion-empty,body[data-page] .customer-menu-section,body[data-page] .retail-product,body[data-page] .retail-store-summary,body[data-page] .market-card,body[data-page] .marketplace-card{border-radius:var(--customer-radius-lg)!important;border-color:#d6e4f5;box-shadow:var(--customer-shadow)}
+body[data-page] .mpa-card{padding:clamp(16px,3vw,22px)}body[data-page] .mpa-grid{gap:var(--customer-space-3)}
+body[data-page] .mpa-page-head,body[data-page] .customer-section-head{gap:var(--customer-space-2);margin-bottom:var(--customer-space-3)}
+body[data-page] .mpa-page-head h1,body[data-page] .customer-section-head h1{font-size:clamp(1.45rem,5vw,2rem);letter-spacing:-.6px}
+body[data-page] .mpa-page-head h2,body[data-page] .customer-section-head h2{font-size:clamp(1.25rem,4vw,1.65rem);letter-spacing:-.35px}
+body[data-page] .mpa-button{min-height:42px;border-radius:var(--customer-radius-md)!important;padding:10px 15px;box-shadow:0 5px 12px rgba(29,79,170,.11);transition:transform 150ms cubic-bezier(.23,1,.32,1),box-shadow 150ms cubic-bezier(.23,1,.32,1),background 150ms cubic-bezier(.23,1,.32,1)}
+body[data-page] .mpa-button:active{transform:scale(.97)}body[data-page] .mpa-button-secondary{background:#fbfdff}
+body[data-page] .mpa-field{gap:7px;margin-bottom:var(--customer-space-3)}
+body[data-page] .mpa-field input,body[data-page] .mpa-field select,body[data-page] .mpa-field textarea,body[data-page] .customer-search,body[data-page] .customer-filters input{min-height:46px;border-radius:var(--customer-radius-md)!important;border-color:#cedff3;background:#fbfdff;padding:11px 13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+body[data-page] .mpa-field textarea{min-height:104px;resize:vertical}
+body[data-page] .mpa-field input:focus,body[data-page] .mpa-field select:focus,body[data-page] .mpa-field textarea:focus,body[data-page] .customer-search:focus{outline:3px solid rgba(37,99,235,.15);border-color:#4c89ed}
+body[data-page] .customer-category-chip,body[data-page] .customer-menu-filter,body[data-page] .mpa-badge{border-radius:999px!important}
+body[data-page] .customer-store-card,body[data-page] .customer-service,body[data-page] .retail-product{overflow:hidden;transition:transform 160ms cubic-bezier(.23,1,.32,1),box-shadow 160ms cubic-bezier(.23,1,.32,1),border-color 160ms cubic-bezier(.23,1,.32,1)}
+body[data-page] .customer-store-card:active,body[data-page] .customer-service:active,body[data-page] .retail-product:active{transform:scale(.985)}
+body[data-page] .customer-store-card:hover,body[data-page] .customer-service:hover,body[data-page] .retail-product:hover{box-shadow:var(--customer-shadow-hover);border-color:#b7d0f1}
+body[data-page] .customer-store-visual{border-radius:var(--customer-radius-lg) var(--customer-radius-lg) 0 0!important}
+body[data-page] .mpa-table-wrap{border-radius:var(--customer-radius-lg);border-color:#d6e4f5;box-shadow:var(--customer-shadow)}
+body[data-page] .mpa-table th:first-child{border-radius:var(--customer-radius-md) 0 0 0}body[data-page] .mpa-table th:last-child{border-radius:0 var(--customer-radius-md) 0 0}
+body[data-page] .mpa-toast{border-radius:var(--customer-radius-md);box-shadow:0 16px 34px rgba(21,61,123,.22)}
+body[data-page] .mpa-modal,body[data-page] [role="dialog"].mpa-card{border-radius:var(--customer-radius-xl)!important;box-shadow:0 24px 62px rgba(19,48,94,.25)}
+body[data-page] .customer-cart-fab{border-radius:50%!important}
+body[data-page] .customer-cart-fab.customer-bottom-cart{border-radius:var(--customer-radius-lg)!important}
+body[data-page] .customer-cart-fab.customer-bottom-cart{position:fixed;z-index:60;left:14px;right:14px;bottom:max(14px,env(safe-area-inset-bottom));width:auto;height:56px;padding:0 18px;border:0!important;display:flex;align-items:center;justify-content:center;gap:9px;background:linear-gradient(135deg,#246be7,#164bb8);color:#fff;box-shadow:0 16px 32px rgba(18,70,173,.32);transform:none!important;text-decoration:none}body[data-page] .customer-cart-fab.customer-bottom-cart[hidden]{display:none!important}body[data-page] .customer-cart-fab.customer-bottom-cart strong{font-size:.9rem}body[data-page] .customer-cart-fab.customer-bottom-cart b{display:grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#fff;color:#1e56c2;font-size:.72rem}body[data-page] .customer-cart-fab.customer-bottom-cart em{position:static;display:grid;place-items:center;min-width:22px;height:22px;margin:0;padding:0 6px;border-radius:999px;background:#fff;color:#1e56c2;font-size:.72rem;font-style:normal}
+.customer-consent-backdrop{position:fixed;z-index:120;inset:0;display:grid;place-items:end center;padding:20px 14px max(20px,env(safe-area-inset-bottom));background:rgba(17,38,73,.34);backdrop-filter:blur(7px)}
+.customer-consent-modal{width:min(100%,470px);padding:24px;border:1px solid rgba(255,255,255,.82);border-radius:var(--customer-radius-xl);background:linear-gradient(145deg,#fff,#f3f8ff);box-shadow:0 28px 66px rgba(17,43,90,.29);animation:customer-consent-enter 220ms cubic-bezier(.23,1,.32,1);color:#17324d}.customer-consent-art{display:grid;place-items:center;width:52px;height:52px;margin:0 0 13px;border-radius:19px;background:linear-gradient(145deg,#dceaff,#c7f5ed);color:#1767c9;font-size:27px}.customer-consent-eyebrow{margin:0 0 5px;color:#3770c4;font-size:.76rem;font-weight:900;letter-spacing:.08em}.customer-consent-modal h2{margin:0 0 8px;color:#153b75;font-size:1.37rem}.customer-consent-modal p{margin:0;color:#5a6e86;line-height:1.55}.customer-consent-modal ul{margin:14px 0 18px;padding-left:20px;color:#45637e;font-size:.88rem;line-height:1.65}.customer-consent-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:9px}.customer-consent-actions .mpa-button{min-height:46px}.customer-consent-privacy{display:block;margin-top:13px;text-align:center;color:#356fc7;font-size:.8rem;font-weight:750}@keyframes customer-consent-enter{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:760px){body[data-page] .customer-page{padding-top:14px}body[data-page] .mpa-card{padding:16px}body[data-page] .mpa-page-head{flex-wrap:wrap}body[data-page] .mpa-page-head>.mpa-button,body[data-page] .customer-section-head>.mpa-button{min-height:38px;padding:8px 12px}body[data-page] .mpa-grid.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}body[data-page] .mpa-table-wrap{border-radius:var(--customer-radius-md)}}
+@media(prefers-reduced-motion:reduce){body[data-page] .mpa-button,body[data-page] .customer-store-card,body[data-page] .customer-service,body[data-page] .retail-product{transition:none}}
+@media(max-width:390px){.customer-consent-modal{padding:21px 18px}.customer-consent-actions{grid-template-columns:1fr}.customer-consent-actions .mpa-button:first-child{order:2}}

@@ -7,7 +7,7 @@ const runtime = fs.readFileSync('customer/customer-home-mobile.js', 'utf8');
 const css = fs.readFileSync('customer/customer-home-mobile.css', 'utf8');
 const home = app.slice(app.indexOf('async function home()'), app.indexOf('async function storesPage()'));
 
-assert.match(index, /customer-app\.js\?v=customer-home-v10/);
+assert.match(index, /customer-app\.js\?v=customer-home-v11/);
 assert.match(index, /customer-home-mobile\.css\?v=home-mobile-v2/);
 assert.match(index, /customer-home-mobile\.js\?v=home-mobile-v2/);
 assert.match(runtime, /homeDeliveryLabel/);

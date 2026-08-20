@@ -41,7 +41,7 @@ body {
 .customer-nav-wrap { border-color: #dce8f8; background: rgba(255, 255, 255, .83); }
 .customer-nav-wrap .mpa-nav a { border-radius: 999px; padding: 9px 13px; }
 .customer-nav-wrap .mpa-nav a.active,.customer-nav-wrap .mpa-nav a:hover { color: #1b4ca5; background: #e5efff; }
-.customer-page { background-image: none !important; }
+.customer-page { background-color: transparent; }
 .customer-hero {
   border: 1px solid rgba(255, 255, 255, .45);
   background:
