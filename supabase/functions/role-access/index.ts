@@ -135,6 +135,25 @@ Deno.serve(async (request) => {
     if (!adminRole) return json({ error: 'เฉพาะผู้ดูแลระบบที่มีสิทธิ์ใน Supabase เท่านั้นที่ดำเนินการได้' }, 403)
     const callerDb = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false }, global: { headers: { Authorization: `Bearer ${accessToken}` } } })
 
+    if (body.action === 'review_rider_compliance') {
+      const riderId = text(body.rider_id), decision = text(body.decision), note = text(body.note)
+      if (!riderId || !['approved', 'rejected'].includes(decision) || note.length < 3) return json({ error: 'กรุณาระบุ Rider ผลพิจารณา และเหตุผลอย่างน้อย 3 ตัวอักษร' }, 400)
+      const { data: rider, error: riderError } = await admin.from('riders').select('id,user_id,identity_verified,identity_document_image_url,license_number,license_expiry,license_image_url,vehicle_registration_image_url,insurance_expiry,insurance_image_url,compliance_status,ride_available,status').eq('id', riderId).maybeSingle()
+      if (riderError) return json({ error: riderError.message }, 400)
+      if (!rider) return json({ error: 'ไม่พบ Rider ที่ต้องการพิจารณา' }, 404)
+      if (decision === 'approved') {
+        const licenseValid = rider.license_expiry && new Date(rider.license_expiry).getTime() >= new Date(new Date().toISOString().slice(0, 10)).getTime()
+        const insuranceValid = rider.insurance_expiry && new Date(rider.insurance_expiry).getTime() >= new Date(new Date().toISOString().slice(0, 10)).getTime()
+        if (!rider.identity_verified || !rider.identity_document_image_url || !rider.license_number || !licenseValid || !rider.license_image_url || !rider.vehicle_registration_image_url || !insuranceValid || !rider.insurance_image_url) return json({ error: 'เอกสารยืนยันตัวตน ใบขับขี่ ทะเบียนรถ หรือประกันยังไม่ครบ/หมดอายุ จึงอนุมัติไม่ได้' }, 409)
+      }
+      const updates: Record<string, unknown> = { compliance_status: decision, compliance_note: note, compliance_reviewed_by: caller.id, compliance_reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }
+      if (decision !== 'approved') { updates.ride_available = false; updates.status = 'ไม่พร้อมรับงาน' }
+      const { data: updated, error: updateError } = await admin.from('riders').update(updates).eq('id', riderId).select('id,compliance_status,compliance_note,compliance_reviewed_at,ride_available,status').single()
+      if (updateError) return json({ error: updateError.message }, 400)
+      await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: rider.user_id || null, action: 'rider_compliance_reviewed', reason: note, before_state: { rider_id: riderId, compliance_status: rider.compliance_status, ride_available: rider.ride_available }, after_state: { rider_id: riderId, compliance_status: updated.compliance_status, ride_available: updated.ride_available } })
+      return json({ ok: true, rider: updated })
+    }
+
     if (body.action === 'migrate_orders') {
       const source = Array.isArray(body.orders) ? body.orders.slice(0, 100) as LocalOrder[] : []
       if (!source.length) return json({ imported: 0 })
