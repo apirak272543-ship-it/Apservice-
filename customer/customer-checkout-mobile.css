@@ -24,8 +24,7 @@ body[data-page="checkout"] .customer-address-book .mpa-grid[style*="minmax(180px
   .customer-brand-name{font-size:15px;white-space:nowrap}
   .customer-brand-tag{display:none}
   .customer-top-actions{gap:5px;flex:0 0 auto}
-  .customer-top-actions>.mpa-button{width:60px;min-height:36px;padding:8px 7px;font-size:0;border-radius:11px}
-  .customer-top-actions>.mpa-button::after{content:'สมัคร';font-size:12px;line-height:1;font-weight:900}
+  .customer-top-actions>.mpa-button{width:76px;min-height:36px;padding:8px 6px;font-size:11px!important;line-height:1;white-space:nowrap;border-radius:11px}
   .customer-account{width:36px;height:36px;border-radius:11px}
   body[data-page="checkout"] .customer-page{padding-left:10px;padding-right:10px}
   body[data-page="checkout"] .mpa-card{border-radius:16px}

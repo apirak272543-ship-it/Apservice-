@@ -10,6 +10,7 @@ assert.match(css, /@media\(max-width:760px\)/);
 assert.match(css, /grid-template-columns:minmax\(0,1fr\)!important/);
 assert.match(css, /@media\(max-width:480px\)/);
 assert.match(css, /customer-address-book \.mpa-grid\[style\*="minmax\(180px"\]\{grid-template-columns:minmax\(0,1fr\)!important/);
-assert.match(css, /customer-top-actions>\.mpa-button\{width:60px/);
+assert.match(css, /customer-top-actions>\.mpa-button\{width:76px/);
+assert.match(css, /white-space:nowrap/);
 assert.match(css, /overflow-x:clip/);
 console.log('customer_checkout_mobile_layout_contract_test: PASS');
