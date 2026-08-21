@@ -23,6 +23,7 @@ assert.match(registerRuntime, /identities\.length === 0/, 'Registration must rec
 assert.match(runtime, /sendPasswordRecovery|acceptRecoveryFromHash|updatePassword/, 'Shared auth runtime must support password recovery and password update');
 assert.match(recoverRuntime, /sendPasswordRecovery/, 'Recovery page must send a password-recovery email through the shared runtime');
 assert.match(updatePasswordRuntime, /acceptRecoveryFromHash|updatePassword/, 'Recovery completion page must accept a recovery session before updating a password');
+assert.match(updatePasswordRuntime, /profile\.html\?password_reset=1/, 'A completed recovery must return the Customer to the Login page');
 assert.match(recoverPage, /defer src="customer-recover\.js/, 'Recovery runtime must wait for its body before rendering the form');
 assert.match(updatePasswordPage, /defer src="customer-update-password\.js/, 'Password update runtime must wait for its body before rendering the form');
 assert.match(app, /APLoginUI\?\.enhance/, 'Customer Login must use shared Login UI motion helper');
