@@ -265,10 +265,16 @@
     void hydrateCrossSystemData();
   }
 
-  const observer = new MutationObserver(() => boot());
-  observer.observe(document.body, { childList: true, subtree: true });
-  boot();
-  setTimeout(boot, 250);
-  setTimeout(boot, 900);
-  setTimeout(boot, 1800);
+  let booting = false;
+  const runBoot = () => {
+    if (booting) return;
+    booting = true;
+    try { boot(); } finally { booting = false; }
+  };
+  // Customer app renders its shell synchronously and checkout helpers settle asynchronously.
+  // A bounded retry is sufficient; observing the whole body can retrigger boot while decorators mutate the DOM.
+  runBoot();
+  setTimeout(runBoot, 250);
+  setTimeout(runBoot, 900);
+  setTimeout(runBoot, 1800);
 })();
