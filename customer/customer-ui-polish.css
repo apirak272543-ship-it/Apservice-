@@ -1,0 +1,740 @@
+:root {
+  --customer-ui-ink: #173c3a;
+  --customer-ui-ink-soft: #315955;
+  --customer-ui-muted: #708582;
+  --customer-ui-brand: #0b8f7d;
+  --customer-ui-brand-deep: #07645c;
+  --customer-ui-mint: #e8f8f4;
+  --customer-ui-mint-strong: #c9eee6;
+  --customer-ui-coral: #f06b5c;
+  --customer-ui-coral-soft: #fff2ee;
+  --customer-ui-line: #d9ebe7;
+  --customer-ui-paper: rgba(255, 255, 255, .96);
+  --customer-ui-canvas: #f5faf9;
+  --customer-ui-radius: 24px;
+  --customer-ui-shadow: 0 12px 30px rgba(16, 73, 66, .08);
+  --customer-ui-shadow-hover: 0 18px 40px rgba(16, 73, 66, .14);
+  color-scheme: light;
+}
+
+/* Shared canvas: the home page keeps its composition; secondary screens gain a calmer app shell. */
+body[data-page] {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(185, 239, 228, .42), transparent 26rem),
+    radial-gradient(circle at 100% 28%, rgba(255, 224, 214, .24), transparent 24rem),
+    var(--customer-ui-canvas);
+  color: var(--customer-ui-ink);
+}
+
+body[data-page] .customer-page {
+  width: min(100%, 1080px);
+  padding: 22px 18px 118px;
+}
+
+body[data-page]:not([data-page="home"]) .customer-page {
+  padding-top: 24px;
+}
+
+body[data-page] .customer-topbar {
+  min-height: 68px;
+  border-bottom: 1px solid rgba(217, 235, 231, .9);
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 6px 22px rgba(19, 76, 68, .06);
+  backdrop-filter: blur(18px);
+}
+
+body[data-page] .customer-nav-wrap {
+  border-bottom: 1px solid rgba(217, 235, 231, .9);
+  background: rgba(255, 255, 255, .84);
+  backdrop-filter: blur(18px);
+}
+
+body[data-page] .customer-nav-wrap .mpa-nav a {
+  min-height: 42px;
+  border-radius: 14px;
+  color: var(--customer-ui-muted);
+  font-weight: 850;
+}
+
+body[data-page] .customer-nav-wrap .mpa-nav a.active,
+body[data-page] .customer-nav-wrap .mpa-nav a:hover {
+  color: var(--customer-ui-brand-deep);
+  background: var(--customer-ui-mint);
+}
+
+/* Mobile native header on secondary screens. */
+body[data-page]:not([data-page="home"]) .customer-native-mode .customer-topbar,
+.customer-native-mode:not([data-native-page="home"]) .customer-topbar {
+  min-height: 66px;
+  padding: 9px max(14px, env(safe-area-inset-left)) 9px;
+  border-bottom: 1px solid var(--customer-ui-line);
+  box-shadow: 0 5px 18px rgba(19, 76, 68, .055);
+}
+
+.customer-native-mode:not([data-native-page="home"]) .customer-native-back {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--customer-ui-line);
+  border-radius: 13px;
+  color: var(--customer-ui-brand-deep);
+  background: #fff;
+  font-size: 1.85rem;
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(15, 84, 74, .06);
+}
+
+.customer-native-mode:not([data-native-page="home"]) .customer-native-title {
+  color: var(--customer-ui-ink);
+  font-weight: 900;
+  letter-spacing: -.025em;
+}
+
+/* Page headers become intentional visual anchors instead of loose text blocks. */
+body[data-page]:not([data-page="home"]) .mpa-page-head,
+body[data-page]:not([data-page="home"]) .customer-section-head {
+  position: relative;
+  margin: 4px 0 18px;
+  padding: 3px 2px 2px;
+}
+
+body[data-page]:not([data-page="home"]) .mpa-page-head::after,
+body[data-page]:not([data-page="home"]) .customer-section-head::after {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 4px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--customer-ui-brand), var(--customer-ui-mint-strong));
+}
+
+body[data-page] .mpa-page-head h1,
+body[data-page] .mpa-page-head h2,
+body[data-page] .customer-section-head h1,
+body[data-page] .customer-section-head h2 {
+  color: var(--customer-ui-ink);
+  font-size: clamp(1.42rem, 4vw, 2rem);
+  font-weight: 950;
+  letter-spacing: -.045em;
+  line-height: 1.18;
+}
+
+body[data-page] .mpa-page-head p,
+body[data-page] .customer-section-head p {
+  max-width: 640px;
+  margin-top: 7px;
+  color: var(--customer-ui-muted);
+  font-size: .84rem;
+  line-height: 1.65;
+}
+
+/* Surfaces and controls. */
+body[data-page] .mpa-card,
+body[data-page] .mpa-table-wrap,
+body[data-page] .customer-store-card,
+body[data-page] .customer-service,
+body[data-page] .customer-promotion,
+body[data-page] .customer-promotion-empty,
+body[data-page] .retail-product,
+body[data-page] .retail-store-summary,
+body[data-page] .market-card,
+body[data-page] .marketplace-card {
+  border: 1px solid var(--customer-ui-line);
+  border-radius: var(--customer-ui-radius);
+  background: var(--customer-ui-paper);
+  box-shadow: var(--customer-ui-shadow);
+}
+
+body[data-page] .mpa-card,
+body[data-page] .mpa-table-wrap {
+  padding: 19px;
+}
+
+body[data-page] .mpa-card:hover,
+body[data-page] .customer-store-card:hover,
+body[data-page] .customer-service:hover,
+body[data-page] .retail-product:hover,
+body[data-page] .market-card:hover,
+body[data-page] .marketplace-card:hover {
+  border-color: #abdcd3;
+  box-shadow: var(--customer-ui-shadow-hover);
+}
+
+body[data-page] .mpa-button {
+  min-height: 45px;
+  border: 1px solid var(--customer-ui-brand);
+  border-radius: 15px !important;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--customer-ui-brand), #12a892);
+  color: #fff;
+  font-size: .84rem;
+  font-weight: 900;
+  box-shadow: 0 8px 18px rgba(11, 143, 125, .17);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+
+body[data-page] .mpa-button:hover {
+  filter: saturate(1.08);
+  box-shadow: 0 12px 24px rgba(11, 143, 125, .24);
+  transform: translateY(-1px);
+}
+
+body[data-page] .mpa-button:active {
+  transform: scale(.97);
+}
+
+body[data-page] .mpa-button-secondary {
+  border-color: #b8ded7;
+  background: #fff;
+  color: var(--customer-ui-brand-deep);
+  box-shadow: none;
+}
+
+body[data-page] .mpa-button-secondary:hover {
+  background: var(--customer-ui-mint);
+  box-shadow: none;
+}
+
+body[data-page] .mpa-button-danger {
+  border-color: #dd786d;
+  background: linear-gradient(135deg, #e65f55, var(--customer-ui-coral));
+}
+
+body[data-page] .mpa-badge,
+body[data-page] .customer-category-chip,
+body[data-page] .customer-menu-filter {
+  border-radius: 999px !important;
+}
+
+body[data-page] .mpa-badge {
+  border: 1px solid #bce2db;
+  background: #edfaf6;
+  color: var(--customer-ui-brand-deep);
+  font-weight: 900;
+}
+
+body[data-page] .mpa-field {
+  gap: 7px;
+  margin-bottom: 16px;
+}
+
+body[data-page] .mpa-field label {
+  color: var(--customer-ui-ink-soft);
+  font-size: .75rem;
+  font-weight: 850;
+}
+
+body[data-page] .mpa-field input,
+body[data-page] .mpa-field select,
+body[data-page] .mpa-field textarea,
+body[data-page] input[type="search"],
+body[data-page] input[type="text"],
+body[data-page] input[type="email"],
+body[data-page] input[type="tel"],
+body[data-page] input[type="number"],
+body[data-page] input[type="password"],
+body[data-page] select,
+body[data-page] textarea {
+  min-height: 48px;
+  border: 1px solid #cfe6e1;
+  border-radius: 15px !important;
+  background: #fff;
+  color: var(--customer-ui-ink);
+  padding: 12px 14px;
+  font: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9);
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+body[data-page] .mpa-field textarea,
+body[data-page] textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+body[data-page] .mpa-field input:focus,
+body[data-page] .mpa-field select:focus,
+body[data-page] .mpa-field textarea:focus,
+body[data-page] input:focus,
+body[data-page] select:focus,
+body[data-page] textarea:focus {
+  outline: 0;
+  border-color: var(--customer-ui-brand);
+  box-shadow: 0 0 0 4px rgba(11, 143, 125, .13);
+  transform: translateY(-1px);
+}
+
+body[data-page] .mpa-table-wrap {
+  overflow: auto;
+  padding: 0;
+}
+
+body[data-page] .mpa-table th {
+  background: #eff9f6;
+  color: var(--customer-ui-brand-deep);
+  font-size: .7rem;
+  font-weight: 900;
+}
+
+body[data-page] .mpa-table td,
+body[data-page] .mpa-table th {
+  border-color: #e3efec;
+  padding: 13px 14px;
+}
+
+body[data-page] .mpa-empty,
+body[data-page] .mpa-loading,
+body[data-page] .mpa-state {
+  border: 1px dashed #b9ded7;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #fbfffe, #eef9f6);
+  color: var(--customer-ui-muted);
+}
+
+body[data-page] .mpa-alert,
+body[data-page] .mpa-error {
+  border: 1px solid #f0c9c1;
+  border-radius: 16px;
+  background: var(--customer-ui-coral-soft);
+  color: #9b5148;
+}
+
+/* Store discovery and store detail. */
+body[data-page="stores"] .customer-filters,
+body[data-page="retail"] .customer-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--customer-ui-line);
+  border-radius: 21px;
+  background: rgba(255, 255, 255, .78);
+  box-shadow: 0 7px 20px rgba(18, 76, 69, .05);
+}
+
+body[data-page="stores"] .customer-category-chips,
+body[data-page="stores"] .customer-filters .customer-category-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+
+body[data-page="stores"] .customer-category-chips::-webkit-scrollbar {
+  display: none;
+}
+
+body[data-page="stores"] .customer-category-chip,
+body[data-page="stores"] .customer-menu-filter {
+  flex: 0 0 auto;
+  border: 1px solid #cbe6e0;
+  background: #fff;
+  color: var(--customer-ui-muted);
+  font-weight: 850;
+}
+
+body[data-page="stores"] .customer-category-chip.active,
+body[data-page="stores"] .customer-category-chip:hover,
+body[data-page="stores"] .customer-menu-filter.active,
+body[data-page="stores"] .customer-menu-filter:hover {
+  border-color: #8dd3c8;
+  background: var(--customer-ui-mint);
+  color: var(--customer-ui-brand-deep);
+}
+
+body[data-page="stores"] .customer-native-store-filters {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+body[data-page="stores"] .customer-native-filter-link {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #b9ded7;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #f6fffd, #e6f8f3);
+  color: var(--customer-ui-brand-deep);
+  box-shadow: none;
+}
+
+body[data-page="stores"] .customer-native-store-list {
+  gap: 13px !important;
+}
+
+body[data-page="stores"] .customer-native-store-list .customer-store-card {
+  grid-template-columns: 122px minmax(0, 1fr);
+  min-height: 122px;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 0;
+}
+
+body[data-page="stores"] .customer-native-store-list .customer-store-visual {
+  min-height: 122px;
+  border-radius: 0 !important;
+  background: linear-gradient(145deg, #dff7f1, #bde8df);
+}
+
+body[data-page="stores"] .customer-native-store-list .customer-store-copy {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  padding: 14px 15px;
+}
+
+body[data-page="stores"] .customer-native-store-list .customer-store-copy h3 {
+  color: var(--customer-ui-ink);
+  font-size: .98rem;
+  font-weight: 950;
+  letter-spacing: -.025em;
+}
+
+body[data-page="stores"] .customer-native-store-list .customer-store-copy p {
+  color: var(--customer-ui-muted);
+  line-height: 1.4;
+}
+
+body[data-page="stores"] .customer-native-store-list .customer-store-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #edf4f2;
+}
+
+body[data-page="store"] .customer-store-detail,
+body[data-page="store"] .store-detail,
+body[data-page="store"] .customer-store-hero {
+  border-radius: 28px;
+}
+
+body[data-page="store"] .customer-menu-card,
+body[data-page="store"] .menu-card,
+body[data-page="store"] .customer-food-card {
+  border: 1px solid var(--customer-ui-line);
+  border-radius: 21px;
+  background: #fff;
+  box-shadow: var(--customer-ui-shadow);
+}
+
+body[data-page="store"] .customer-menu-card:hover,
+body[data-page="store"] .menu-card:hover,
+body[data-page="store"] .customer-food-card:hover {
+  border-color: #abdcd3;
+  box-shadow: var(--customer-ui-shadow-hover);
+}
+
+/* Orders, tracking and checkout: prioritize hierarchy and scanability. */
+body[data-page="orders"] .customer-native-status-hero,
+body[data-page="order"] .customer-native-status-hero {
+  border-color: #c7e9e1;
+  border-radius: 25px;
+  background: linear-gradient(135deg, #effcf9, #fff);
+  box-shadow: var(--customer-ui-shadow);
+}
+
+body[data-page="orders"] .customer-native-order-card,
+body[data-page="order"] .customer-native-tracking-card,
+body[data-page="order"] .customer-native-map-card {
+  border-radius: 22px;
+  box-shadow: var(--customer-ui-shadow);
+}
+
+body[data-page="orders"] .customer-native-order-card-top,
+body[data-page="order"] .customer-native-order-card-top {
+  gap: 11px;
+}
+
+body[data-page="orders"] .customer-native-order-icon,
+body[data-page="order"] .customer-native-order-icon {
+  background: var(--customer-ui-mint);
+  color: var(--customer-ui-brand-deep);
+}
+
+body[data-page="orders"] .customer-native-order-card-bottom,
+body[data-page="order"] .customer-native-order-card-bottom {
+  border-top-color: #e7f1ef;
+}
+
+body[data-page="orders"] .customer-native-order-card-bottom > strong,
+body[data-page="order"] .customer-native-order-card-bottom > strong {
+  color: var(--customer-ui-brand-deep);
+}
+
+body[data-page="checkout"] .customer-native-checkout-store,
+body[data-page="retail-checkout"] .customer-native-checkout-store {
+  border-color: #c8e7e0;
+  border-radius: 21px;
+  background: linear-gradient(135deg, #f6fffd, #fff);
+  box-shadow: var(--customer-ui-shadow);
+}
+
+body[data-page="checkout"] .customer-native-store-mark,
+body[data-page="retail-checkout"] .customer-native-store-mark {
+  background: linear-gradient(145deg, #12a794, #087168);
+  box-shadow: 0 8px 16px rgba(11, 143, 125, .16);
+}
+
+body[data-page="checkout"] .customer-native-cart-section,
+body[data-page="retail-checkout"] .customer-native-cart-section,
+body[data-page="checkout"] .customer-native-checkout-summary,
+body[data-page="retail-checkout"] .customer-native-checkout-summary {
+  border-radius: 23px;
+}
+
+body[data-page="checkout"] .customer-native-total-bar,
+body[data-page="retail-checkout"] .customer-native-total-bar {
+  border-top-color: #dcece9;
+}
+
+body[data-page="checkout"] .customer-native-total-bar strong,
+body[data-page="retail-checkout"] .customer-native-total-bar strong {
+  color: var(--customer-ui-coral);
+}
+
+body[data-page="checkout"] #checkoutForm > button[type="submit"],
+body[data-page="retail-checkout"] #checkoutForm > button[type="submit"] {
+  background: linear-gradient(135deg, var(--customer-ui-coral), #f5876f);
+  border-color: var(--customer-ui-coral);
+  box-shadow: 0 10px 22px rgba(240, 107, 92, .22);
+}
+
+body[data-page="checkout"] .customer-payment-guide,
+body[data-page="orders"] .customer-orders-guide,
+body[data-page="support"] .customer-support-context {
+  border: 1px solid #f2d7d0;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fff8f5, #fff);
+  box-shadow: 0 9px 22px rgba(139, 68, 55, .06);
+}
+
+/* Parcel and community marketplace inherit the same surface language. */
+body[data-page="parcel"] .parcel-hero,
+body[data-page="parcel"] .parcel-card,
+body[data-page="parcel"] .customer-parcel-card,
+body[data-page="parcel"] .location-picker-card {
+  border-radius: 24px;
+  border-color: var(--customer-ui-line);
+  box-shadow: var(--customer-ui-shadow);
+}
+
+body[data-page^="marketplace"] .market-card,
+body[data-page^="marketplace"] .marketplace-card {
+  overflow: hidden;
+  border-radius: 22px;
+}
+
+body[data-page^="marketplace"] .marketplace-toolbar,
+body[data-page^="marketplace"] .market-toolbar {
+  border: 1px solid var(--customer-ui-line);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .8);
+  box-shadow: 0 7px 20px rgba(18, 76, 69, .05);
+}
+
+/* Retail mini-app: make its separate components feel like part of AP Service. */
+body[data-page="retail"],
+body[data-page="retail-checkout"] {
+  --retail-brand: var(--customer-ui-brand);
+  --retail-deep: var(--customer-ui-brand-deep);
+  --retail-line: var(--customer-ui-line);
+}
+
+body[data-page="retail"] .retail-hero,
+body[data-page="retail-checkout"] .retail-hero {
+  border-radius: 26px;
+  box-shadow: var(--customer-ui-shadow);
+}
+
+body[data-page="retail"] .retail-product,
+body[data-page="retail-checkout"] .retail-product,
+body[data-page="retail"] .retail-store-summary,
+body[data-page="retail-checkout"] .retail-store-summary {
+  border-radius: 21px;
+}
+
+body[data-page="retail"] .retail-product img,
+body[data-page="retail-checkout"] .retail-product img {
+  border-radius: 17px;
+}
+
+body[data-page="retail"] .customer-cart-fab,
+body[data-page="retail-checkout"] .customer-cart-fab {
+  background: linear-gradient(145deg, var(--customer-ui-brand), #076b63);
+  box-shadow: 0 15px 30px rgba(6, 112, 100, .26);
+}
+
+/* Profile, notification, privacy and support pages get a clear section rhythm. */
+body[data-page="profile"] .mpa-card,
+body[data-page="notifications"] .mpa-card,
+body[data-page="privacy"] .mpa-card,
+body[data-page="support"] .mpa-card {
+  border-radius: 22px;
+  background: linear-gradient(145deg, #fff, #f5fcfa);
+}
+
+body[data-page="notifications"] .mpa-card {
+  border-left: 4px solid #9cd9ce;
+}
+
+body[data-page="profile"] .mpa-card h2,
+body[data-page="notifications"] .mpa-card h2,
+body[data-page="privacy"] .mpa-card h2,
+body[data-page="support"] .mpa-card h2 {
+  color: var(--customer-ui-brand-deep);
+  letter-spacing: -.03em;
+}
+
+/* Auth routes: preserve existing auth contracts, only refine the surrounding hierarchy. */
+body[data-page="register"],
+body[data-page="recover"],
+body[data-page="update-password"] {
+  background:
+    radial-gradient(circle at 8% 4%, rgba(190, 239, 229, .5), transparent 24rem),
+    radial-gradient(circle at 96% 86%, rgba(255, 222, 211, .34), transparent 22rem),
+    #f5faf9;
+}
+
+body[data-page="register"] .auth-card,
+body[data-page="recover"] .auth-card,
+body[data-page="update-password"] .auth-card,
+body[data-page="register"] .ap-login-card,
+body[data-page="recover"] .ap-login-card,
+body[data-page="update-password"] .ap-login-card {
+  border-radius: 28px;
+  box-shadow: 0 20px 55px rgba(9, 78, 71, .13);
+}
+
+/* Small motion cues communicate polish without hiding content. */
+@media (prefers-reduced-motion: no-preference) {
+  body[data-page]:not([data-page="home"]) .customer-page > .mpa-page-head,
+  body[data-page]:not([data-page="home"]) .customer-page > .customer-section-head,
+  body[data-page]:not([data-page="home"]) .customer-page > .mpa-card,
+  body[data-page]:not([data-page="home"]) .customer-page > .mpa-grid {
+    animation: customer-ui-rise .42s cubic-bezier(.23, 1, .32, 1) both;
+  }
+
+  body[data-page]:not([data-page="home"]) .customer-page > :nth-child(2) { animation-delay: 40ms; }
+  body[data-page]:not([data-page="home"]) .customer-page > :nth-child(3) { animation-delay: 75ms; }
+  body[data-page]:not([data-page="home"]) .customer-page > :nth-child(4) { animation-delay: 110ms; }
+
+  @keyframes customer-ui-rise {
+    from { opacity: 0; transform: translateY(7px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+@media (max-width: 760px) {
+  body[data-page] .customer-page {
+    padding: 16px 13px 100px;
+  }
+
+  body[data-page]:not([data-page="home"]) .customer-page {
+    padding-top: 17px;
+  }
+
+  body[data-page] .mpa-card,
+  body[data-page] .mpa-table-wrap {
+    padding: 15px;
+    border-radius: 21px;
+  }
+
+  body[data-page] .mpa-page-head,
+  body[data-page] .customer-section-head {
+    margin-bottom: 15px;
+  }
+
+  body[data-page] .mpa-page-head > .mpa-button,
+  body[data-page] .customer-section-head > .mpa-button {
+    width: 100%;
+  }
+
+  body[data-page="stores"] .customer-filters,
+  body[data-page="retail"] .customer-filters,
+  body[data-page="stores"] .customer-native-store-filters {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 10px;
+  }
+
+  body[data-page="stores"] .customer-native-store-list .customer-store-card {
+    grid-template-columns: 104px minmax(0, 1fr);
+    min-height: 104px;
+  }
+
+  body[data-page="stores"] .customer-native-store-list .customer-store-visual {
+    min-height: 104px;
+  }
+
+  body[data-page="stores"] .customer-native-store-list .customer-store-copy {
+    padding: 11px 12px;
+  }
+
+  body[data-page="stores"] .customer-native-store-list .customer-store-copy h3 {
+    font-size: .9rem;
+  }
+
+  body[data-page="stores"] .customer-native-store-list .customer-store-meta .mpa-button {
+    min-height: 34px;
+    padding: 6px 9px;
+    font-size: .7rem;
+  }
+
+  body[data-page="checkout"] .customer-native-checkout-grid,
+  body[data-page="retail-checkout"] .customer-native-checkout-grid {
+    gap: 11px;
+  }
+
+  body[data-page="checkout"] .customer-native-total-bar,
+  body[data-page="retail-checkout"] .customer-native-total-bar {
+    padding-bottom: 8px;
+  }
+
+  .customer-native-bottom-nav {
+    padding-top: 8px;
+    border-top-color: #dcebe7;
+    background: rgba(255, 255, 255, .95);
+    box-shadow: 0 -10px 28px rgba(17, 76, 68, .09);
+  }
+
+  .customer-native-nav-item {
+    min-height: 55px;
+    border-radius: 16px;
+  }
+
+  .customer-native-nav-item.is-active {
+    background: linear-gradient(145deg, #e8faf5, #dff5ef);
+    box-shadow: inset 0 0 0 1px rgba(141, 211, 200, .45);
+  }
+}
+
+@media (max-width: 390px) {
+  body[data-page] .customer-page {
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
+  body[data-page="stores"] .customer-native-store-list .customer-store-card {
+    grid-template-columns: 94px minmax(0, 1fr);
+  }
+
+  body[data-page="stores"] .customer-native-store-list .customer-store-copy h3 {
+    font-size: .84rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page] *,
+  body[data-page] *::before,
+  body[data-page] *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
