@@ -135,7 +135,7 @@
   transition: border-color 160ms var(--ap-login-ease), box-shadow 160ms var(--ap-login-ease), transform 160ms var(--ap-login-ease);
 }
 .ap-login-control input { padding: 0 48px 0 54px; }
-body[data-page] .ap-login-control input { padding: 0 48px 0 62px; }
+body[data-page] .ap-login-field .ap-login-control input { padding: 0 48px 0 62px; }
 .ap-login-field input,
 .auth-card input,
 .stack-form input { padding: 0 14px; }
