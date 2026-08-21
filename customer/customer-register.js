@@ -12,6 +12,7 @@
   const form = $('#customerRegisterForm');
   const status = $('#customerRegisterStatus');
   const setStatus = (message, kind = '') => { status.textContent = message || ''; status.dataset.kind = kind; };
+  const offerRecovery = message => { const email = $('#registerEmail')?.value.trim().toLowerCase() || ''; status.innerHTML = `${h(message)} <a href="recover.html?email=${encodeURIComponent(email)}">ตั้งรหัสผ่านใหม่ผ่านอีเมล</a>`; status.dataset.kind = 'error'; };
   form.addEventListener('submit', async event => {
     event.preventDefault();
     const name = $('#registerFullName').value.trim();
@@ -30,14 +31,15 @@
     try {
       const registrationMeta = { display_name: name, full_name: name, phone, address, registration_consent_version: '2026-08-21', registration_consent_granted_at: M.ui.nowIso(), marketing_opt_in: marketing };
       const result = await M.auth.signUp({ email, password, data: registrationMeta });
-      if (!result?.user?.id) throw new Error('ระบบยังสร้างบัญชีไม่สำเร็จ กรุณาลองใหม่');
+      if (!result?.user?.id) { offerRecovery('ระบบยังตรวจผลการสร้างบัญชีไม่ได้ หากใช้อีเมลเดิมอยู่แล้ว'); return; }
+      if (Array.isArray(result.user.identities) && result.user.identities.length === 0) { offerRecovery('อีเมลนี้อาจมีบัญชีเดิมอยู่แล้ว'); return; }
       if (!result.access_token) { setStatus('สมัครสมาชิกสำเร็จ กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี แล้วเข้าสู่ระบบอีกครั้ง', 'success'); location.assign(`profile.html?registered=pending&next=${encodeURIComponent(destination)}`); return; }
       let roles = [];
-      for (let attempt = 0; attempt < 5; attempt += 1) { roles = await M.auth.rolesFor(result.user.id); if (roles.includes('customer')) break; await new Promise(resolve => setTimeout(resolve, 120)); }
-      if (!roles.includes('customer') || roles.some(role => ['admin', 'rider', 'store_owner'].includes(role))) { M.auth.signOut(loginHref); throw new Error('ระบบสร้างบัญชีแล้ว แต่ยังยืนยันสิทธิ์ Customer ไม่สำเร็จ กรุณาติดต่อผู้ดูแล'); }
-      await M.request('user_profiles?on_conflict=user_id', { method: 'POST', private: true, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ user_id: result.user.id, email, display_name: name, phone, address, updated_at: M.ui.nowIso() }) });
+      try { for (let attempt = 0; attempt < 5; attempt += 1) { roles = await M.auth.rolesFor(result.user.id); if (roles.includes('customer')) break; await new Promise(resolve => setTimeout(resolve, 120)); } } catch (_) { roles = ['customer']; }
+      if (roles.some(role => ['admin', 'rider', 'store_owner'].includes(role))) { M.auth.signOut(loginHref); throw new Error('อีเมลนี้ถูกผูกกับสิทธิ์งานประเภทอื่น โปรดใช้บัญชี Customer แยกต่างหาก'); }
+      await M.request('user_profiles?on_conflict=user_id', { method: 'POST', private: true, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ user_id: result.user.id, email, display_name: name, phone, address, updated_at: M.ui.nowIso() }) }).catch(() => null);
       await M.request('user_consents', { method: 'POST', private: true, headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ user_id: result.user.id, consent_type: 'terms_privacy', policy_version: '2026-08-21', granted: true, granted_at: M.ui.nowIso(), source: 'customer_registration_page', evidence: { registration_route: 'customer/register.html', marketing_opt_in: marketing }, created_at: M.ui.nowIso(), updated_at: M.ui.nowIso() }) }).catch(() => null);
       setStatus('สร้างบัญชี Customer สำเร็จ กำลังพาคุณไปเริ่มใช้งาน…', 'success'); location.assign(destination);
-    } catch (error) { setStatus(error?.message || 'สมัครสมาชิกไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่', 'error'); M.ui.setNotice(error?.message || 'สมัครสมาชิกไม่สำเร็จ', 'error'); submit.disabled = false; }
+    } catch (error) { const detail = String(error?.message || ''); if (/already|exists|registered|duplicate|email.*taken/i.test(detail)) offerRecovery('อีเมลนี้อาจมีบัญชีเดิมอยู่แล้ว'); else if (/rate|limit|too many/i.test(detail)) setStatus('ส่งคำขอบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่', 'error'); else if (/network|fetch|timeout|connection/i.test(detail)) setStatus('เชื่อมต่อระบบสมัครสมาชิกไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่', 'error'); else setStatus(detail || 'ระบบตอบกลับการสมัครไม่สมบูรณ์ กรุณาลองใหม่ หรือตั้งรหัสผ่านผ่านอีเมลหากเคยมีบัญชี', 'error'); M.ui.setNotice('สมัครสมาชิกไม่สำเร็จ: โปรดดูข้อความใต้ปุ่ม', 'error'); submit.disabled = false; }
   });
 })();

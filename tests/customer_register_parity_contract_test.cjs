@@ -5,6 +5,8 @@ const runtime = fs.readFileSync('shared/ap-service-mpa.js', 'utf8');
 const app = fs.readFileSync('customer/customer-app.js', 'utf8');
 const registerPage = fs.readFileSync('customer/register.html', 'utf8');
 const registerRuntime = fs.readFileSync('customer/customer-register.js', 'utf8');
+const recoverRuntime = fs.readFileSync('customer/customer-recover.js', 'utf8');
+const updatePasswordRuntime = fs.readFileSync('customer/customer-update-password.js', 'utf8');
 const admin = fs.readFileSync('../Apservicebeta/admin/admin-app.js', 'utf8');
 
 assert.match(runtime, /async function signUp/, 'Shared runtime may retain signUp internally for Admin-provisioned workflows');
@@ -14,6 +16,11 @@ assert.match(registerPage, /customer-register\.js/, 'Registration page must load
 assert.match(registerRuntime, /registerFullName|registerPhone|registerAddress|registerConsent/, 'Registration must collect essential account, contact, delivery, and consent information');
 assert.match(registerRuntime, /user_profiles\?on_conflict=user_id/, 'Signed-in registration must persist contact and delivery details');
 assert.match(registerRuntime, /user_consents/, 'Registration must create an auditable required-consent record when a session is available');
+assert.match(registerRuntime, /offerRecovery|recover\.html/, 'Registration must offer account recovery when an existing account or incomplete auth result is detected');
+assert.match(registerRuntime, /identities\.length === 0/, 'Registration must recognize Supabase anti-enumeration responses for an existing email and direct to recovery');
+assert.match(runtime, /sendPasswordRecovery|acceptRecoveryFromHash|updatePassword/, 'Shared auth runtime must support password recovery and password update');
+assert.match(recoverRuntime, /sendPasswordRecovery/, 'Recovery page must send a password-recovery email through the shared runtime');
+assert.match(updatePasswordRuntime, /acceptRecoveryFromHash|updatePassword/, 'Recovery completion page must accept a recovery session before updating a password');
 assert.match(app, /APLoginUI\?\.enhance/, 'Customer Login must use shared Login UI motion helper');
 assert.match(app, /สมัครสมาชิก Customer|สมัครสมาชิกด้วยอีเมลและรหัสผ่าน/, 'Customer Login must explain and expose self-registration');
 assert.match(app, /rolesFor\(session\.user\.id\)/, 'Customer Login must check role after sign-in');
