@@ -1,7 +1,7 @@
 const fs = require('fs');
 const assert = require('assert');
 
-const migration = fs.readFileSync('supabase/migrations/20260821_fix_rider_delivery_proof_storage_policy.sql', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/20260821_fix_rider_delivery_proof_storage_policy_v2.sql', 'utf8');
 
 assert.match(migration, /DROP POLICY IF EXISTS ["']riders upload own delivery proof["']/i, 'ต้อง replace policy upload proof เดิมอย่างชัดเจน');
 assert.match(migration, /storage\.foldername\(name\)\)\[2\]/, 'ต้องตรวจ order ID จาก object path จริง');
