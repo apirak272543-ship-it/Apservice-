@@ -125,10 +125,9 @@ body[data-page="home"] .customer-nav-wrap .mpa-nav{grid-template-columns:repeat(
 .customer-native-title{display:none}
 .customer-native-back{color:var(--customer-ink);font-size:2rem;line-height:1;text-decoration:none;padding:5px 10px 7px 0;min-width:34px}
 .customer-native-bottom-nav{display:none}
-.customer-native-quick-actions{display:flex;gap:9px;overflow:auto;padding:2px 0 6px;margin:2px 0 10px;scrollbar-width:none}
-.customer-native-quick-actions::-webkit-scrollbar{display:none}
-.customer-native-quick-actions a{display:flex;align-items:center;gap:7px;flex:0 0 auto;padding:10px 13px;border:1px solid #e8e9e7;border-radius:15px;background:#fff;color:var(--customer-ink);box-shadow:0 4px 12px rgba(21,44,41,.04);text-decoration:none;white-space:nowrap}
-.customer-native-quick-actions a span{font-size:1.2rem}.customer-native-quick-actions a strong{font-size:.82rem}
+.customer-native-quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:2px 0 8px;margin:2px 0 10px}
+.customer-native-quick-actions a{display:flex;min-width:0;align-items:center;justify-content:center;gap:5px;padding:10px 6px;border:1px solid #e8e9e7;border-radius:15px;background:#fff;color:var(--customer-ink);box-shadow:0 4px 12px rgba(21,44,41,.04);text-decoration:none;white-space:nowrap}
+.customer-native-quick-actions a span{font-size:1.05rem;flex:0 0 auto}.customer-native-quick-actions a strong{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:clamp(.66rem,2.8vw,.82rem);letter-spacing:-.01em}
 .customer-native-checkout-store{display:flex;align-items:center;gap:11px;margin:0 0 12px;padding:14px 15px;border:1px solid var(--customer-line);border-radius:20px;background:#fff;box-shadow:var(--customer-shadow)}
 .customer-native-store-mark{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;border-radius:15px;background:var(--customer-brand);font-size:1.35rem}.customer-native-checkout-store>div:nth-child(2){min-width:0;flex:1}.customer-native-checkout-store strong,.customer-native-checkout-store small{display:block}.customer-native-checkout-store strong{font-size:.98rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.customer-native-checkout-store small{margin-top:3px;color:var(--customer-muted);font-size:.75rem}.customer-native-inline-action{color:var(--customer-brand-dark);font-weight:850;text-decoration:none}
 .customer-native-mode .customer-home-search,.customer-native-mode .customer-home-tools{position:relative;z-index:2}
