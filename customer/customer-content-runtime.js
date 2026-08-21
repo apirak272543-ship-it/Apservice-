@@ -98,6 +98,9 @@
       const viewAll = storeSection.querySelector('.customer-section-head a'); if (viewAll) { viewAll.textContent = home.storeSection.viewAllLabel; viewAll.href = home.storeSection.viewAllHref; }
     }
 
+    window.__APServiceCustomerHomeConfig = home;
+    window.dispatchEvent(new CustomEvent('apservice:customer-home-config', { detail: home }));
+
     const cart = document.querySelector('.customer-cart-fab');
     if (cart) { cart.hidden = !home.floatingCart.enabled; cart.href = home.floatingCart.href; cart.setAttribute('aria-label', home.floatingCart.label); const badge = cart.querySelector('[data-cart-count]'); cart.firstChild?.remove(); cart.insertBefore(document.createTextNode(home.floatingCart.icon), badge || null); }
 
