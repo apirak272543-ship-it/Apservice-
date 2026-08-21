@@ -15,7 +15,7 @@ body[data-page]{background:radial-gradient(circle at 8% -10%,rgba(187,216,255,.4
 body[data-page] .customer-page{padding:clamp(14px,3vw,26px) clamp(13px,3.5vw,28px) 106px;max-width:1100px}
 body[data-page] .customer-topbar{border-bottom-color:rgba(190,210,239,.72);border-radius:0 0 var(--customer-radius-lg) var(--customer-radius-lg)}
 body[data-page] .customer-top-actions{gap:9px}.customer-account{border-radius:var(--customer-radius-md)!important}
-body[data-page]:not([data-page="profile"]) .customer-top-actions>a[href*="mode=register"]{display:none!important}
+
 body[data-page] .mpa-nav a{border-radius:var(--customer-radius-md)!important;min-height:38px;display:inline-flex;align-items:center;justify-content:center}
 body[data-page] .mpa-card,body[data-page] .customer-store-card,body[data-page] .customer-service,body[data-page] .customer-promotion,body[data-page] .customer-promotion-empty,body[data-page] .customer-menu-section,body[data-page] .retail-product,body[data-page] .retail-store-summary,body[data-page] .market-card,body[data-page] .marketplace-card{border-radius:var(--customer-radius-lg)!important;border-color:#d6e4f5;box-shadow:var(--customer-shadow)}
 body[data-page] .mpa-card{padding:clamp(16px,3vw,22px)}body[data-page] .mpa-grid{gap:var(--customer-space-3)}

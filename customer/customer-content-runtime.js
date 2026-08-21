@@ -41,7 +41,7 @@
       serviceCards: fallbackCards.map(card => { const configuredCard = configured.get(card.id) || {}; return { ...card, ...configuredCard, id: card.id, enabled: bool(configuredCard.enabled ?? card.enabled), sortOrder: Number(configuredCard.sortOrder ?? card.sortOrder), title: String(configuredCard.title || card.title), description: String(configuredCard.description || card.description), href: validHref(configuredCard.href) || card.href, actionLabel: String(configuredCard.actionLabel || card.actionLabel), icon: String(configuredCard.icon || card.icon).slice(0, 12), iconUrl: validImage(configuredCard.iconUrl), backgroundUrl: validImage(configuredCard.backgroundUrl), altText: String(configuredCard.altText || card.altText), textColor: validColor(configuredCard.textColor, card.textColor), backgroundColor: validColor(configuredCard.backgroundColor, card.backgroundColor) }; }).sort((a, b) => a.sortOrder - b.sortOrder),
       storeSection: { ...(source.storeSection || {}), title: String(source.storeSection?.title || 'ร้านค้ายอดนิยม'), description: String(source.storeSection?.description || 'ดีลดี อาหารอร่อย ส่งตรงถึงมือ'), viewAllLabel: String(source.storeSection?.viewAllLabel || 'ดูทั้งหมด'), viewAllHref: validHref(source.storeSection?.viewAllHref) || 'stores.html', enabled: bool(source.storeSection?.enabled) },
       floatingCart: { ...(source.floatingCart || {}), enabled: bool(source.floatingCart?.enabled), icon: String(source.floatingCart?.icon || '🛒').slice(0, 12), label: String(source.floatingCart?.label || 'ตะกร้าสินค้า'), href: validHref(source.floatingCart?.href) || 'checkout.html' },
-      navigation: { ...(source.navigation || {}), registerLabel: String(source.navigation?.registerLabel || 'สมัครสมาชิก'), supportLabel: String(source.navigation?.supportLabel || 'ติดต่อเจ้าหน้าที่'), notificationLabel: String(source.navigation?.notificationLabel || 'การแจ้งเตือน'), profileLabel: String(source.navigation?.profileLabel || 'เข้าสู่ระบบหรือดูโปรไฟล์') },
+      navigation: { ...(source.navigation || {}), supportLabel: String(source.navigation?.supportLabel || 'ติดต่อเจ้าหน้าที่'), notificationLabel: String(source.navigation?.notificationLabel || 'การแจ้งเตือน'), profileLabel: String(source.navigation?.profileLabel || 'เข้าสู่ระบบหรือดูโปรไฟล์') },
     };
   }
 
@@ -100,7 +100,7 @@
 
     const cart = document.querySelector('.customer-cart-fab');
     if (cart) { cart.hidden = !home.floatingCart.enabled; cart.href = home.floatingCart.href; cart.setAttribute('aria-label', home.floatingCart.label); const badge = cart.querySelector('[data-cart-count]'); cart.firstChild?.remove(); cart.insertBefore(document.createTextNode(home.floatingCart.icon), badge || null); }
-    const register = document.querySelector('.customer-top-actions a[href*="mode=register"]'); if (register) register.textContent = home.navigation.registerLabel;
+
     const support = document.querySelector('.customer-top-actions a[href="support.html"]'); if (support) support.setAttribute('aria-label', home.navigation.supportLabel);
     const notification = document.querySelector('.customer-top-actions a[href="notifications.html"]'); if (notification) notification.setAttribute('aria-label', home.navigation.notificationLabel);
     const profile = document.querySelector('.customer-top-actions a[href="profile.html"]'); if (profile) profile.setAttribute('aria-label', home.navigation.profileLabel);
