@@ -7,6 +7,8 @@ const registerPage = fs.readFileSync('customer/register.html', 'utf8');
 const registerRuntime = fs.readFileSync('customer/customer-register.js', 'utf8');
 const recoverRuntime = fs.readFileSync('customer/customer-recover.js', 'utf8');
 const updatePasswordRuntime = fs.readFileSync('customer/customer-update-password.js', 'utf8');
+const recoverPage = fs.readFileSync('customer/recover.html', 'utf8');
+const updatePasswordPage = fs.readFileSync('customer/update-password.html', 'utf8');
 const admin = fs.readFileSync('../Apservicebeta/admin/admin-app.js', 'utf8');
 
 assert.match(runtime, /async function signUp/, 'Shared runtime may retain signUp internally for Admin-provisioned workflows');
@@ -21,6 +23,8 @@ assert.match(registerRuntime, /identities\.length === 0/, 'Registration must rec
 assert.match(runtime, /sendPasswordRecovery|acceptRecoveryFromHash|updatePassword/, 'Shared auth runtime must support password recovery and password update');
 assert.match(recoverRuntime, /sendPasswordRecovery/, 'Recovery page must send a password-recovery email through the shared runtime');
 assert.match(updatePasswordRuntime, /acceptRecoveryFromHash|updatePassword/, 'Recovery completion page must accept a recovery session before updating a password');
+assert.match(recoverPage, /defer src="customer-recover\.js/, 'Recovery runtime must wait for its body before rendering the form');
+assert.match(updatePasswordPage, /defer src="customer-update-password\.js/, 'Password update runtime must wait for its body before rendering the form');
 assert.match(app, /APLoginUI\?\.enhance/, 'Customer Login must use shared Login UI motion helper');
 assert.match(app, /สมัครสมาชิก Customer|สมัครสมาชิกด้วยอีเมลและรหัสผ่าน/, 'Customer Login must explain and expose self-registration');
 assert.match(app, /rolesFor\(session\.user\.id\)/, 'Customer Login must check role after sign-in');
