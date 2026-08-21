@@ -1,4 +1,4 @@
-/* AP Service Customer Home — Mobile-first visual layer */
+/* AP Service Customer Home — Mobile-first visual layer. Primary navigation is the single six-item nav; the legacy topbar is no longer rendered by the MPA controller. */
 body[data-page="home"]{
   --customer-teal:#0b8c7c;
   --customer-teal-dark:#05675e;
@@ -18,7 +18,7 @@ body[data-page="home"] .customer-top-actions{gap:7px;margin-left:auto}
 body[data-page="home"] .customer-top-actions>a[href*="mode=register"]{display:none!important}
 body[data-page="home"] .customer-account{width:40px;height:40px;border-radius:14px;background:#f1faf8;color:var(--customer-teal);border:1px solid var(--customer-line);font-size:19px}
 body[data-page="home"] .customer-nav-wrap{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--customer-line);background:rgba(255,255,255,.94);backdrop-filter:blur(16px)}
-body[data-page="home"] .customer-nav-wrap .mpa-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;padding:7px 12px max(7px,env(safe-area-inset-bottom));max-width:760px;margin:auto}
+body[data-page="home"] .customer-nav-wrap .mpa-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;padding:7px 8px max(7px,env(safe-area-inset-bottom));max-width:760px;margin:auto}
 body[data-page="home"] .customer-nav-wrap .mpa-nav a{display:grid;place-items:center;gap:3px;min-height:48px;padding:5px 2px;border-radius:15px;font-size:.7rem;font-weight:850;white-space:nowrap;color:#68807c;text-decoration:none}
 body[data-page="home"] .customer-nav-wrap .mpa-nav a.active{background:#e6f7f3;color:var(--customer-teal-dark)}
 body[data-page="home"] .customer-nav-wrap .mpa-nav a::before{font-size:19px;line-height:1;font-weight:400}
