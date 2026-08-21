@@ -13,6 +13,7 @@ assert.match(native, /publicPhonePattern/, 'Marketplace guard must detect public
 assert.match(native, /redactPublicContact/, 'Marketplace browse/detail text must redact public contact details');
 assert.match(native, /ใช้แชต AP Service/, 'Marketplace must direct contact through the in-product chat flow');
 assert.match(native, /stopImmediatePropagation/, 'Create flow must block submission containing a phone-like string before the original handler writes data');
-for (const page of pages) assert.match(page, /customer-mobile-native\.js\?v=customer-native-v4-marketplace-privacy/, 'Every public Marketplace surface must load the privacy runtime revision');
+assert.match(native, /marketplacePrivacyAttempts < 20/, 'Async Marketplace data must receive only bounded privacy retries');
+for (const page of pages) assert.match(page, /customer-mobile-native\.js\?v=customer-native-v5-marketplace-privacy-retry/, 'Every public Marketplace surface must load the bounded privacy runtime revision');
 
 console.log('customer marketplace public safety contract: PASS');

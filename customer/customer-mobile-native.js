@@ -255,6 +255,7 @@
 
   const publicPhonePattern = /(?:\+66|0)(?:[\s-]?\d){8,9}\b/g;
   const redactPublicContact = value => String(value || '').replace(publicPhonePattern, '••• ••• ••••');
+  let marketplacePrivacyAttempts = 0;
 
   function enhanceMarketplacePrivacy() {
     if (!['marketplace', 'marketplace-item', 'marketplace-new'].includes(page)) return;
@@ -270,10 +271,22 @@
         description.insertAdjacentHTML('afterend', '<p class="mpa-muted" data-marketplace-contact-note>เพื่อความเป็นส่วนตัว โปรดติดต่อผู้ขายผ่านแชต AP Service</p>');
       }
     });
+    const publicDescription = document.querySelector('#marketplaceList .customer-store-copy > p, #marketplaceItem p[style*="white-space"]');
+    if (page !== 'marketplace-new' && !publicDescription && marketplacePrivacyAttempts < 20) {
+      marketplacePrivacyAttempts += 1;
+      setTimeout(enhanceMarketplacePrivacy, 250);
+    }
     if (page !== 'marketplace-new') return;
     const form = document.querySelector('#marketplaceNewForm');
     const description = document.querySelector('#listingDescription');
-    if (!form || !description || form.dataset.marketplacePrivacy) return;
+    if (!form || !description) {
+      if (marketplacePrivacyAttempts < 20) {
+        marketplacePrivacyAttempts += 1;
+        setTimeout(enhanceMarketplacePrivacy, 250);
+      }
+      return;
+    }
+    if (form.dataset.marketplacePrivacy) return;
     form.dataset.marketplacePrivacy = 'true';
     const label = description.closest('.mpa-field')?.querySelector('label');
     if (label) label.textContent = 'รายละเอียด (ไม่ต้องใส่เบอร์โทรหรือข้อมูลติดต่อส่วนตัว)';
