@@ -151,9 +151,9 @@
     $('#slipCamera').addEventListener('change', event => selectSlip(event.target));
     $('#checkoutForm').addEventListener('submit', async event => {
       event.preventDefault(); const current = M.cart.read(); if (!current.length) return M.ui.setNotice('กรุณาเพิ่มสินค้าก่อนยืนยันออร์เดอร์', 'error');
+      const checkoutForm = event.currentTarget, submitButton = checkoutForm.querySelector('[type="submit"]');
       const user = await currentCustomerWithSessionRestore('profile.html?next=checkout.html'); if (!user) { M.ui.setNotice('กรุณาเข้าสู่ระบบด้วยบัญชีลูกค้าก่อนยืนยันออร์เดอร์', 'error'); return; }
       const address = $('#deliveryAddress').value.trim(), paymentMethod = $('#paymentMethod').value, isTransfer = paymentMethod === 'โอนผ่าน QR / แนบสลิป';
-      const checkoutForm = event.currentTarget, submitButton = checkoutForm.querySelector('[type="submit"]');
       if (submitButton) { submitButton.disabled = true; submitButton.dataset.originalLabel = submitButton.textContent; submitButton.textContent = 'กำลังตรวจสอบที่อยู่และพิกัด…'; }
       let deliveryLocation, deliveryAddress;
       try {
