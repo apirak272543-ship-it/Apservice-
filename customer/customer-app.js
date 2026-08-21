@@ -23,7 +23,7 @@
     const user = await currentUserWithSessionRestore();
     if (!user) return null;
     const roles = await M.auth.rolesFor(user.id);
-    if (roles.includes('customer')) return user;
+    if (roles.length === 1 && roles[0] === 'customer') return user;
     M.auth.signOut(loginUrl);
     return null;
   };
