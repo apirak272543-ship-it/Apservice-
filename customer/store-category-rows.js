@@ -74,7 +74,7 @@
       .map(category => ({ category, stores: (grouped.get(category.id) || []).slice().sort(qualityComparator) }))
       .sort((left, right) => right.stores.length - left.stores.length || left.category.name.localeCompare(right.category.name, 'th'));
     const populated = ordered.filter(item => item.stores.length);
-    host.innerHTML = `<section class="store-category-rows" aria-labelledby="storeCategoryRowsTitle"><div class="store-category-rows__intro"><p class="store-category-rows__eyebrow">EXPLORE BY CATEGORY</p><h2 id="storeCategoryRowsTitle">เลือกร้านตามหมวดหมู่</h2><p>Tier คำนวณสดจากสถานะเปิดบริการ คะแนนรีวิว จำนวนรีวิว และจำนวนออร์เดอร์ที่ระบบเผยแพร่ให้แสดง</p></div>${populated.length ? ordered.map(item => section(item.category, item.stores)).join('') : '<div class="store-category-rows__empty">ยังไม่มีร้านค้าที่พร้อมแสดงตามหมวดหมู่ในขณะนี้</div>'}</section>`;
+    host.innerHTML = `<section class="store-category-rows" aria-labelledby="storeCategoryRowsTitle"><div class="store-category-rows__intro"><p class="store-category-rows__eyebrow">EXPLORE BY CATEGORY</p><h2 id="storeCategoryRowsTitle">เลือกร้านตามหมวดหมู่</h2><p>เลือกร้านที่เปิดให้บริการและดูเมนูที่เหมาะกับคุณได้ง่ายขึ้น</p></div>${populated.length ? ordered.map(item => section(item.category, item.stores)).join('') : '<div class="store-category-rows__empty">ยังไม่มีร้านค้าที่พร้อมแสดงตามหมวดหมู่ในขณะนี้</div>'}</section>`;
   };
 
   const isInViewport = element => {
