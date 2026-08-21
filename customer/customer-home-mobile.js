@@ -7,7 +7,7 @@
   const safeHref = value => { try { const url = new URL(String(value || ''), location.href); return url.protocol === 'https:' || url.origin === location.origin ? url.href : ''; } catch (_) { return ''; } };
   const safeImage = value => /^https:\/\//i.test(String(value || '').trim()) ? String(value).trim() : '';
   const terminal = new Set(['สำเร็จ', 'ยกเลิก', 'cancelled', 'completed', 'delivered']);
-  const storeFields = 'id,name,emoji,description,rating,review_count,eta,icon_url,background_url,category_id,category_name,category_icon,active,status';
+  const storeFields = 'id,name,emoji,description,rating,review_count,eta,icon_url,background_url,category_id,category_name,category_icon,active';
 
   function renderCart() {
     const cart = $('.customer-cart-fab'); if (!cart) return;
