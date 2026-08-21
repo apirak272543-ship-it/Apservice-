@@ -87,13 +87,20 @@
 
   async function loadDiscovery() {
     const host = $('#homeDiscoveryMount'); if (!host) return;
-    try {
-      const [storeRows, categoryRows] = await Promise.all([
-        M.request(`catalog_stores?select=${storeFields}&order=rating.desc&limit=300`, { cacheTtlMs: 30_000, cacheKey: 'customer-home-discovery-stores' }),
-        M.request('store_categories?select=id,name,icon&active=eq.true&order=sort_order.asc,name.asc', { cacheTtlMs: 60_000, cacheKey: 'customer-home-discovery-categories' }).catch(() => []),
-      ]);
-      renderDiscovery(host, Array.isArray(storeRows) ? storeRows : [], Array.isArray(categoryRows) ? categoryRows : []);
-    } catch (_) { host.hidden = true; }
+    const attempts = [0, 450, 1200];
+    for (let attempt = 0; attempt < attempts.length; attempt += 1) {
+      if (attempts[attempt]) await new Promise(resolve => setTimeout(resolve, attempts[attempt]));
+      try {
+        const [storeRows, categoryRows] = await Promise.all([
+          M.request(`catalog_stores?select=${storeFields}&order=rating.desc&limit=300`, { cacheTtlMs: 30_000, cacheKey: `customer-home-discovery-stores-${attempt}` }),
+          M.request('store_categories?select=id,name,icon&active=eq.true&order=sort_order.asc,name.asc', { cacheTtlMs: 60_000, cacheKey: `customer-home-discovery-categories-${attempt}` }).catch(() => []),
+        ]);
+        renderDiscovery(host, Array.isArray(storeRows) ? storeRows : [], Array.isArray(categoryRows) ? categoryRows : []);
+        if (!host.hidden && host.children.length) return;
+      } catch (_) {
+        if (attempt === attempts.length - 1) host.hidden = true;
+      }
+    }
   }
 
   async function loadSponsored() {
