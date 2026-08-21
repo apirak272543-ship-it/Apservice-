@@ -27,5 +27,8 @@ assert.doesNotMatch(home, /ร้านค้ายอดนิยม/);
 assert.doesNotMatch(home, /id="storeList"/);
 assert.match(app, /q\.get\('search'\)/);
 assert.match(shared, /DEFAULT_REQUEST_TIMEOUT_MS|withTimeoutSignal/);
+assert.match(shared, /typeof AbortSignal !== 'undefined'/, 'Runtime must support WebViews without AbortSignal.timeout');
+assert.match(shared, /setTimeout\(abort, duration\)/, 'Fallback timeout must actively abort hung requests');
+assert.match(shared, /requestCount[\s\S]*signal: withTimeoutSignal\(signal, timeoutMs\)/, 'Count requests must not bypass the timeout guard');
 
 console.log('customer_mobile_home_redesign_contract_test: PASS');

@@ -7,7 +7,20 @@
   const SESSION_KEY = 'apservice_mpa_session_v1';
   const STALE_RESPONSE = 'AP_SERVICE_STALE_RESPONSE';
   const DEFAULT_REQUEST_TIMEOUT_MS = 12_000;
-  const withTimeoutSignal = (signal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS) => { const timeout = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(Math.max(1_000, Number(timeoutMs) || DEFAULT_REQUEST_TIMEOUT_MS)) : null; if (!signal) return timeout || undefined; if (!timeout || typeof AbortSignal?.any !== 'function') return signal; return AbortSignal.any([signal, timeout]); };
+  const withTimeoutSignal = (signal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS) => {
+    const duration = Math.max(1_000, Number(timeoutMs) || DEFAULT_REQUEST_TIMEOUT_MS);
+    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+      const timeout = AbortSignal.timeout(duration);
+      if (!signal) return timeout;
+      if (typeof AbortSignal.any === 'function') return AbortSignal.any([signal, timeout]);
+    }
+    if (typeof AbortController === 'undefined') return signal || undefined;
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    if (signal?.aborted) abort(); else signal?.addEventListener?.('abort', abort, { once: true });
+    setTimeout(abort, duration);
+    return controller.signal;
+  };
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&gt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
   const baht = value => Number(value || 0).toLocaleString('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 });
@@ -114,7 +127,7 @@
       if (inFlight.has(key)) { metrics.deduped += 1; return inFlight.get(key); }
       const promise = (async () => {
         metrics.requests += 1;
-        const run = () => { const headers = { apikey: SUPABASE_KEY, Prefer: 'count=exact', ...(fetchOptions.headers || {}) }; if (token() && (!publicRead || forceSession)) headers.Authorization = `Bearer ${token()}`; return fetch(`${SUPABASE_URL}/rest/v1/${normalizePath(path)}`, { ...fetchOptions, method, headers, signal }); };
+        const run = () => { const headers = { apikey: SUPABASE_KEY, Prefer: 'count=exact', ...(fetchOptions.headers || {}) }; if (token() && (!publicRead || forceSession)) headers.Authorization = `Bearer ${token()}`; return fetch(`${SUPABASE_URL}/rest/v1/${normalizePath(path)}`, { ...fetchOptions, method, headers, signal: withTimeoutSignal(signal, timeoutMs) }); };
         let response;
         try { response = await run(); } catch (error) { if (isAbort(error)) metrics.aborted += 1; else metrics.failures += 1; throw error; }
         if (response.status === 401 && token() && !skipRefreshRetry) { await refreshSession(true); response = await run(); }
