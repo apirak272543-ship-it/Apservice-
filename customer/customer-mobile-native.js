@@ -253,6 +253,44 @@
     table.closest('.mpa-table-wrap')?.setAttribute('hidden', '');
   }
 
+  const publicPhonePattern = /(?:\+66|0)(?:[\s-]?\d){8,9}\b/g;
+  const redactPublicContact = value => String(value || '').replace(publicPhonePattern, '••• ••• ••••');
+
+  function enhanceMarketplacePrivacy() {
+    if (!['marketplace', 'marketplace-item', 'marketplace-new'].includes(page)) return;
+    document.querySelectorAll('.customer-section-head p').forEach(copy => {
+      if (copy.textContent.includes('RLS ของบัญชีผู้ขาย')) copy.textContent = 'ประกาศของคุณจะแสดงเฉพาะตามสิทธิ์ของบัญชี เพื่อช่วยคุ้มครองข้อมูลส่วนตัว';
+    });
+    document.querySelectorAll('#marketplaceList .customer-store-copy > p, #marketplaceItem p[style*="white-space"]').forEach(description => {
+      const original = description.textContent || '';
+      const safe = redactPublicContact(original);
+      if (safe !== original) {
+        description.textContent = safe;
+        description.dataset.contactRedacted = 'true';
+        description.insertAdjacentHTML('afterend', '<p class="mpa-muted" data-marketplace-contact-note>เพื่อความเป็นส่วนตัว โปรดติดต่อผู้ขายผ่านแชต AP Service</p>');
+      }
+    });
+    if (page !== 'marketplace-new') return;
+    const form = document.querySelector('#marketplaceNewForm');
+    const description = document.querySelector('#listingDescription');
+    if (!form || !description || form.dataset.marketplacePrivacy) return;
+    form.dataset.marketplacePrivacy = 'true';
+    const label = description.closest('.mpa-field')?.querySelector('label');
+    if (label) label.textContent = 'รายละเอียด (ไม่ต้องใส่เบอร์โทรหรือข้อมูลติดต่อส่วนตัว)';
+    const note = document.createElement('p');
+    note.className = 'mpa-muted';
+    note.textContent = 'ใช้แชต AP Service เพื่อติดต่อผู้ซื้อหรือผู้ขายหลังลงประกาศ';
+    description.insertAdjacentElement('afterend', note);
+    form.addEventListener('submit', event => {
+      if (!publicPhonePattern.test(description.value)) return;
+      publicPhonePattern.lastIndex = 0;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      window.APServiceMPA?.ui?.setNotice?.('เพื่อความเป็นส่วนตัว โปรดลบเบอร์โทรออกจากรายละเอียด และใช้แชต AP Service สำหรับการติดต่อ', 'error');
+      description.focus();
+    }, true);
+  }
+
   function boot() {
     setPageState();
     enhanceHeader();
@@ -262,6 +300,7 @@
     enhanceCheckout();
     enhanceTracking();
     enhanceOrders();
+    enhanceMarketplacePrivacy();
     void hydrateCrossSystemData();
   }
 
