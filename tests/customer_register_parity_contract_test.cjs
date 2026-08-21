@@ -3,10 +3,17 @@ const assert = require('assert');
 
 const runtime = fs.readFileSync('shared/ap-service-mpa.js', 'utf8');
 const app = fs.readFileSync('customer/customer-app.js', 'utf8');
+const registerPage = fs.readFileSync('customer/register.html', 'utf8');
+const registerRuntime = fs.readFileSync('customer/customer-register.js', 'utf8');
 const admin = fs.readFileSync('../Apservicebeta/admin/admin-app.js', 'utf8');
 
 assert.match(runtime, /async function signUp/, 'Shared runtime may retain signUp internally for Admin-provisioned workflows');
 assert.match(app, /registerForm|auth\.signUp|mode=register/, 'Customer app must expose the public Customer registration flow');
+assert.match(app, /register\.html\?next=/, 'Customer registration must open on its own route instead of an inline popup');
+assert.match(registerPage, /customer-register\.js/, 'Registration page must load its dedicated runtime');
+assert.match(registerRuntime, /registerFullName|registerPhone|registerAddress|registerConsent/, 'Registration must collect essential account, contact, delivery, and consent information');
+assert.match(registerRuntime, /user_profiles\?on_conflict=user_id/, 'Signed-in registration must persist contact and delivery details');
+assert.match(registerRuntime, /user_consents/, 'Registration must create an auditable required-consent record when a session is available');
 assert.match(app, /APLoginUI\?\.enhance/, 'Customer Login must use shared Login UI motion helper');
 assert.match(app, /สมัครสมาชิก Customer|สมัครสมาชิกด้วยอีเมลและรหัสผ่าน/, 'Customer Login must explain and expose self-registration');
 assert.match(app, /rolesFor\(session\.user\.id\)/, 'Customer Login must check role after sign-in');
