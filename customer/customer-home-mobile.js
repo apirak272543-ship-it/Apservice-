@@ -119,12 +119,11 @@
     const page = $('.customer-page'); const nav = $('.customer-nav-wrap .mpa-nav'); if (!page || !nav || page.dataset.homeMobileEnhanced) return false;
     page.dataset.homeMobileEnhanced = 'true';
     enhanceNavigation(nav);
-    $('.customer-top-actions a[href*="mode=register"]')?.setAttribute('hidden', '');
     [...nav.querySelectorAll('a')].forEach(link => { link.dataset.homeNav = link.href.includes('stores.html') ? 'stores' : link.href.includes('orders.html') ? 'orders' : link.href.includes('notifications.html') ? 'notifications' : link.href.includes('profile.html') ? 'profile' : 'home'; });
     $('#storeList')?.closest('section')?.remove();
     $('#promotionList')?.closest('.customer-promotions')?.remove();
     $('#sponsoredList')?.closest('.customer-sponsored')?.remove();
-    page.insertAdjacentHTML('afterbegin', `<section class="customer-home-tools" aria-label="ค้นหาและที่อยู่จัดส่ง"><a class="customer-delivery-picker" href="profile.html?next=index.html"><span class="customer-delivery-picker__icon" aria-hidden="true">⌖</span><span class="customer-delivery-picker__copy"><small>ส่งไปที่</small><strong id="homeDeliveryLabel">กำลังตรวจสอบที่อยู่จัดส่ง…</strong></span><span class="customer-delivery-picker__chevron" aria-hidden="true">›</span></a><form class="customer-home-search" id="homeStoreSearch"><span aria-hidden="true">⌕</span><input id="homeStoreSearchInput" type="search" maxlength="100" placeholder="ค้นหาร้านค้า หรือเมนูอาหาร" autocomplete="off"><button type="submit" aria-label="ค้นหา">→</button></form></section>`);
+    page.insertAdjacentHTML('afterbegin', `<section class="customer-home-tools" aria-label="ค้นหาและที่อยู่จัดส่ง"><a class="customer-delivery-picker" href="profile.html?next=index.html"><span class="customer-delivery-picker__icon" aria-hidden="true">⌖</span><span class="customer-delivery-picker__copy"><small>ส่งไปที่</small><strong id="homeDeliveryLabel">กำลังตรวจสอบที่อยู่จัดส่ง…</strong></span><span class="customer-delivery-picker__chevron" aria-hidden="true">›</span></a><form class="customer-home-search" id="homeStoreSearch"><span aria-hidden="true">⌕</span><input id="homeStoreSearchInput" type="search" maxlength="100" placeholder="ค้นหาร้านค้า หรือเมนูอาหาร" autocomplete="off"><button type="submit" aria-label="ค้นหา">→</button></form><a class="customer-home-register" href="profile.html?mode=register&next=index.html"><span aria-hidden="true">✦</span><span><strong>สมัครสมาชิก Customer</strong><small>สร้างบัญชีเพื่อสั่งซื้อและติดตามออร์เดอร์</small></span><span aria-hidden="true">›</span></a></section>`);
     const services = $('.customer-services'); const serviceSection = services?.closest('section');
     if (serviceSection) {
       const additions = [];
@@ -134,7 +133,7 @@
       if (additions.length) serviceSection.insertAdjacentHTML('afterend', additions.join(''));
     }
     $('#homeStoreSearch')?.addEventListener('submit', event => { event.preventDefault(); const needle = $('#homeStoreSearchInput')?.value.trim(); location.assign(`stores.html${needle ? `?search=${encodeURIComponent(needle)}` : ''}`); });
-    loadDelivery(); loadActiveOrder(); loadDiscovery(); renderCart(); addEventListener('apservice:cart', renderCart);
+    const enhancementFallback = window.setTimeout(() => { $('#homeDeliveryLabel')?.replaceChildren(document.createTextNode('ตั้งค่าที่อยู่จัดส่ง')); $('#homeDiscoveryMount')?.setAttribute('aria-busy', 'false'); }, 3_500); addEventListener('pagehide', () => window.clearTimeout(enhancementFallback), { once: true }); loadDelivery(); loadActiveOrder(); loadDiscovery(); renderCart(); addEventListener('apservice:cart', renderCart);
     return true;
   }
   let attempts = 0;

@@ -6,6 +6,8 @@
   const SUPABASE_KEY = 'sb_publishable_TyJWnKkbS8vKcQKKAzoqSg_BOguwKRv';
   const SESSION_KEY = 'apservice_mpa_session_v1';
   const STALE_RESPONSE = 'AP_SERVICE_STALE_RESPONSE';
+  const DEFAULT_REQUEST_TIMEOUT_MS = 12_000;
+  const withTimeoutSignal = (signal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS) => { const timeout = typeof AbortSignal?.timeout === 'function' ? AbortSignal.timeout(Math.max(1_000, Number(timeoutMs) || DEFAULT_REQUEST_TIMEOUT_MS)) : null; if (!signal) return timeout || undefined; if (!timeout || typeof AbortSignal?.any !== 'function') return signal; return AbortSignal.any([signal, timeout]); };
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&gt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
   const baht = value => Number(value || 0).toLocaleString('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 });
@@ -23,7 +25,7 @@
     const expiresAt = Number(current.expires_at || 0);
     const expiresSoon = !expiresAt || expiresAt <= Math.floor(Date.now() / 1000) + 90;
     if (!force && !expiresSoon) return current;
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Authorization: `Bearer ${current.refresh_token}` }, body: JSON.stringify({ refresh_token: current.refresh_token }) });
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Authorization: `Bearer ${current.refresh_token}` }, body: JSON.stringify({ refresh_token: current.refresh_token }), signal: withTimeoutSignal() });
     const next = await response.json().catch(() => null);
     if (!response.ok || !next?.access_token) { saveSession(null); throw new Error(next?.error_description || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); }
     saveSession(next); return next;
@@ -76,7 +78,7 @@
     function clearCache(prefix = '') { [...cache.keys()].filter(key => !prefix || key.startsWith(prefix)).forEach(key => cache.delete(key)); }
 
     async function request(path, rawOptions = {}) {
-      const { cacheTtlMs = 0, cacheKey, forceFresh = false, signal, private: privateRequest = false, forceSession = false, skipRefreshRetry = false, ...fetchOptions } = rawOptions;
+      const { cacheTtlMs = 0, cacheKey, forceFresh = false, signal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, private: privateRequest = false, forceSession = false, skipRefreshRetry = false, ...fetchOptions } = rawOptions;
       const method = String(fetchOptions.method || 'GET').toUpperCase();
       const publicRead = method === 'GET' && !privateRequest;
       const key = keyFor(method, path, { cacheKey, private: privateRequest, forceSession });
@@ -91,7 +93,7 @@
         const run = () => {
           const headers = { apikey: SUPABASE_KEY, ...(fetchOptions.body ? { 'Content-Type': 'application/json' } : {}), ...(fetchOptions.headers || {}) };
           if (token() && (!publicRead || forceSession)) headers.Authorization = `Bearer ${token()}`;
-          return fetch(`${SUPABASE_URL}/rest/v1/${normalizePath(path)}`, { ...fetchOptions, method, headers, signal });
+          return fetch(`${SUPABASE_URL}/rest/v1/${normalizePath(path)}`, { ...fetchOptions, method, headers, signal: withTimeoutSignal(signal, timeoutMs) });
         };
         let response;
         try { response = await run(); } catch (error) { if (isAbort(error)) metrics.aborted += 1; else metrics.failures += 1; throw error; }
@@ -106,7 +108,7 @@
       try { return await promise; } finally { if (inFlight.get(key) === promise) inFlight.delete(key); }
     }
     async function requestCount(path, rawOptions = {}) {
-      const { cacheTtlMs = 0, cacheKey, forceFresh = false, signal, private: privateRequest = false, forceSession = false, skipRefreshRetry = false, ...fetchOptions } = rawOptions;
+      const { cacheTtlMs = 0, cacheKey, forceFresh = false, signal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, private: privateRequest = false, forceSession = false, skipRefreshRetry = false, ...fetchOptions } = rawOptions;
       const method = 'HEAD'; const publicRead = !privateRequest; const key = keyFor(method, path, { cacheKey, private: privateRequest, forceSession }); const ttl = Math.max(0, Number(cacheTtlMs) || 0);
       if (!forceFresh) { const cachedValue = cached(key, ttl); if (cachedValue !== null) { metrics.cacheHits += 1; return cachedValue; } }
       if (inFlight.has(key)) { metrics.deduped += 1; return inFlight.get(key); }
@@ -127,7 +129,8 @@
   })();
 
   async function authRequest(path, options = {}) {
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/${normalizePath(path)}`, { ...options, headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...(options.headers || {}) } });
+    const { timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, signal, ...fetchOptions } = options;
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/${normalizePath(path)}`, { ...fetchOptions, headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...(options.headers || {}) }, signal: withTimeoutSignal(signal, timeoutMs) });
     const body = await response.json().catch(() => null);
     if (!response.ok) throw new Error(body?.msg || body?.message || 'ไม่สามารถยืนยันตัวตนได้');
     return body;

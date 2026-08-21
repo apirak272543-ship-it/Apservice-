@@ -15,7 +15,6 @@ body[data-page="home"] .customer-brand-mark{display:grid;place-items:center;widt
 body[data-page="home"] .customer-brand-name{font-size:1rem;letter-spacing:-.02em;color:var(--customer-ink)}
 body[data-page="home"] .customer-brand-tag{display:none}
 body[data-page="home"] .customer-top-actions{gap:7px;margin-left:auto}
-body[data-page="home"] .customer-top-actions>a[href*="mode=register"]{display:none!important}
 body[data-page="home"] .customer-account{width:40px;height:40px;border-radius:14px;background:#f1faf8;color:var(--customer-teal);border:1px solid var(--customer-line);font-size:19px}
 body[data-page="home"] .customer-nav-wrap{position:sticky;top:0;z-index:40;border-bottom:1px solid var(--customer-line);background:rgba(255,255,255,.94);backdrop-filter:blur(16px)}
 body[data-page="home"] .customer-nav-wrap .mpa-nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;padding:7px 8px max(7px,env(safe-area-inset-bottom));max-width:760px;margin:auto}
@@ -29,6 +28,9 @@ body[data-page="home"] .customer-nav-wrap .mpa-nav a[data-home-nav="notification
 body[data-page="home"] .customer-nav-wrap .mpa-nav a[data-home-nav="profile"]::before{content:'◯'}
 body[data-page="home"] .customer-page{padding:14px 14px 132px;max-width:760px;margin:auto}
 body[data-page="home"] .customer-home-tools{display:grid;gap:10px;margin:0 0 16px}
+body[data-page="home"] .customer-home-register{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;padding:11px 13px;border:1px solid #cfe9e2;border-radius:17px;background:linear-gradient(135deg,#f4fffc,#fff);color:var(--customer-ink);text-decoration:none;box-shadow:0 8px 18px rgba(11,96,84,.06)}
+body[data-page="home"] .customer-home-register>span:first-child{display:grid;place-items:center;width:32px;height:32px;border-radius:11px;background:#e1f8f2;color:var(--customer-teal);font-size:18px}
+body[data-page="home"] .customer-home-register strong,body[data-page="home"] .customer-home-register small{display:block}body[data-page="home"] .customer-home-register strong{font-size:.84rem}body[data-page="home"] .customer-home-register small{margin-top:2px;color:#69817c;font-size:.7rem}body[data-page="home"] .customer-home-register>span:last-child{font-size:20px;color:var(--customer-teal)}
 body[data-page="home"] .customer-delivery-picker{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid #cae6df;border-radius:17px;background:#fff;color:var(--customer-ink);text-align:left;box-shadow:0 8px 18px rgba(11,96,84,.07);text-decoration:none}
 body[data-page="home"] .customer-delivery-picker__icon{display:grid;place-items:center;width:35px;height:35px;border-radius:12px;background:#e3f7f2;color:var(--customer-teal);font-size:18px;flex:0 0 35px}
 body[data-page="home"] .customer-delivery-picker__copy{display:grid;min-width:0;gap:2px}.customer-delivery-picker__copy small{font-size:.7rem;color:var(--customer-muted)}.customer-delivery-picker__copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.83rem}.customer-delivery-picker__chevron{margin-left:auto;color:var(--customer-teal);font-size:1.4rem}
