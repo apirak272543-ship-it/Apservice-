@@ -7,6 +7,8 @@ const navLine = source.match(/const nav = active => ([^\n]+)/)?.[1] || '';
 assert(navLine, 'ต้องมี Customer navigation factory');
 assert(!navLine.includes('customer-topbar'), 'Customer MPA ต้องไม่สร้าง topbar ที่ซ้ำกับ navigation หลัก');
 assert(navLine.includes('class="customer-nav-wrap"'), 'ต้องมี navigation wrapper หลัก');
+assert.match(source, /currentCustomerWithSessionRestore/, 'Protected Customer routes ต้องมี customer-role guard');
+assert.match(source, /roles\.includes\('customer'\)/, 'Customer ต้องตรวจ role จาก Supabase ก่อนแสดงข้อมูลส่วนตัว');
 for (const label of ['หน้าแรก', 'ร้านค้า', 'ออร์เดอร์', 'แจ้งเตือน', 'โปรไฟล์', 'ช่วยเหลือ']) {
   assert(navLine.includes(`>${label}</a>`), `navigation หลักต้องมี ${label}`);
 }
