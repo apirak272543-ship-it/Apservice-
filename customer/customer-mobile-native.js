@@ -45,12 +45,19 @@
     }
     decorateCrossSystem();
   }
+  const navIcons = {
+    home: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1v-9.2Z"/></svg>',
+    stores: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>',
+    orders: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5h6v2H9zM9 11h6M9 15h6M9 18h3"/></svg>',
+    notifications: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 9.8a6 6 0 0 0-12 0c0 7-3 7-3 8.2h18c0-1.2-3-1.2-3-8.2Z"/><path d="M10 21h4"/></svg>',
+    profile: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c.8-3.5 3.2-5.5 7.5-5.5s6.7 2 7.5 5.5"/></svg>'
+  };
   const navItems = [
-    ['home', 'index.html', '⌂', 'หน้าแรก'],
-    ['stores', 'stores.html', '⌕', 'ค้นหา'],
-    ['orders', 'orders.html', '▣', 'ออร์เดอร์'],
-    ['notifications', 'notifications.html', '♧', 'แจ้งเตือน'],
-    ['profile', 'profile.html', '○', 'โปรไฟล์']
+    ['home', 'index.html', 'หน้าแรก'],
+    ['stores', 'stores.html', 'ค้นหา'],
+    ['orders', 'orders.html', 'ออร์เดอร์'],
+    ['notifications', 'notifications.html', 'แจ้งเตือน'],
+    ['profile', 'profile.html', 'โปรไฟล์']
   ];
   const activeNav = page === 'store' || page === 'retail' || page === 'retail-checkout' || page === 'checkout' ? 'stores' : page === 'order' ? 'orders' : navItems.some(item => item[0] === page) ? page : 'home';
   const currentRoot = () => document.querySelector('.customer-page');
@@ -65,15 +72,6 @@
     const topbar = document.querySelector('.customer-topbar');
     if (!topbar || topbar.dataset.nativeHeader) return;
     topbar.dataset.nativeHeader = 'true';
-    if (page === 'home' && !topbar.querySelector('.customer-native-header-search')) {
-      const search = document.createElement('a');
-      search.className = 'customer-native-header-search';
-      search.href = 'stores.html';
-      search.setAttribute('aria-label', 'ค้นหาร้านค้า');
-      search.textContent = '⌕';
-      const actions = topbar.querySelector('.customer-top-actions');
-      topbar.insertBefore(search, actions || null);
-    }
     if (page !== 'home') {
       const back = document.createElement('a');
       back.className = 'customer-native-back';
@@ -94,7 +92,7 @@
     nav.id = 'customerNativeBottomNav';
     nav.className = 'customer-native-bottom-nav';
     nav.setAttribute('aria-label', 'เมนูหลัก AP Service');
-    nav.innerHTML = navItems.map(([key, href, icon, label]) => `<a class="customer-native-nav-item${key === activeNav ? ' is-active' : ''}" href="${href}" data-native-nav="${key}"><span class="customer-native-nav-icon" aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('');
+    nav.innerHTML = navItems.map(([key, href, label]) => `<a class="customer-native-nav-item${key === activeNav ? ' is-active' : ''}" href="${href}" data-native-nav="${key}" aria-label="${label}"${key === activeNav ? ' aria-current="page"' : ''}><span class="customer-native-nav-icon">${navIcons[key]}</span><span>${label}</span></a>`).join('');
     document.body.append(nav);
   }
 
