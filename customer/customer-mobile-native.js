@@ -304,6 +304,20 @@
     }, true);
   }
 
+  function normalizeProfileLoginCopy() {
+    if (page !== 'profile') return;
+    const panel = document.querySelector('[data-login-panel="customer"]');
+    if (!panel) return;
+    const role = panel.querySelector('.ap-login-role');
+    const intro = panel.querySelector('.ap-login-intro');
+    const initialStatus = panel.querySelector('#loginForm [data-login-status]');
+    const registerHeading = panel.querySelector('.customer-register-prompt strong');
+    if (role) role.textContent = 'เข้าสู่ระบบลูกค้า';
+    if (intro) intro.textContent = 'เข้าสู่ระบบเพื่อสั่งอาหาร ติดตามออร์เดอร์ และจัดการข้อมูลจัดส่งของคุณ';
+    if (initialStatus?.textContent.includes('Customer')) initialStatus.textContent = 'ยังไม่มีบัญชีใช่ไหม สมัครได้ทันทีจากหน้านี้';
+    if (registerHeading) registerHeading.textContent = 'ยังไม่มีบัญชีใช่ไหม';
+  }
+
   function boot() {
     setPageState();
     enhanceHeader();
@@ -314,6 +328,7 @@
     enhanceTracking();
     enhanceOrders();
     enhanceMarketplacePrivacy();
+    normalizeProfileLoginCopy();
     void hydrateCrossSystemData();
   }
 

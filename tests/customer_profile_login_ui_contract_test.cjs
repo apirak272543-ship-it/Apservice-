@@ -1,0 +1,17 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const css = fs.readFileSync(path.join(root, 'shared', 'ap-login-media.css'), 'utf8');
+const native = fs.readFileSync(path.join(root, 'customer', 'customer-mobile-native.js'), 'utf8');
+const profile = fs.readFileSync(path.join(root, 'customer', 'profile.html'), 'utf8');
+
+assert.match(css, /\.ap-login-control input \{ padding: 0 48px 0 54px; \}/, 'Input copy must reserve space for the left icon');
+assert.match(native, /function normalizeProfileLoginCopy\(\)/, 'Profile Login copy must be normalized after runtime render');
+assert.match(native, /role\.textContent = 'เข้าสู่ระบบลูกค้า'/, 'Profile Login role label must be Thai');
+assert.match(native, /จัดการข้อมูลจัดส่งของคุณ/, 'Profile Login intro must use concise Thai copy');
+assert.match(profile, /auth-ui-v2-field-inset/, 'Profile must request the field-inset stylesheet revision');
+assert.match(profile, /customer-native-v6-profile-copy/, 'Profile must request the localized profile runtime revision');
+
+console.log('customer profile login ui contract: PASS');
