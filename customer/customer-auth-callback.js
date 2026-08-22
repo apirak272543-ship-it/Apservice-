@@ -11,7 +11,8 @@
     const candidate = String(value || '').trim();
     return /^[a-z0-9-]+\.html(?:\?[^#]*)?$/i.test(candidate) ? candidate : 'index.html';
   };
-  const next = destination(q.get('next'));
+  const storedNext = (() => { try { const value = localStorage.getItem('apservice_auth_next') || ''; localStorage.removeItem('apservice_auth_next'); return value; } catch (_) { return ''; } })();
+  const next = destination(q.get('next') || storedNext);
   const emailHint = String(q.get('email') || '').trim().toLowerCase();
   const normalizePhone = value => String(value || '').trim().replace(/[\s-]/g, '');
   const validPhone = value => /^(?:0\d{8,9}|\+66\d{8,9})$/.test(normalizePhone(value));
@@ -52,9 +53,12 @@
     shell(`${statusIcon('!', 'error')}<span class="customer-auth-callback-eyebrow">AP SERVICE · ยังไปต่อได้</span><h1>ยืนยันอีเมลไม่สำเร็จ</h1><p>${h(message)}</p><div class="customer-auth-callback-actions">${button('กลับไปขอลิงก์ใหม่', appUrl())}${button('กลับหน้าแรก AP Service', new URL('index.html', document.baseURI).href, true)}</div><p class="customer-auth-callback-note">หากกดลิงก์จากอีเมลแล้วพบหน้านี้ซ้ำ ให้ตรวจสอบว่าเปิดลิงก์ล่าสุดและไม่ได้เปิดผ่านตัวอย่างลิงก์ของระบบอีเมล</p>`);
   }
 
-  function completeState(user, message = 'ข้อมูลพร้อมแล้ว กำลังพาคุณเข้าใช้งาน') {
-    shell(`${statusIcon('✓', 'success')}<span class="customer-auth-callback-eyebrow">AP SERVICE · ยืนยันสำเร็จ</span><h1>ยินดีต้อนรับสู่ AP Service</h1><p>${h(message)}</p><div class="customer-auth-callback-email">${h(user?.email || emailHint || 'อีเมลของคุณ')}</div><div class="customer-auth-callback-actions">${button('เข้าใช้งานแอป', next)}${button('ดูโปรไฟล์ของฉัน', appUrl('profile.html'), true)}</div><p id="authCallbackStatus" class="customer-auth-callback-status is-success" role="status" aria-live="polite">กำลังเปิดแอปให้คุณ…</p>`);
-    setTimeout(() => { if (document.visibilityState !== 'hidden') location.assign(next); }, 1200);
+  function completeState(user, message = 'ข้อมูลพร้อมแล้ว กำลังเตรียมพื้นที่ใช้งานของคุณ') {
+    shell(`${statusIcon('✓', 'success')}<span class="customer-auth-callback-eyebrow">AP SERVICE · ยืนยันสำเร็จ</span><h1>ยินดีต้อนรับสู่ AP Service</h1><p>${h(message)}</p><div class="customer-auth-callback-email">${h(user?.email || emailHint || 'อีเมลของคุณ')}</div><div class="customer-success-motion" role="status" aria-live="polite"><div class="customer-success-orbit" aria-hidden="true"><span></span><span></span><span></span><b>AS</b></div><strong>กำลังเตรียมพื้นที่ของคุณ</strong><small>กำลังโหลดร้านค้าใกล้คุณและสิทธิพิเศษสำหรับลูกค้า</small><div class="customer-success-progress" aria-hidden="true"><span></span></div><div class="customer-success-progress-meta"><span>เตรียมความพร้อม</span><b data-success-countdown>3</b></div><div class="customer-success-promo"><span>ร้านใกล้คุณ</span><span>ส่งไว</span><span>สิทธิพิเศษ</span></div></div><div class="customer-auth-callback-actions">${button('เข้าใช้งานแอป', next)}${button('ดูโปรไฟล์ของฉัน', appUrl('profile.html'), true)}</div><p id="authCallbackStatus" class="customer-auth-callback-status is-success" role="status" aria-live="polite">ระบบจะเปิดแอปให้อัตโนมัติในอีก 3 วินาที…</p>`);
+    const countdown = $('[data-success-countdown]');
+    const startedAt = Date.now();
+    const timer = setInterval(() => { const remaining = Math.max(0, 3 - Math.ceil((Date.now() - startedAt) / 1000)); if (countdown) countdown.textContent = String(remaining); if (!remaining) clearInterval(timer); }, 120);
+    setTimeout(() => { clearInterval(timer); if (document.visibilityState !== 'hidden') location.assign(next); }, 3000);
   }
 
   function onboardingState(user, profile) {

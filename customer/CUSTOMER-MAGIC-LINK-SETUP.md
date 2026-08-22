@@ -1,37 +1,48 @@
-# Customer Email OTP Setup
+# Customer Simple Login and Magic-Link Setup
 
-เอกสารนี้ใช้ตั้งค่าการเข้าสู่ระบบของ AP Service Customer แบบ **รหัส OTP จากอีเมล** โดยลูกค้าจะไม่กดลิงก์ Verify และไม่ต้องเปิด callback URL อีกต่อไป
+เอกสารนี้ใช้ตั้งค่าการเข้าสู่ระบบของ AP Service Customer แบบเรียบง่ายตามแนวทาง B ลูกค้าที่มี session อยู่แล้วจะเข้าแอปได้ทันทีโดยไม่ต้องยืนยันซ้ำ ส่วนเครื่องใหม่หรือกรณีออกจากระบบจะได้รับลิงก์ Verify ทางอีเมลและกดเพียงครั้งเดียว
 
-## รูปแบบที่ใช้งาน
+## URL ที่ต้องอนุญาตใน Supabase
 
-Supabase Email OTP มาตรฐานส่งรหัสตัวเลข **6 หลัก** ผ่านตัวแปร `{{ .Token }}` และตรวจด้วยคำขอ `verifyOtp({ email, token, type: 'email' })` แอปจึงใช้ช่อง PIN 6 หลักตามรูปแบบที่ Auth รองรับอย่างเป็นทางการ [1] [2]
+ใน Supabase Dashboard ให้เปิด **Authentication → URL Configuration** แล้วตรวจสอบค่าเหล่านี้:
 
-ความต้องการรหัส 4 หลักไม่สามารถทำได้ด้วย Email OTP ของ Supabase Auth โดยตรง เพราะระบบกำหนดรูปแบบ OTP ของตัวเองและเอกสารระบุเป็นรหัส 6 หลัก หากต้องการ 4 หลักจริง ต้องสร้าง backend/Edge Function แยกสำหรับสร้างรหัสแบบสุ่ม เก็บเฉพาะ hash จำกัดจำนวนครั้งและอายุรหัส และเชื่อมผู้ให้บริการส่งอีเมล ซึ่งไม่ควรทำด้วย JavaScript ฝั่งหน้าเว็บเพียงอย่างเดียว
-
-## การตั้งค่าใน Supabase
-
-ใน Supabase Dashboard ให้เปิด **Authentication → Email Templates** แล้วนำเนื้อหาจาก `supabase/templates/customer_magic_link.html` ไปใช้กับ template **Magic Link or OTP** โดยคงตัวแปร `{{ .Token }}` ไว้ในเนื้อหาอีเมล ห้ามใช้ `{{ .ConfirmationURL }}` หรือปุ่ม Verify กับ flow นี้
-
-หาก project ยังใช้ template **Confirm signup** สำหรับบัญชีใหม่ ให้ใช้เนื้อหาจาก `supabase/templates/customer_confirmation.html` ด้วย ทั้งสองไฟล์เป็น template สำหรับ hosted Supabase จึงต้องคัดลอกไปวางใน Dashboard ด้วยตนเอง การ commit ไฟล์ใน repository ไม่ได้เปลี่ยนค่า mailer ของ project hosted โดยอัตโนมัติ
-
-ไม่จำเป็นต้องเพิ่ม callback URL ของ GitHub Pages สำหรับการเข้าสู่ระบบแบบ OTP เพราะแอปส่งคำขอ OTP โดยไม่กำหนด `redirect_to` และให้ลูกค้ากรอกรหัสบนหน้า `profile.html` เดิม อย่างไรก็ตามควรเก็บ Site URL ของ project ให้ตรงกับโดเมนที่ใช้งานจริงสำหรับลิงก์อื่นของระบบ
-
-## Flow ที่ควรทดสอบ
-
-| ขั้นตอน | สิ่งที่ควรเกิดขึ้น |
+| รายการ | ค่า |
 |---|---|
-| เปิดหน้า Login | เห็นช่องอีเมลและปุ่ม `ส่งรหัส PIN เข้าอีเมล` โดยไม่มีช่องรหัสผ่าน |
-| ส่งอีเมล | ระบบส่งอีเมลที่มีรหัส 6 หลัก และหน้าเดิมเปลี่ยนเป็นช่อง `รหัส PIN 6 หลัก` |
-| กรอกรหัสถูกต้อง | Supabase สร้าง session แล้วลูกค้าใหม่ถูกพาไปฟอร์มชื่อ เบอร์โทรศัพท์ และที่อยู่ |
-| บันทึก onboarding | ข้อมูลถูกบันทึกใน `user_profiles` และหลักฐานยอมรับนโยบายถูกบันทึกใน `user_consents` จากนั้นกลับเข้าแอป |
-| ลูกค้าเดิม | ถ้าข้อมูลโปรไฟล์ครบ ระบบกลับไปยังหน้าที่ขอไว้โดยไม่แสดง onboarding ซ้ำ |
-| รหัสผิดหรือหมดอายุ | แสดงข้อความให้ขอรหัสใหม่ในหน้าเดิม ไม่เปิด GitHub Pages callback และไม่เกิด 404 |
+| Site URL | `https://apirak272543-ship-it.github.io/Apservice-` |
+| Customer Verify callback | `https://apirak272543-ship-it.github.io/Apservice-/customer/auth-callback.html` |
 
-## ความปลอดภัยและข้อจำกัด
+ต้องเพิ่ม callback URL ข้างต้นใน **Redirect URLs** ด้วย อย่าเพิ่มเฉพาะ `profile.html` เพราะคำขอส่งลิงก์ของแอปจะชี้ไปที่ `customer/auth-callback.html` พร้อม query `next` และ `email`
 
-รหัส OTP เป็นรหัสใช้ครั้งเดียวและมีอายุจำกัด Supabase ยังจำกัดความถี่การขอ OTP ตามการตั้งค่าของ project ดังนั้นผู้ใช้ควรรอเมื่อเห็นข้อความให้ลองใหม่ภายหลัง และไม่ควรแชร์รหัสกับผู้อื่น
+## Email template
 
-ถ้าใน Gmail ยังเห็นปุ่ม Verify จาก template เดิม แปลว่ายังไม่ได้บันทึก template **Magic Link or OTP** ใน Supabase Dashboard หรือกำลังดูอีเมลเก่า ให้ส่งรหัสใหม่หลังบันทึก template แล้ว
+ใน Supabase Dashboard ให้เปิด **Authentication → Email Templates → Magic Link** แล้วนำเนื้อหาจาก `supabase/templates/customer_magic_link.html` ไปใช้ โดยคงตัวแปร `{{ .ConfirmationURL }}` ไว้ใน `href` ของปุ่ม Verify
+
+ถ้า project เปิดใช้งานการยืนยันบัญชีใหม่แยกต่างหาก ให้ใช้ `supabase/templates/customer_confirmation.html` กับ template **Confirm signup** ด้วย ทั้งสองไฟล์ใน repository เป็นต้นฉบับสำหรับคัดลอกเท่านั้น การ commit ไฟล์ไม่ได้เปลี่ยน mailer ของ Supabase hosted project โดยอัตโนมัติ
+
+หลังเปลี่ยน template ให้ส่งลิงก์ใหม่เสมอ อีเมลเก่าที่ส่งก่อนแก้ไขอาจยังชี้ไปยังปลายทางเดิมหรือ token หมดอายุแล้ว
+
+## Flow ที่ผู้ใช้เห็น
+
+| สถานการณ์ | ผลลัพธ์ |
+|---|---|
+| ลูกค้าเคยเข้าสู่ระบบและยังมี session | เปิดหน้า Customer แล้วเข้าแอปได้ทันที |
+| ลูกค้าเข้าเครื่องใหม่หรือออกจากระบบ | กรอกอีเมล กด `ส่งลิงก์เข้าใช้งาน` เปิด Gmail แล้วกด Verify |
+| ลูกค้าใหม่ | กดปุ่ม `สมัครสมาชิก` บนหน้า Login กรอกอีเมล กด Verify ครั้งเดียว แล้วกรอกชื่อ เบอร์โทรศัพท์ และที่อยู่ |
+| Verify สำเร็จ | เห็นหน้า AP Service success พร้อมแถบ motion สีไล่ระดับประมาณ 3 วินาที แล้วกลับเข้าแอป |
+| Verify ไม่สำเร็จหรือ token หมดอายุ | เห็นหน้า error ของ AP Service พร้อมปุ่มกลับไปขอลิงก์ใหม่ ไม่ใช่หน้า GitHub Pages 404 |
+
+## ตรวจสอบเมื่อยังเห็น 404
+
+หากกดอีเมลแล้วเห็น `There isn't a GitHub Pages site here` หรือ 404 ให้ตรวจตามลำดับนี้:
+
+1. ตรวจว่า URL ของอีเมลขึ้นต้นด้วย `https://apirak272543-ship-it.github.io/Apservice-/customer/auth-callback.html` ไม่ใช่โดเมนเดียวกันแต่ขาด path `/Apservice-`
+2. ตรวจว่า callback URL ถูกเพิ่มใน Supabase **Redirect URLs** ตรงทุกตัวอักษร
+3. ลบหรือหยุดใช้ลิงก์เก่า แล้วกลับมาหน้า Login เพื่อขอลิงก์ใหม่
+4. ตรวจว่า email template ใช้ `{{ .ConfirmationURL }}` อยู่ใน `href` ของปุ่ม Verify
+
+## ข้อควรระวัง
+
+Magic Link เป็นลิงก์ใช้ครั้งเดียวและมีอายุจำกัด หากผู้ให้บริการอีเมลมีระบบติดตามลิงก์หรือระบบสแกนล่วงหน้า อาจทำให้ token ถูกใช้ก่อนลูกค้ากดจริง ให้เปิดลิงก์ล่าสุดจากอีเมลฉบับล่าสุดและไม่ส่งต่อลิงก์ให้บุคคลอื่น
 
 ## References
 
