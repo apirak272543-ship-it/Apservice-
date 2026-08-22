@@ -131,7 +131,7 @@
 
 .featured-store-carousel-card__copy {
   display: block;
-  min-height: 52px;
+  min-height: 64px;
   padding: 8px 9px 9px;
   background: #fff;
 }
@@ -140,7 +140,7 @@
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   font-size: 11px;
   line-height: 1.25;
 }
@@ -174,7 +174,7 @@
 @media (max-width: 420px) {
   .featured-store-carousel { padding-top: 14px; }
   .featured-store-carousel-card { flex-basis: 132px; border-radius: 17px; }
-  .featured-store-carousel-card__copy { min-height: 49px; }
+  .featured-store-carousel-card__copy { min-height: 61px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
