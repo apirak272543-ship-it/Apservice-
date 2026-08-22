@@ -336,8 +336,8 @@
     const initialStatus = panel.querySelector('#loginForm [data-login-status]');
     const registerHeading = panel.querySelector('.customer-register-prompt strong');
     if (role) role.textContent = 'เข้าสู่ระบบลูกค้า';
-    if (intro) intro.textContent = 'ไม่ต้องจำรหัสผ่าน เราจะส่งลิงก์ยืนยันไปที่อีเมลของคุณเพื่อกลับเข้าแอปอย่างปลอดภัย';
-    if (initialStatus && !initialStatus.textContent.includes('ลิงก์')) initialStatus.textContent = 'เปิดอีเมลล่าสุดแล้วกดลิงก์ยืนยันเพื่อเข้าใช้งาน';
+    if (intro) intro.textContent = 'ไม่ต้องจำรหัสผ่าน เราจะส่งรหัส PIN 6 หลักไปที่อีเมลให้กรอกยืนยันในหน้านี้';
+    if (initialStatus && !initialStatus.textContent.includes('รหัส')) initialStatus.textContent = 'เปิดอีเมลล่าสุดแล้วกรอกรหัส PIN เพื่อเข้าใช้งาน';
     if (registerHeading) registerHeading.textContent = 'ยังไม่มีบัญชีใช่ไหม';
   }
 

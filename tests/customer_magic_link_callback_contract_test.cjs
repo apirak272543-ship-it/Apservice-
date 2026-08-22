@@ -10,14 +10,16 @@ const callback = fs.readFileSync(path.join(root, 'customer', 'customer-auth-call
 const callbackPage = fs.readFileSync(path.join(root, 'customer', 'auth-callback.html'), 'utf8');
 const emailTemplate = fs.readFileSync(path.join(root, 'supabase', 'templates', 'customer_magic_link.html'), 'utf8');
 
-assert.match(runtime, /async function sendMagicLink\(email, redirectTo\)/, 'Shared runtime must expose a magic-link request');
-assert.match(runtime, /create_user: true/, 'Magic-link flow must allow first-time Customer onboarding');
-assert.match(runtime, /payload\.redirect_to = redirectTo/, 'Magic-link flow must pass the callback destination');
-assert.match(runtime, /async function acceptMagicLinkFromHash\(\)/, 'Shared runtime must consume the auth URL hash');
-assert.match(app, /auth-callback\.html/, 'Customer Login must use a dedicated callback route');
-assert.match(app, /M\.auth\.sendMagicLink\(email, callback\.href\)/, 'Customer Login must request the link with the callback URL');
+assert.match(runtime, /async function sendEmailOtp\(email\)/, 'Shared runtime must expose an email OTP request');
+assert.match(runtime, /create_user: true/, 'Email OTP flow must allow first-time Customer onboarding');
+assert.match(runtime, /async function verifyEmailOtp\(email, token\)/, 'Shared runtime must expose OTP verification');
+assert.match(runtime, /type: 'email'/, 'Email OTP verification must use the email OTP type');
+assert.doesNotMatch(app, /auth-callback\.html/, 'Customer Login must not create a callback URL for OTP');
+assert.match(app, /M\.auth\.sendEmailOtp\(email\)/, 'Customer Login must request an email OTP');
+assert.match(app, /M\.auth\.verifyEmailOtp\(email, token\)/, 'Customer Login must verify the OTP in the same page');
 assert.doesNotMatch(app, /id="password"/, 'Customer Login must not render a password field');
-assert.match(register, /sendMagicLink/, 'Customer registration must use the same passwordless flow');
+assert.match(register, /sendEmailOtp/, 'Customer registration must use the same email OTP flow');
+assert.match(register, /verifyEmailOtp/, 'Customer registration must verify the OTP before onboarding');
 assert.doesNotMatch(register, /registerPassword/, 'Customer registration must not ask for a password');
 assert.match(callback, /acceptMagicLinkFromHash\(\)/, 'Callback must accept the one-time auth session');
 assert.match(callback, /onboardingState\(user, profile\)/, 'Incomplete profiles must be routed to onboarding');
@@ -26,5 +28,6 @@ assert.match(callback, /user_consents/, 'Onboarding must persist consent evidenc
 assert.match(callback, /location\.assign\(next\)/, 'Successful callback must return to the requested application route');
 assert.match(callbackPage, /customer-auth-callback\.css/, 'Callback page must load the branded callback stylesheet');
 assert.match(callbackPage, /customer-auth-callback\.js/, 'Callback page must load the callback runtime');
-assert.match(emailTemplate, /\{\{ \.ConfirmationURL \}\}/, 'Magic-link email template must use Supabase ConfirmationURL');
+assert.match(emailTemplate, /\{\{ \.Token \}\}/, 'Email OTP template must show the Supabase Token');
+assert.doesNotMatch(emailTemplate, /ConfirmationURL|href=/, 'Email OTP template must not depend on a Verify link');
 console.log('customer magic-link callback contract: PASS');
