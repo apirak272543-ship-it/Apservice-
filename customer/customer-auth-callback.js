@@ -27,6 +27,11 @@
     url.searchParams.set('next', next);
     return url.href;
   };
+  const reloadIntoApp = () => {
+    const url = new URL(next, document.baseURI);
+    if (url.href === location.href) window.location.reload();
+    else window.location.replace(url.href);
+  };
 
   const shell = content => {
     document.body.innerHTML = `<main class="customer-auth-callback-shell"><section class="customer-auth-callback-card">${content}</section></main>`;
@@ -58,7 +63,7 @@
     const countdown = $('[data-success-countdown]');
     const startedAt = Date.now();
     const timer = setInterval(() => { const remaining = Math.max(0, 3 - Math.ceil((Date.now() - startedAt) / 1000)); if (countdown) countdown.textContent = String(remaining); if (!remaining) clearInterval(timer); }, 120);
-    setTimeout(() => { clearInterval(timer); if (document.visibilityState !== 'hidden') location.assign(next); }, 3000);
+    setTimeout(() => { clearInterval(timer); if (document.visibilityState !== 'hidden') reloadIntoApp(); }, 3000);
   }
 
   function onboardingState(user, profile) {

@@ -23,9 +23,11 @@ assert.match(callback, /acceptMagicLinkFromHash\(\)/, 'Callback must accept the 
 assert.match(callback, /onboardingState\(user, profile\)/, 'Incomplete profiles must be routed to onboarding');
 assert.match(callback, /user_profiles\?on_conflict=user_id/, 'Onboarding must persist required customer profile data');
 assert.match(callback, /user_consents/, 'Onboarding must persist consent evidence');
-assert.match(callback, /location\.assign\(next\)/, 'Successful callback must return to the requested application route');
+assert.match(callback, /reloadIntoApp/, 'Successful callback must return to the requested application route');
 assert.match(callback, /customer-success-motion/, 'Successful callback must show the branded processing motion');
 assert.match(callback, /3000/, 'Successful callback must keep the processing motion visible for about three seconds');
+assert.match(callback, /reloadIntoApp/, 'Successful callback must reload or replace into the application automatically');
+assert.match(callback, /window\.location\.replace\(url\.href\)/, 'Successful callback must replace the callback route with the application route');
 assert.match(callbackPage, /customer-auth-callback\.css\?v=auth-callback-v2-motion/, 'Callback page must load the branded callback stylesheet revision');
 assert.match(callbackPage, /customer-auth-callback\.js\?v=auth-callback-v2-motion/, 'Callback page must load the callback runtime revision');
 assert.match(emailTemplate, /\{\{ \.ConfirmationURL \}\}/, 'Magic-link email template must use Supabase ConfirmationURL');
