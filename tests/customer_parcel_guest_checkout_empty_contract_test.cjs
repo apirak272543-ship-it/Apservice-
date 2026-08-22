@@ -21,6 +21,6 @@ assert.match(native, /summary\.hidden = isEmpty/, 'Checkout summary form must no
 assert.match(native, /context\.hidden = isEmpty/, 'Checkout context card must not duplicate the empty-cart guidance');
 assert.match(checkoutCss, /customer-native-cart-empty/, 'Checkout empty state must have dedicated mobile styling');
 assert.match(checkoutEntry, /checkout-mobile-v2-empty/, 'Checkout must request the empty-state stylesheet revision');
-assert.match(checkoutEntry, /customer-native-v7-empty-checkout/, 'Checkout must request the empty-state runtime revision');
+assert.match(checkoutEntry, /customer-native-v8-empty-checkout-summary/, 'Checkout must request the empty-state runtime revision');
 
 console.log('customer parcel guest and checkout empty contract: PASS');
