@@ -336,8 +336,8 @@
     const initialStatus = panel.querySelector('#loginForm [data-login-status]');
     const registerHeading = panel.querySelector('.customer-register-prompt strong');
     if (role) role.textContent = 'เข้าสู่ระบบลูกค้า';
-    if (intro) intro.textContent = 'เข้าสู่ระบบเพื่อสั่งอาหาร ติดตามออร์เดอร์ และจัดการข้อมูลจัดส่งของคุณ';
-    if (initialStatus?.textContent.includes('Customer')) initialStatus.textContent = 'ยังไม่มีบัญชีใช่ไหม สมัครได้ทันทีจากหน้านี้';
+    if (intro) intro.textContent = 'ไม่ต้องจำรหัสผ่าน เราจะส่งลิงก์ยืนยันไปที่อีเมลของคุณเพื่อกลับเข้าแอปอย่างปลอดภัย';
+    if (initialStatus && !initialStatus.textContent.includes('ลิงก์')) initialStatus.textContent = 'เปิดอีเมลล่าสุดแล้วกดลิงก์ยืนยันเพื่อเข้าใช้งาน';
     if (registerHeading) registerHeading.textContent = 'ยังไม่มีบัญชีใช่ไหม';
   }
 

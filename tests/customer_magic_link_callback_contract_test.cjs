@@ -1,0 +1,30 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const runtime = fs.readFileSync(path.join(root, 'shared', 'ap-service-mpa.js'), 'utf8');
+const app = fs.readFileSync(path.join(root, 'customer', 'customer-app.js'), 'utf8');
+const register = fs.readFileSync(path.join(root, 'customer', 'customer-register.js'), 'utf8');
+const callback = fs.readFileSync(path.join(root, 'customer', 'customer-auth-callback.js'), 'utf8');
+const callbackPage = fs.readFileSync(path.join(root, 'customer', 'auth-callback.html'), 'utf8');
+const emailTemplate = fs.readFileSync(path.join(root, 'supabase', 'templates', 'customer_magic_link.html'), 'utf8');
+
+assert.match(runtime, /async function sendMagicLink\(email, redirectTo\)/, 'Shared runtime must expose a magic-link request');
+assert.match(runtime, /create_user: true/, 'Magic-link flow must allow first-time Customer onboarding');
+assert.match(runtime, /payload\.redirect_to = redirectTo/, 'Magic-link flow must pass the callback destination');
+assert.match(runtime, /async function acceptMagicLinkFromHash\(\)/, 'Shared runtime must consume the auth URL hash');
+assert.match(app, /auth-callback\.html/, 'Customer Login must use a dedicated callback route');
+assert.match(app, /M\.auth\.sendMagicLink\(email, callback\.href\)/, 'Customer Login must request the link with the callback URL');
+assert.doesNotMatch(app, /id="password"/, 'Customer Login must not render a password field');
+assert.match(register, /sendMagicLink/, 'Customer registration must use the same passwordless flow');
+assert.doesNotMatch(register, /registerPassword/, 'Customer registration must not ask for a password');
+assert.match(callback, /acceptMagicLinkFromHash\(\)/, 'Callback must accept the one-time auth session');
+assert.match(callback, /onboardingState\(user, profile\)/, 'Incomplete profiles must be routed to onboarding');
+assert.match(callback, /user_profiles\?on_conflict=user_id/, 'Onboarding must persist required customer profile data');
+assert.match(callback, /user_consents/, 'Onboarding must persist consent evidence');
+assert.match(callback, /location\.assign\(next\)/, 'Successful callback must return to the requested application route');
+assert.match(callbackPage, /customer-auth-callback\.css/, 'Callback page must load the branded callback stylesheet');
+assert.match(callbackPage, /customer-auth-callback\.js/, 'Callback page must load the callback runtime');
+assert.match(emailTemplate, /\{\{ \.ConfirmationURL \}\}/, 'Magic-link email template must use Supabase ConfirmationURL');
+console.log('customer magic-link callback contract: PASS');

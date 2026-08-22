@@ -1,0 +1,106 @@
+:root {
+  --callback-brand: #0b8c7c;
+  --callback-deep: #075e54;
+  --callback-ink: #143b31;
+  --callback-muted: #61766f;
+  --callback-line: #dce9e7;
+  --callback-soft: #eef9f7;
+  --callback-coral: #f46758;
+  --callback-ease: cubic-bezier(.23, 1, .32, 1);
+}
+
+body[data-page="auth-callback"] {
+  margin: 0;
+  min-height: 100svh;
+  color: var(--callback-ink);
+  background: radial-gradient(circle at 8% 0%, rgba(196, 244, 235, .8), transparent 34%), radial-gradient(circle at 96% 100%, rgba(255, 218, 207, .65), transparent 32%), linear-gradient(145deg, #f8fdfc, #eaf7f4);
+  font-family: Inter, "Noto Sans Thai", system-ui, -apple-system, sans-serif;
+}
+
+.customer-auth-callback-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  padding: 24px 14px;
+}
+
+.customer-auth-callback-card {
+  width: min(570px, 100%);
+  padding: clamp(24px, 6vw, 42px);
+  border: 1px solid rgba(11, 140, 124, .16);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: 0 28px 70px rgba(5, 89, 79, .16);
+  text-align: center;
+  animation: callback-enter 360ms var(--callback-ease) both;
+}
+
+.customer-auth-callback-icon {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 18px;
+  border-radius: 26px;
+  font-size: 34px;
+  font-weight: 900;
+}
+.customer-auth-callback-icon--loading { color: var(--callback-brand); background: var(--callback-soft); animation: callback-pulse 1.2s ease-in-out infinite; }
+.customer-auth-callback-icon--success { color: var(--callback-brand); background: linear-gradient(145deg, #e5fbf5, #f7fffd); box-shadow: inset 0 0 0 1px rgba(11, 140, 124, .14); }
+.customer-auth-callback-icon--error { color: #b42318; background: #fff2ef; box-shadow: inset 0 0 0 1px rgba(244, 103, 88, .18); }
+
+.customer-auth-callback-eyebrow {
+  display: block;
+  color: var(--callback-brand);
+  font-size: .72rem;
+  font-weight: 950;
+  letter-spacing: .12em;
+}
+.customer-auth-callback-card h1 { margin: 12px 0 9px; font-size: clamp(1.7rem, 7vw, 2.35rem); letter-spacing: -.045em; line-height: 1.15; }
+.customer-auth-callback-card > p, .customer-auth-callback-note { max-width: 470px; margin: 0 auto; color: var(--callback-muted); line-height: 1.72; }
+
+.customer-auth-callback-progress, .customer-auth-callback-stepper { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 24px auto 8px; }
+.customer-auth-callback-progress span { width: 9px; height: 9px; border-radius: 999px; background: var(--callback-brand); animation: callback-dot 900ms ease-in-out infinite; }
+.customer-auth-callback-progress span:nth-child(2) { animation-delay: 120ms; }
+.customer-auth-callback-progress span:nth-child(3) { animation-delay: 240ms; }
+.customer-auth-callback-stepper span { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #edf4f2; color: var(--callback-muted); font-weight: 900; font-size: .78rem; }
+.customer-auth-callback-stepper span.is-done, .customer-auth-callback-stepper span.is-active { color: #fff; background: var(--callback-brand); }
+.customer-auth-callback-stepper i { display: block; width: 38px; height: 2px; background: var(--callback-line); }
+
+.customer-auth-callback-email { display: inline-flex; max-width: 100%; margin: 19px auto 0; padding: 8px 13px; border-radius: 999px; overflow: hidden; color: var(--callback-deep); background: var(--callback-soft); font-size: .86rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.customer-auth-callback-actions { display: grid; gap: 10px; max-width: 360px; margin: 24px auto 0; }
+.customer-auth-callback-button { display: flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 18px; border-radius: 15px; color: #fff; background: linear-gradient(135deg, var(--callback-deep), var(--callback-brand)); box-shadow: 0 12px 22px rgba(11, 140, 124, .18); font-size: .92rem; font-weight: 900; text-decoration: none; transition: transform 160ms var(--callback-ease), filter 160ms var(--callback-ease); }
+.customer-auth-callback-button:hover { filter: saturate(1.08); }
+.customer-auth-callback-button:active { transform: scale(.97); }
+.customer-auth-callback-button.is-secondary { color: var(--callback-ink); background: #fff; border: 1px solid var(--callback-line); box-shadow: none; }
+.customer-auth-callback-note { margin-top: 20px !important; font-size: .76rem; }
+.customer-auth-callback-status { min-height: 1.4em; margin-top: 18px !important; font-size: .84rem; }
+.customer-auth-callback-status[data-kind="error"] { color: #b42318; }
+.customer-auth-callback-status[data-kind="loading"] { color: var(--callback-brand); }
+.customer-auth-callback-status.is-success { color: var(--callback-brand); }
+
+.customer-auth-callback-form { display: grid; gap: 13px; margin-top: 21px; text-align: left; }
+.customer-auth-callback-form label { display: grid; gap: 7px; color: var(--callback-ink); font-size: .82rem; font-weight: 850; }
+.customer-auth-callback-form label > span { display: block; }
+.customer-auth-callback-form label b { color: var(--callback-coral); }
+.customer-auth-callback-form input, .customer-auth-callback-form textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--callback-line); border-radius: 13px; padding: 12px 13px; color: var(--callback-ink); background: #fbfefd; font: inherit; outline: none; transition: border-color 160ms var(--callback-ease), box-shadow 160ms var(--callback-ease); }
+.customer-auth-callback-form input { min-height: 46px; }
+.customer-auth-callback-form textarea { min-height: 105px; resize: vertical; }
+.customer-auth-callback-form input:focus, .customer-auth-callback-form textarea:focus { border-color: var(--callback-brand); box-shadow: 0 0 0 4px rgba(11, 140, 124, .11); }
+.customer-auth-callback-form input:disabled { color: var(--callback-muted); background: #f2f7f5; }
+.customer-auth-callback-form small { color: var(--callback-muted); font-size: .73rem; font-weight: 500; }
+.customer-auth-callback-check { display: flex !important; grid-template-columns: auto 1fr; align-items: flex-start; gap: 9px !important; margin-top: 3px; font-weight: 600 !important; line-height: 1.55; }
+.customer-auth-callback-check input { width: 17px; height: 17px; margin: 2px 0 0; accent-color: var(--callback-brand); }
+.customer-auth-callback-check a { color: var(--callback-deep); font-weight: 850; }
+.customer-auth-callback-submit { min-height: 50px; border: 0; border-radius: 15px; color: #fff; background: linear-gradient(135deg, var(--callback-deep), var(--callback-brand)); box-shadow: 0 12px 22px rgba(11, 140, 124, .18); font: inherit; font-size: .92rem; font-weight: 900; cursor: pointer; transition: transform 160ms var(--callback-ease), filter 160ms var(--callback-ease); }
+.customer-auth-callback-submit:hover { filter: saturate(1.08); }
+.customer-auth-callback-submit:active { transform: scale(.97); }
+.customer-auth-callback-submit:disabled { cursor: wait; opacity: .7; }
+.customer-auth-callback-form.is-error { animation: callback-shake 360ms var(--callback-ease); }
+
+@keyframes callback-enter { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes callback-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+@keyframes callback-dot { 0%, 100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-4px); } }
+@keyframes callback-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 55% { transform: translateX(4px); } 78% { transform: translateX(-2px); } }
+@media (max-width: 520px) { .customer-auth-callback-shell { padding: 14px 10px; } .customer-auth-callback-card { border-radius: 24px; padding: 25px 19px; } .customer-auth-callback-stepper i { width: 25px; } }
+@media (prefers-reduced-motion: reduce) { .customer-auth-callback-card, .customer-auth-callback-icon--loading, .customer-auth-callback-progress span, .customer-auth-callback-form.is-error { animation: none !important; } .customer-auth-callback-button, .customer-auth-callback-submit, .customer-auth-callback-form input, .customer-auth-callback-form textarea { transition: none !important; } }
