@@ -165,6 +165,26 @@
     }
     decorateCartRows();
     addCheckoutTotalMirror();
+    const syncEmptyCart = () => {
+      const cart = window.APServiceMPA?.cart?.read?.() || [];
+      const cartSection = grid.querySelector('.customer-native-cart-section');
+      const table = grid.querySelector('.customer-native-cart-table');
+      const submit = form.querySelector('[type="submit"]');
+      const context = document.querySelector('.customer-native-checkout-store');
+      const isEmpty = !cart.length;
+      cartSection?.toggleAttribute('data-empty-cart', isEmpty);
+      if (table) table.hidden = isEmpty;
+      if (cartSection) {
+        let empty = cartSection.querySelector('.customer-native-cart-empty');
+        if (isEmpty && !empty) { empty = document.createElement('div'); empty.className = 'customer-native-cart-empty'; empty.setAttribute('role', 'status'); empty.innerHTML = '<span aria-hidden="true">🛍️</span><h2>ตะกร้าสินค้ายังว่าง</h2><p>เลือกสินค้าแล้วกลับมาตรวจสอบราคาและค่าจัดส่งก่อนยืนยัน</p><a class="mpa-button" href="stores.html">ไปเลือกสินค้า</a>'; cartSection.append(empty); }
+        if (!isEmpty) empty?.remove();
+      }
+      if (submit) { submit.disabled = isEmpty; submit.title = isEmpty ? 'เพิ่มสินค้าก่อนยืนยันคำสั่งซื้อ' : ''; submit.textContent = isEmpty ? 'เพิ่มสินค้าก่อนยืนยัน' : 'ยืนยันคำสั่งซื้อทั้งหมด'; }
+      if (context) { const title = context.querySelector('strong'); const helper = context.querySelector('small'); const action = context.querySelector('a'); const storeNames = [...new Set(cart.map(item => item.storeName).filter(Boolean))]; const count = cart.reduce((sum, item) => sum + Number(item.qty || 0), 0); if (isEmpty) { if (title) title.textContent = 'ตะกร้าสินค้ายังว่าง'; if (helper) helper.textContent = 'เลือกสินค้าก่อนเข้าสู่ขั้นตอนชำระเงิน'; if (action) action.textContent = 'เพิ่มสินค้า'; } else { if (title) title.textContent = storeNames[0] || 'รายการสั่งซื้อของคุณ'; if (helper) helper.textContent = `จัดส่งโดย AP Service · ${count} รายการ`; if (action) action.textContent = 'แก้ไข'; } }
+    };
+    syncEmptyCart();
+    const rows = document.querySelector('#cartRows');
+    if (rows && !rows.dataset.nativeEmptySync) { rows.dataset.nativeEmptySync = 'true'; new MutationObserver(syncEmptyCart).observe(rows, { childList: true, subtree: true }); }
   }
 
   function enhanceStores() {
