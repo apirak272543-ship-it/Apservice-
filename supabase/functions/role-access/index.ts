@@ -54,6 +54,7 @@ const loginIdIsValid = (value: string) => /^[a-z0-9][a-z0-9._-]{2,31}$/.test(val
 const text = (value: unknown, fallback = '') => String(value ?? fallback).trim()
 const number = (value: unknown) => Math.max(0, Number(value) || 0)
 const validDate = (value: unknown) => { const date = new Date(String(value || '')); return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString() }
+const secureTemporaryPassword = (value: string) => value.length >= 12 && value.length <= 128 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value) && /[^A-Za-z0-9]/.test(value) && !/\s/.test(value)
 const riderLocation = (value: unknown) => {
   const source = value && typeof value === 'object' ? value as Record<string, unknown> : {}
   const lat = Number(source.lat), lng = Number(source.lng), accuracy = Number(source.accuracy)
@@ -334,14 +335,27 @@ Deno.serve(async (request) => {
       return json({ ok: true, entity_id: entityId, section, store: updated })
     }
 
+    if (body.action === 'reset_rider_password') {
+      const entityId = text(body.entity_id), password = String(body.password || '')
+      if (!entityId || !secureTemporaryPassword(password)) return json({ error: 'รหัสผ่านชั่วคราวต้องมีอย่างน้อย 12 ตัวอักษร และมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ โดยห้ามมีช่องว่าง' }, 400)
+      const { data: rider, error: riderError } = await admin.from('riders').select('id,user_id').eq('id', entityId).maybeSingle()
+      if (riderError) return json({ error: riderError.message }, 400)
+      if (!rider?.user_id) return json({ error: 'Rider นี้ยังไม่ผูกบัญชี Rider App' }, 409)
+      const { error: passwordError } = await admin.auth.admin.updateUserById(rider.user_id, { password })
+      if (passwordError) return json({ error: passwordError.message }, 400)
+      await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: rider.user_id, action: 'rider_password_reset', after_state: { rider_id: entityId } })
+      return json({ ok: true, entity_id: entityId })
+    }
+
     if (body.action === 'reset_store_password') {
       const entityId = text(body.entity_id), password = String(body.password || '')
-      if (!entityId || password.length < 8) return json({ error: 'รหัสผ่านชั่วคราวต้องมีอย่างน้อย 8 ตัวอักษร' }, 400)
+      if (!entityId || !secureTemporaryPassword(password)) return json({ error: 'รหัสผ่านชั่วคราวต้องมีอย่างน้อย 12 ตัวอักษร และมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ โดยห้ามมีช่องว่าง' }, 400)
       const { data: store, error: storeError } = await admin.from('stores').select('id,owner_id').eq('id', entityId).maybeSingle()
       if (storeError) return json({ error: storeError.message }, 400)
       if (!store?.owner_id) return json({ error: 'ร้านนี้ยังไม่ผูกบัญชี Store App' }, 409)
       const { error: passwordError } = await admin.auth.admin.updateUserById(store.owner_id, { password })
       if (passwordError) return json({ error: passwordError.message }, 400)
+      await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: store.owner_id, action: 'store_password_reset', after_state: { store_id: entityId } })
       return json({ ok: true, entity_id: entityId })
     }
 
@@ -466,6 +480,34 @@ Deno.serve(async (request) => {
       return json({ ok: true, user_id: userId, role, email, login_id: loginId })
     }
 
+    if (body.action === 'provision_store_owner') {
+      const entity = body.entity && typeof body.entity === 'object' ? body.entity as Record<string, unknown> : {}
+      const entityId = text(body.entity_id || entity.id), email = normalizedId(body.email), loginId = normalizedId(body.login_id), displayName = text(body.display_name), password = String(body.password || ''), phone = text(body.phone || entity.phone), storeName = text(entity.name)
+      if (!entityId || !storeName || !looksLikeEmail(email) || !loginIdIsValid(loginId) || !displayName || !secureTemporaryPassword(password)) return json({ error: 'กรุณาระบุชื่อร้าน ชื่อเจ้าของ อีเมล Login ID และรหัสผ่านที่ปลอดภัยอย่างน้อย 12 ตัวอักษรให้ครบถ้วน' }, 400)
+      const { data: duplicate } = await admin.from('user_profiles').select('user_id').or(`email.eq.${email},login_id.eq.${loginId}`).maybeSingle()
+      if (duplicate) return json({ error: 'อีเมลหรือ Login ID นี้ถูกใช้งานแล้ว' }, 409)
+      const { data: existingStore, error: existingStoreError } = await admin.from('stores').select('id').eq('id', entityId).maybeSingle()
+      if (existingStoreError) return json({ error: existingStoreError.message }, 400)
+      if (existingStore) return json({ error: 'รหัสร้านค้านี้ถูกใช้งานแล้ว กรุณาลองใหม่' }, 409)
+      const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { login_id: loginId, app_role: 'store_owner', display_name: displayName } })
+      if (createError || !created.user) return json({ error: createError?.message || 'ไม่สามารถสร้างบัญชี Merchant ได้' }, 400)
+      const userId = created.user.id
+      try {
+        const { error: profileError } = await admin.from('user_profiles').upsert({ user_id: userId, email, display_name: displayName, login_id: loginId, phone })
+        if (profileError) throw profileError
+        const { error: roleError } = await admin.from('user_roles').insert({ user_id: userId, role: 'store_owner' })
+        if (roleError) throw roleError
+        const store = { id: entityId, owner_id: userId, owner_email: email, name: storeName, phone, active: entity.active !== false, moderation_status: text(entity.moderation_status, 'active'), legal_name: text(entity.legal_name) || null, registration_number: text(entity.registration_number) || null, contact_name: text(entity.contact_name) || null, contact_email: text(entity.contact_email) || null, registered_address: text(entity.registered_address) || null, pickup_address: text(entity.pickup_address) || null, delivery_address: text(entity.delivery_address) || null, category_id: text(entity.category_id) || null, location: entity.location || null, updated_at: new Date().toISOString() }
+        const { error: storeError } = await admin.from('stores').insert(store)
+        if (storeError) throw storeError
+        await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'store_owner_provisioned', after_state: { store_id: entityId, login_id: loginId } })
+        return json({ ok: true, entity_id: entityId, user_id: userId, login_id: loginId })
+      } catch (error) {
+        await admin.auth.admin.deleteUser(userId).catch(() => null)
+        return json({ error: error instanceof Error ? error.message : 'ไม่สามารถสร้างร้านค้าและบัญชี Merchant ได้' }, 400)
+      }
+    }
+
     if (body.action === 'update_store_account_section') {
       const entityId = text(body.entity_id), input = (body.data && typeof body.data === 'object' ? body.data : {}) as Record<string, unknown>
       if (!entityId) return json({ error: 'กรุณาระบุร้านค้าที่ต้องการจัดการบัญชี' }, 400)
@@ -475,7 +517,7 @@ Deno.serve(async (request) => {
       if (has('login_id')) { const loginId = normalizedId(input.login_id); if (!loginIdIsValid(loginId)) return json({ error: 'Login ID ไม่ถูกต้อง' }, 400); const { data: duplicate } = await admin.from('user_profiles').select('user_id').eq('login_id', loginId).neq('user_id', userId).maybeSingle(); if (duplicate) return json({ error: 'Login ID นี้ถูกใช้งานแล้ว' }, 409); profileUpdates.login_id = loginId }
       if (has('display_name')) { const displayName = text(input.display_name); if (!displayName) return json({ error: 'ชื่อเจ้าของร้านห้ามว่าง' }, 400); profileUpdates.display_name = displayName }
       if (has('phone')) profileUpdates.phone = text(input.phone)
-      if (has('password') && String(input.password || '')) { const password = String(input.password); if (password.length < 8) return json({ error: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร' }, 400); authUpdates.password = password }
+      if (has('password') && String(input.password || '')) { const password = String(input.password); if (!secureTemporaryPassword(password)) return json({ error: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 12 ตัวอักษร และมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ โดยห้ามมีช่องว่าง' }, 400); authUpdates.password = password }
       if (!Object.keys(authUpdates).length && Object.keys(profileUpdates).length === 1) return json({ error: 'ไม่พบข้อมูลบัญชีที่แก้ไข' }, 400)
       if (Object.keys(authUpdates).length) { const { error: authError } = await admin.auth.admin.updateUserById(userId, authUpdates); if (authError) return json({ error: authError.message }, 400) }
       if (Object.keys(profileUpdates).length > 1) { const { error: profileError } = await admin.from('user_profiles').update(profileUpdates).eq('user_id', userId); if (profileError) return json({ error: profileError.message }, 400) }
@@ -583,7 +625,7 @@ Deno.serve(async (request) => {
         if (nextStatus === ORDER_STATUS.COMPLETED && !order.completed_at) updates.completed_at = now
         const { data: updated, error: updateError } = await admin.from('delivery_orders').update(updates).eq('id', orderId).select('id,status,accepted_at,delivery_started_at,completed_at,updated_at').single()
         if (updateError) return json({ error: updateError.message }, 400)
-        const { error: eventError } = await admin.from('order_status_events').insert({ order_id: orderId, status: nextStatus, actor_id: caller.id, actor_label: 'Admin' })
+        const { error: eventError } = await admin.from('order_status_events').insert({ order_id: orderId, status: nextStatus, actor_id: caller.id, actor_label: 'Admin', created_at: now })
         if (eventError) return json({ error: `บันทึกประวัติสถานะไม่สำเร็จ: ${eventError.message}` }, 400)
         await writeAudit('order_status_updated', { order_id: orderId, status: order.status }, { order_id: orderId, status: nextStatus })
         return json({ ok: true, operation, order: updated })
