@@ -1,0 +1,33 @@
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.resolve(__dirname, '..');
+const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260822_master_owner_role_governance.sql'), 'utf8');
+const edge = fs.readFileSync(path.join(root, 'supabase/functions/role-access/index.ts'), 'utf8');
+const customerTrigger = fs.readFileSync(path.join(root, 'supabase/migrations/20260821_customer_registration_profile_metadata.sql'), 'utf8');
+const adminSource = fs.readFileSync(path.join(root, '..', 'apservice-audit', 'Apservicebeta/admin/admin-app.js'), 'utf8');
+
+assert.match(migration, /CREATE TABLE IF NOT EXISTS private\.admin_role_governors/, 'governance authority must live in a private table');
+assert.match(migration, /user_id uuid PRIMARY KEY REFERENCES auth\.users\(id\) ON DELETE RESTRICT/, 'governance must use stable auth UUID and protect the authority row');
+assert.match(migration, /ALTER TABLE private\.admin_role_governors ENABLE ROW LEVEL SECURITY/, 'governance table must enable RLS');
+assert.match(migration, /REVOKE ALL ON TABLE private\.admin_role_governors FROM PUBLIC, anon, authenticated/, 'governance table must not be directly readable or writable by clients');
+assert.match(migration, /VALUES \(\s*'5c4cc9a0-49d0-457b-a8e8-f71fcfd2d185'::uuid/, 'migration must seed the verified owner UUID, not an email authorization rule');
+assert.match(migration, /ON CONFLICT \(user_id\) DO NOTHING/, 'owner governance seed must be idempotent and preserve existing authority');
+assert.match(migration, /CREATE OR REPLACE FUNCTION private\.is_platform_owner_or_master\(\)/, 'migration must define the UUID-based authority helper');
+assert.match(migration, /SECURITY DEFINER\nSET search_path = pg_catalog, public, private, auth, pg_temp/, 'security definer functions must pin search_path');
+assert.match(migration, /CREATE OR REPLACE FUNCTION public\.admin_can_manage_admin_roles\(\)/, 'clients need a caller-bound capability check');
+assert.match(migration, /v_before_has_admin IS DISTINCT FROM v_after_has_admin/, 'admin grant/revoke must be distinguished from ordinary role changes');
+assert.match(migration, /เฉพาะ Master\/Owner เท่านั้นที่เพิ่มหรือถอดสิทธิ์ admin ได้/, 'admin role transitions must be Master/Owner-only');
+assert.match(migration, /v_is_owner AND NOT \(v_before <@ p_roles\)/, 'owner role set must never lose an existing role');
+assert.match(migration, /jsonb_array_length\(p_roles\) <> \(\s*SELECT count\(DISTINCT requested\.role\)/, 'duplicate roles must be rejected');
+assert.match(edge, /callerDb\.rpc\('admin_can_manage_admin_roles'\)/, 'Edge Function must use caller-bound governance capability');
+assert.match(edge, /can_manage_admin: canManageAdmin === true/, 'Edge Function must expose governance capability to UI');
+assert.match(edge, /if \(role === 'admin'\)/, 'managed account creation must branch for admin role');
+assert.match(edge, /เฉพาะ Master\/Owner เท่านั้นที่สร้างหรืออนุมัติบัญชีผู้ดูแลได้/, 'Edge Function must reject non-governor admin creation');
+assert.match(customerTrigger, /INSERT INTO public\.user_roles\(user_id, role\)/, 'customer signup must keep automatic customer role provisioning');
+assert.match(customerTrigger, /ON CONFLICT \(user_id, role\) DO NOTHING/, 'customer signup role insert must remain idempotent');
+assert.match(adminSource, /canManageAdmin = result\.can_manage_admin === true/, 'Admin UI must consume backend governance capability');
+assert.match(adminSource, /role === 'admin' && !canManageAdmin \? ' disabled' : ''/, 'Admin UI must disable admin role mutation for non-governors');
+assert.match(adminSource, /การสร้างบัญชีผู้ดูแลทำได้โดย Master\/Owner เท่านั้น/, 'Admin UI must explain why regular Admin cannot create Admin');
+console.log('master_owner_governance_contract_test: PASS');
