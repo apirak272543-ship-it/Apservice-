@@ -686,6 +686,39 @@ body[data-page="update-password"] .ap-login-card {
     font-size: .7rem;
   }
 
+  /* Search results are full-width rows on phones; the shared cards grid is two columns. */
+  body[data-page="stores"] #storeList.customer-native-store-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  body[data-page="stores"] #storeList.customer-native-store-list .customer-store-card,
+  body[data-page="stores"] #storeList.customer-native-store-list .customer-store-copy,
+  body[data-page="stores"] #storeList.customer-native-store-list .customer-store-meta {
+    min-width: 0;
+  }
+
+  body[data-page="stores"] #storeList.customer-native-store-list .customer-store-card {
+    width: 100%;
+  }
+
+  body[data-page="stores"] #storeList.customer-native-store-list .customer-store-copy h3 {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  body[data-page="stores"] #storeList.customer-native-store-list .customer-store-meta {
+    flex-wrap: wrap;
+  }
+
+  body[data-page="stores"] #storeList.customer-native-store-list .customer-store-meta .mpa-badge {
+    min-width: 0;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
   body[data-page="checkout"] .customer-native-checkout-grid,
   body[data-page="retail-checkout"] .customer-native-checkout-grid {
     gap: 11px;
