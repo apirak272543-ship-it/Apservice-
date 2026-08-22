@@ -171,9 +171,12 @@
       const table = grid.querySelector('.customer-native-cart-table');
       const submit = form.querySelector('[type="submit"]');
       const context = document.querySelector('.customer-native-checkout-store');
+      const summary = form.closest('aside');
       const isEmpty = !cart.length;
       cartSection?.toggleAttribute('data-empty-cart', isEmpty);
       if (table) table.hidden = isEmpty;
+      if (context) context.hidden = isEmpty;
+      if (summary) summary.hidden = isEmpty;
       if (cartSection) {
         let empty = cartSection.querySelector('.customer-native-cart-empty');
         if (isEmpty && !empty) { empty = document.createElement('div'); empty.className = 'customer-native-cart-empty'; empty.setAttribute('role', 'status'); empty.innerHTML = '<span aria-hidden="true">🛍️</span><h2>ตะกร้าสินค้ายังว่าง</h2><p>เลือกสินค้าแล้วกลับมาตรวจสอบราคาและค่าจัดส่งก่อนยืนยัน</p><a class="mpa-button" href="stores.html">ไปเลือกสินค้า</a>'; cartSection.append(empty); }
