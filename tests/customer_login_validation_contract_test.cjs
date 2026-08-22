@@ -11,6 +11,6 @@ assert.match(source, /if \(!email\).*return;/, 'Customer Login must return befor
 assert.match(source, /M\.auth\.sendMagicLink\(email, callback\.href\)/, 'Customer Login must request a magic-link only with a validated email');
 assert.match(source, /ยังส่งลิงก์ยืนยันไม่ได้/, 'Customer Login must map magic-link errors to Thai');
 assert.doesNotMatch(source, /showError\(loginForm, err\.message/, 'Customer Login must not expose raw provider messages directly');
-assert.match(profile, /customer-auth-v3-simple-login/, 'Customer Profile must request the simple-login runtime revision');
+assert.match(profile, /auth=customer-auth-v4-callback/, 'Customer Profile must request the canonical callback runtime revision');
 
 console.log('customer login validation contract: PASS');

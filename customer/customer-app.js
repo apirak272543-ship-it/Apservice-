@@ -23,7 +23,7 @@
     const user = await Promise.race([currentUserWithSessionRestore(), new Promise(resolve => setTimeout(() => resolve(null), 4_500))]);
     if (!user) return null;
     const roles = await Promise.race([(M.auth.customerRolesFor ? M.auth.customerRolesFor(user.id) : M.auth.rolesFor(user.id)), new Promise(resolve => setTimeout(() => resolve([]), 4_500))]);
-    if (roles.length === 0 || (roles.includes('customer') && !roles.some(role => ['admin', 'rider', 'store_owner'].includes(role)))) return user;
+    if (roles.includes('customer') && !roles.includes('admin')) return user;
     M.auth.signOut(loginUrl);
     return null;
   };

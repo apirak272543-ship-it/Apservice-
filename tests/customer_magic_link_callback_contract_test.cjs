@@ -10,16 +10,16 @@ const callback = fs.readFileSync(path.join(root, 'customer', 'customer-auth-call
 const callbackPage = fs.readFileSync(path.join(root, 'customer', 'auth-callback.html'), 'utf8');
 const emailTemplate = fs.readFileSync(path.join(root, 'supabase', 'templates', 'customer_magic_link.html'), 'utf8');
 
-assert.match(runtime, /async function sendMagicLink\(email, redirectTo\)/, 'Shared runtime must expose a magic-link request');
-assert.match(runtime, /create_user: true/, 'Magic-link flow must allow first-time Customer onboarding');
-assert.match(runtime, /payload\.redirect_to = redirectTo/, 'Magic-link flow must pass the callback destination');
-assert.match(runtime, /async function acceptMagicLinkFromHash\(\)/, 'Shared runtime must consume the auth URL hash');
+assert.match(runtime, /async function sendMagicLink\(email, redirectTo/, 'Shared runtime must expose a magic-link request');
+assert.match(runtime, /create_user: createUser !== false/, 'Magic-link flow must default to first-time Customer onboarding');
+assert.match(runtime, /authRequestPath\('otp', redirectTo\)/, 'Magic-link flow must pass the callback destination through the Auth request URL');
+assert.match(runtime, /async function processCallback\(\)/, 'Shared runtime must expose one canonical callback processor');
 assert.match(app, /auth-callback\.html/, 'Customer Login must use a dedicated callback route');
 assert.match(app, /M\.auth\.sendMagicLink\(email, callback\.href\)/, 'Customer Login must request the link with the callback URL');
 assert.doesNotMatch(app, /id="password"/, 'Customer Login must not render a password field');
 assert.match(register, /sendMagicLink/, 'Customer registration must use the same passwordless flow');
 assert.doesNotMatch(register, /registerPassword/, 'Customer registration must not ask for a password');
-assert.match(callback, /acceptMagicLinkFromHash\(\)/, 'Callback must accept the one-time auth session');
+assert.match(callback, /processCallback\(\)/, 'Callback must use the canonical one-time auth processor');
 assert.match(callback, /onboardingState\(user, profile\)/, 'Incomplete profiles must be routed to onboarding');
 assert.match(callback, /user_profiles\?on_conflict=user_id/, 'Onboarding must persist required customer profile data');
 assert.match(callback, /user_consents/, 'Onboarding must persist consent evidence');
@@ -29,6 +29,10 @@ assert.match(callback, /3000/, 'Successful callback must keep the processing mot
 assert.match(callback, /reloadIntoApp/, 'Successful callback must reload or replace into the application automatically');
 assert.match(callback, /window\.location\.replace\(url\.href\)/, 'Successful callback must replace the callback route with the application route');
 assert.match(callbackPage, /customer-auth-callback\.css\?v=auth-callback-v2-motion/, 'Callback page must load the branded callback stylesheet revision');
-assert.match(callbackPage, /customer-auth-callback\.js\?v=auth-callback-v2-motion/, 'Callback page must load the callback runtime revision');
+assert.match(callbackPage, /customer-auth-callback\.js\?v=auth-callback-v3-canonical/, 'Callback page must load the canonical callback runtime revision');
+assert.match(runtime, /exchangeCodeForSession\(code\)/, 'Shared runtime must support a PKCE code callback');
+assert.match(runtime, /auth_code: value, code_verifier: verifier/, 'PKCE exchange must send auth_code and stored code_verifier');
+assert.match(runtime, /verifyMagicLinkTokenHash\(tokenHash\)/, 'Shared runtime must support the official token_hash callback variant');
+assert.match(runtime, /token_hash: value, type: 'email'/, 'Token-hash verification must use the email verification contract');
 assert.match(emailTemplate, /\{\{ \.ConfirmationURL \}\}/, 'Magic-link email template must use Supabase ConfirmationURL');
 console.log('customer magic-link callback contract: PASS');

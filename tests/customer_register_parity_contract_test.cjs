@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const assert = require('assert');
 
 const runtime = fs.readFileSync('shared/ap-service-mpa.js', 'utf8');
@@ -9,7 +10,10 @@ const recoverRuntime = fs.readFileSync('customer/customer-recover.js', 'utf8');
 const updatePasswordRuntime = fs.readFileSync('customer/customer-update-password.js', 'utf8');
 const recoverPage = fs.readFileSync('customer/recover.html', 'utf8');
 const updatePasswordPage = fs.readFileSync('customer/update-password.html', 'utf8');
-const admin = fs.readFileSync('../Apservicebeta/admin/admin-app.js', 'utf8');
+const adminCandidates = [path.resolve(__dirname, '../../apservice-audit/Apservicebeta/admin/admin-app.js'), path.resolve(__dirname, '../../Apservicebeta/admin/admin-app.js')];
+const adminPath = adminCandidates.find(candidate => fs.existsSync(candidate));
+assert.ok(adminPath, 'Admin source must be available for cross-system ownership checks');
+const admin = fs.readFileSync(adminPath, 'utf8');
 
 assert.match(runtime, /async function signUp/, 'Shared runtime may retain signUp internally for Admin-provisioned workflows');
 assert.match(app, /register\.html\?next=|auth-callback\.html/, 'Customer app must expose the public Customer registration and callback flow');
@@ -19,7 +23,7 @@ assert.match(registerRuntime, /registerEmail|registerConsent|sendMagicLink/, 'Re
 assert.match(fs.readFileSync('customer/customer-auth-callback.js', 'utf8'), /user_profiles\?on_conflict=user_id/, 'Verified customers must persist contact and delivery details during onboarding');
 assert.match(fs.readFileSync('customer/customer-auth-callback.js', 'utf8'), /user_consents/, 'Onboarding must create an auditable required-consent record');
 assert.match(fs.readFileSync('customer/customer-auth-callback.js', 'utf8'), /ยืนยันอีเมลสำเร็จแล้ว|ยังยืนยันอีเมลไม่สำเร็จ/, 'Callback must render success and recovery-friendly error states');
-assert.match(runtime, /async function sendMagicLink\(email, redirectTo\)/, 'Shared runtime must send a passwordless email link');
+assert.match(runtime, /async function sendMagicLink\(email, redirectTo/, 'Shared runtime must send a passwordless email link');
 assert.match(runtime, /sendPasswordRecovery|acceptRecoveryFromHash|updatePassword/, 'Shared auth runtime must support password recovery and password update');
 assert.match(recoverRuntime, /sendPasswordRecovery/, 'Recovery page must send a password-recovery email through the shared runtime');
 assert.match(updatePasswordRuntime, /acceptRecoveryFromHash|updatePassword/, 'Recovery completion page must accept a recovery session before updating a password');
@@ -27,10 +31,11 @@ assert.match(updatePasswordRuntime, /profile\.html\?password_reset=1/, 'A comple
 assert.match(recoverPage, /defer src="customer-recover\.js/, 'Recovery runtime must wait for its body before rendering the form');
 assert.match(updatePasswordPage, /defer src="customer-update-password\.js/, 'Password update runtime must wait for its body before rendering the form');
 assert.match(app, /APLoginUI\?\.enhance/, 'Customer Login must use shared Login UI motion helper');
-assert.match(app, /สมัครสมาชิก Customer|สมัครสมาชิกด้วยอีเมลและรหัสผ่าน/, 'Customer Login must explain and expose self-registration');
+assert.match(app, /customer-register-prompt|สมัครสมาชิกเพื่อยืนยันอีเมล/, 'Customer Login must explain and expose self-registration');
 assert.match(app, /customerRolesFor|rolesFor/, 'Customer routes must check roles after restoring the email-link session');
 assert.match(app, /roles\.includes\('customer'\)/, 'Customer registration must verify the customer role after signup');
-assert.match(fs.readFileSync('customer/customer-auth-callback.js', 'utf8'), /acceptMagicLinkFromHash\(\)|onboardingState/, 'Customer registration must handle email-confirmation and onboarding flows');
+assert.match(app, /roles\.includes\('customer'\) && !roles\.includes\('admin'\)/, 'Customer routes must allow customer plus non-admin roles without opening admin access');
+assert.match(fs.readFileSync('customer/customer-auth-callback.js', 'utf8'), /processCallback\(\)|onboardingState/, 'Customer registration must handle canonical email callback and onboarding flows');
 assert.match(app, /customerAuthActions/, 'Protected Customer pages must expose login and signup actions');
 assert.match(admin, /create_managed_account/, 'Admin must keep managed account creation');
 assert.match(admin, /role: 'store_owner'/, 'Merchant provisioning must remain Admin-owned');
