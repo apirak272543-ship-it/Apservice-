@@ -8,6 +8,7 @@ const corsHeaders = {
 }
 
 type Role = 'rider' | 'store_owner'
+type LoginRole = Role | 'admin'
 type ManagedRole = Role | 'customer' | 'admin'
 type RoleProfile = { user_id: string; email: string; login_id: string | null }
 type RiderEntity = { id: string; name: string; emoji?: string; phone?: string; vehicle?: string; status?: string; lastLocation?: unknown }
@@ -47,10 +48,13 @@ const EDITABLE_ORDER_STATUSES = new Set([ORDER_STATUS.PAYMENT_REVIEW, ORDER_STAT
 
 const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers: corsHeaders })
 const isRole = (value: unknown): value is Role => value === 'rider' || value === 'store_owner'
+const isLoginRole = (value: unknown): value is LoginRole => value === 'admin' || value === 'rider' || value === 'store_owner'
 const isManagedRole = (value: unknown): value is ManagedRole => value === 'customer' || value === 'rider' || value === 'store_owner' || value === 'admin'
 const normalizedId = (value: unknown) => String(value || '').trim().toLowerCase()
 const looksLikeEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 const loginIdIsValid = (value: string) => /^[a-z0-9][a-z0-9._-]{2,31}$/.test(value)
+const INTERNAL_EMAIL_DOMAIN = 'internal.apservice.local'
+const internalEmailFor = (loginId: string) => `${loginId}@${INTERNAL_EMAIL_DOMAIN}`
 const text = (value: unknown, fallback = '') => String(value ?? fallback).trim()
 const number = (value: unknown) => Math.max(0, Number(value) || 0)
 const validDate = (value: unknown) => { const date = new Date(String(value || '')); return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString() }
@@ -75,22 +79,27 @@ Deno.serve(async (request) => {
 
     if (body.action === 'login') {
       const role = body.role, identifier = normalizedId(body.identifier), password = String(body.password || '')
-      if (!isRole(role) || !identifier || !password) return json({ error: 'กรุณากรอกข้อมูลเข้าสู่ระบบให้ครบถ้วน' }, 400)
-      const profileResult = looksLikeEmail(identifier)
-        ? await admin.from('user_profiles').select('user_id,email,login_id').eq('email', identifier).maybeSingle()
-        : await admin.from('user_profiles').select('user_id,email,login_id').ilike('login_id', identifier).maybeSingle()
-      if (profileResult.error || !profileResult.data) return json({ error: 'ไม่พบบัญชีหรือรหัส ID นี้' }, 401)
+      if (!isLoginRole(role) || !loginIdIsValid(identifier) || !password) return json({ error: 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วน' }, 400)
+      const profileResult = await admin.from('user_profiles').select('user_id,email,login_id').eq('login_id', identifier).maybeSingle()
+      if (profileResult.error || !profileResult.data) return json({ error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }, 401)
       const profile = profileResult.data as RoleProfile
       const { data: roleRow } = await admin.from('user_roles').select('role').eq('user_id', profile.user_id).eq('role', role).maybeSingle()
       if (!roleRow) return json({ error: 'บัญชีนี้ไม่มีสิทธิ์ใช้งานแอปที่เลือก' }, 403)
       const { data: accountControl } = await admin.from('account_controls').select('status,suspension_reason').eq('user_id', profile.user_id).maybeSingle()
       if (accountControl?.status === 'suspended') return json({ error: `บัญชีนี้ถูกระงับ${accountControl.suspension_reason ? `: ${accountControl.suspension_reason}` : ''}` }, 403)
-      const entityResult = role === 'rider' ? await admin.from('riders').select('id').eq('user_id', profile.user_id).maybeSingle() : await admin.from('stores').select('id').eq('owner_id', profile.user_id).maybeSingle()
-      if (entityResult.error || !entityResult.data) return json({ error: 'บัญชีนี้ยังไม่ได้ผูกกับข้อมูลการทำงาน โปรดติดต่อผู้ดูแล' }, 403)
+      let entityId: string | null = null
+      let entityError: { message?: string } | null = null
+      if (role === 'rider') {
+        const result = await admin.from('riders').select('id').eq('user_id', profile.user_id); entityId = result.data?.[0]?.id || null; entityError = result.error
+      } else if (role !== 'admin') {
+        const result = await admin.from('stores').select('id').eq('owner_id', profile.user_id); entityId = result.data?.[0]?.id || null; entityError = result.error
+      }
+      if (entityError || (role !== 'admin' && !entityId)) return json({ error: 'บัญชีนี้ยังไม่ได้ผูกกับข้อมูลการทำงาน โปรดติดต่อผู้ดูแล' }, 403)
+      if (!looksLikeEmail(String(profile.email || ''))) return json({ error: 'บัญชีภายในยังตั้งค่าไม่สมบูรณ์ โปรดติดต่อผู้ดูแล' }, 503)
       const auth = createClient(supabaseUrl, anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
       const { data: signedIn, error: signInError } = await auth.auth.signInWithPassword({ email: profile.email, password })
-      if (signInError || !signedIn.session) return json({ error: 'อีเมล/รหัส ID หรือรหัสผ่านไม่ถูกต้อง' }, 401)
-      return json({ session: signedIn.session, user: signedIn.user, role, entity_id: entityResult.data.id, login_id: profile.login_id })
+      if (signInError || !signedIn.session) return json({ error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' }, 401)
+      return json({ session: signedIn.session, user: signedIn.user, role, entity_id: entityId, login_id: profile.login_id })
     }
 
     const accessToken = (request.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
@@ -371,19 +380,19 @@ Deno.serve(async (request) => {
       const role = body.role, entityId = text(body.entity_id)
       if (!isRole(role) || !entityId) return json({ error: 'กรุณาระบุประเภทบัญชีและรหัสข้อมูลที่ต้องการตรวจสอบ' }, 400)
       if (role === 'store_owner') {
-        const { data: store, error: storeError } = await admin.from('stores').select('id,name,owner_id,owner_email,phone').eq('id', entityId).maybeSingle()
+        const { data: store, error: storeError } = await admin.from('stores').select('id,name,owner_id,owner_email,contact_email,phone').eq('id', entityId).maybeSingle()
         if (storeError) return json({ error: storeError.message }, 400)
         if (!store) return json({ error: 'ไม่พบร้านค้าที่ต้องการตรวจสอบ' }, 404)
         const { data: profile, error: profileError } = store.owner_id ? await admin.from('user_profiles').select('email,login_id,phone,display_name').eq('user_id', store.owner_id).maybeSingle() : { data: null, error: null }
         if (profileError) return json({ error: profileError.message }, 400)
-        return json({ ok: true, role, entity_id: store.id, email: profile?.email || store.owner_email || '', login_id: profile?.login_id || '', phone: profile?.phone || store.phone || '', display_name: profile?.display_name || store.name || '' })
+        return json({ ok: true, role, entity_id: store.id, contact_email: store.contact_email || '', login_id: profile?.login_id || '', phone: profile?.phone || store.phone || '', display_name: profile?.display_name || store.name || '' })
       }
       const { data: rider, error: riderError } = await admin.from('riders').select('id,name,user_id,phone').eq('id', entityId).maybeSingle()
       if (riderError) return json({ error: riderError.message }, 400)
       if (!rider) return json({ error: 'ไม่พบ Rider ที่ต้องการตรวจสอบ' }, 404)
       const { data: profile, error: profileError } = rider.user_id ? await admin.from('user_profiles').select('email,login_id,phone,display_name').eq('user_id', rider.user_id).maybeSingle() : { data: null, error: null }
       if (profileError) return json({ error: profileError.message }, 400)
-      return json({ ok: true, role, entity_id: rider.id, email: profile?.email || '', login_id: profile?.login_id || '', phone: profile?.phone || rider.phone || '', display_name: profile?.display_name || rider.name || '' })
+      return json({ ok: true, role, entity_id: rider.id, contact_email: '', login_id: profile?.login_id || '', phone: profile?.phone || rider.phone || '', display_name: profile?.display_name || rider.name || '' })
     }
 
     if (body.action === 'get_withdrawal_review_detail') {
@@ -472,20 +481,24 @@ Deno.serve(async (request) => {
     }
 
     if (body.action === 'create_managed_account') {
-      const role = body.role, email = normalizedId(body.email), loginId = normalizedId(body.login_id), displayName = text(body.display_name), password = String(body.password || ''), phone = text(body.phone)
-      if (!isManagedRole(role) || !looksLikeEmail(email) || !loginIdIsValid(loginId) || !displayName || password.length < 8) return json({ error: 'กรุณาระบุบทบาท อีเมล Login ID ชื่อ และรหัสผ่านอย่างน้อย 8 ตัวอักษรให้ครบถ้วน' }, 400)
+      const role = body.role, contactEmail = normalizedId(body.email || body.contact_email), requestedLoginId = normalizedId(body.login_id), displayName = text(body.display_name), password = String(body.password || ''), phone = text(body.phone)
+      const internalRole = role === 'admin' || role === 'rider' || role === 'store_owner'
+      const loginId = internalRole ? requestedLoginId : ''
+      const email = internalRole ? internalEmailFor(loginId) : contactEmail
+      if (!isManagedRole(role) || (role === 'customer' && !looksLikeEmail(contactEmail)) || (internalRole && !loginIdIsValid(loginId)) || !displayName || password.length < 8) return json({ error: role === 'customer' ? 'บัญชี Customer ต้องใช้อีเมลที่ถูกต้อง ส่วนบัญชีภายในต้องมี Login ID ชื่อ และรหัสผ่านอย่างน้อย 8 ตัวอักษรให้ครบถ้วน' : 'กรุณาระบุบทบาท Login ID ชื่อ และรหัสผ่านอย่างน้อย 8 ตัวอักษรให้ครบถ้วน' }, 400)
       if (role === 'admin') {
         const { data: canManageAdmin, error: governanceError } = await callerDb.rpc('admin_can_manage_admin_roles')
         if (governanceError || canManageAdmin !== true) return json({ error: 'เฉพาะ Master/Owner เท่านั้นที่สร้างหรืออนุมัติบัญชีผู้ดูแลได้' }, 403)
       }
-      const { data: duplicate } = await admin.from('user_profiles').select('user_id').or(`email.eq.${email},login_id.eq.${loginId}`).maybeSingle(); if (duplicate) return json({ error: 'อีเมลหรือ Login ID นี้ถูกใช้งานแล้ว' }, 409)
-      const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { login_id: loginId, app_role: role, display_name: displayName } })
+      const duplicateFilter = loginId ? `email.eq.${email},login_id.eq.${loginId}` : `email.eq.${email}`
+      const { data: duplicate } = await admin.from('user_profiles').select('user_id').or(duplicateFilter).maybeSingle(); if (duplicate) return json({ error: 'อีเมลภายในหรือ Login ID นี้ถูกใช้งานแล้ว' }, 409)
+      const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { ...(loginId ? { login_id: loginId } : {}), app_role: role, display_name: displayName, ...(looksLikeEmail(contactEmail) && role !== 'customer' ? { contact_email: contactEmail } : {}) } })
       if (createError || !created.user) return json({ error: createError?.message || 'ไม่สามารถสร้างบัญชีได้' }, 400)
       const userId = created.user.id
-      const { error: profileError } = await admin.from('user_profiles').upsert({ user_id: userId, email, display_name: displayName, login_id: loginId, phone }); if (profileError) return json({ error: profileError.message }, 400)
+      const { error: profileError } = await admin.from('user_profiles').upsert({ user_id: userId, email, display_name: displayName, login_id: loginId || null, phone }); if (profileError) return json({ error: profileError.message }, 400)
       const { error: roleError } = await admin.from('user_roles').insert({ user_id: userId, role }); if (roleError) return json({ error: roleError.message }, 400)
-      await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'managed_account_created', after_state: { role, email, login_id: loginId } })
-      return json({ ok: true, user_id: userId, role, email, login_id: loginId })
+      await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'managed_account_created', after_state: { role, login_id: loginId, has_contact_email: looksLikeEmail(contactEmail) } })
+      return json({ ok: true, user_id: userId, role, login_id: loginId || null, contact_email: looksLikeEmail(contactEmail) ? contactEmail : null })
     }
 
     if (body.action === 'provision_store_owner') {
@@ -501,7 +514,7 @@ Deno.serve(async (request) => {
       if (createError || !created.user) return json({ error: createError?.message || 'ไม่สามารถสร้างบัญชี Merchant ได้' }, 400)
       const userId = created.user.id
       try {
-        const { error: profileError } = await admin.from('user_profiles').upsert({ user_id: userId, email, display_name: displayName, login_id: loginId, phone })
+        const { error: profileError } = await admin.from('user_profiles').upsert({ user_id: userId, email, display_name: displayName, login_id: loginId || null, phone })
         if (profileError) throw profileError
         const { error: roleError } = await admin.from('user_roles').insert({ user_id: userId, role: 'store_owner' })
         if (roleError) throw roleError
@@ -525,11 +538,14 @@ Deno.serve(async (request) => {
       if (has('login_id')) { const loginId = normalizedId(input.login_id); if (!loginIdIsValid(loginId)) return json({ error: 'Login ID ไม่ถูกต้อง' }, 400); const { data: duplicate } = await admin.from('user_profiles').select('user_id').eq('login_id', loginId).neq('user_id', userId).maybeSingle(); if (duplicate) return json({ error: 'Login ID นี้ถูกใช้งานแล้ว' }, 409); profileUpdates.login_id = loginId }
       if (has('display_name')) { const displayName = text(input.display_name); if (!displayName) return json({ error: 'ชื่อเจ้าของร้านห้ามว่าง' }, 400); profileUpdates.display_name = displayName }
       if (has('phone')) profileUpdates.phone = text(input.phone)
+      let contactEmail: string | null = null
+      if (has('contact_email')) { contactEmail = normalizedId(input.contact_email); if (contactEmail && !looksLikeEmail(contactEmail)) return json({ error: 'รูปแบบอีเมลติดต่อร้านไม่ถูกต้อง' }, 400) }
       if (has('password') && String(input.password || '')) { const password = String(input.password); if (!secureTemporaryPassword(password)) return json({ error: 'รหัสผ่านใหม่ต้องมีอย่างน้อย 12 ตัวอักษร และมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และอักขระพิเศษ โดยห้ามมีช่องว่าง' }, 400); authUpdates.password = password }
-      if (!Object.keys(authUpdates).length && Object.keys(profileUpdates).length === 1) return json({ error: 'ไม่พบข้อมูลบัญชีที่แก้ไข' }, 400)
+      if (!Object.keys(authUpdates).length && Object.keys(profileUpdates).length === 1 && !has('contact_email')) return json({ error: 'ไม่พบข้อมูลบัญชีที่แก้ไข' }, 400)
       if (Object.keys(authUpdates).length) { const { error: authError } = await admin.auth.admin.updateUserById(userId, authUpdates); if (authError) return json({ error: authError.message }, 400) }
       if (Object.keys(profileUpdates).length > 1) { const { error: profileError } = await admin.from('user_profiles').update(profileUpdates).eq('user_id', userId); if (profileError) return json({ error: profileError.message }, 400) }
       if (authUpdates.email) await admin.from('stores').update({ owner_email: authUpdates.email, updated_at: new Date().toISOString() }).eq('id', entityId)
+      if (has('contact_email')) { const { error: contactError } = await admin.from('stores').update({ contact_email: contactEmail, updated_at: new Date().toISOString() }).eq('id', entityId); if (contactError) return json({ error: contactError.message }, 400) }
       await admin.from('admin_action_audit').insert({ actor_id: caller.id, target_user_id: userId, action: 'store_account_updated', after_state: { store_id: entityId, fields: Object.keys(input) } })
       return json({ ok: true, entity_id: entityId })
     }
@@ -717,11 +733,11 @@ Deno.serve(async (request) => {
     }
 
     if (body.action !== 'provision') return json({ error: 'Unsupported action' }, 400)
-    const role = body.role, entityId = text(body.entity_id), email = normalizedId(body.email), loginId = normalizedId(body.login_id), displayName = text(body.display_name), password = String(body.password || ''), entity = (body.entity || {}) as RiderEntity | StoreEntity, phone = text(body.phone || (body.entity as Record<string, unknown> | undefined)?.phone)
+    const role = body.role, entityId = text(body.entity_id), contactEmail = normalizedId(body.email || body.contact_email), loginId = normalizedId(body.login_id), displayName = text(body.display_name), password = String(body.password || ''), entity = (body.entity || {}) as RiderEntity | StoreEntity, phone = text(body.phone || (body.entity as Record<string, unknown> | undefined)?.phone)
+    const email = internalEmailFor(loginId)
     const missing = [
       !isRole(role) ? 'ประเภทบัญชี' : '',
       !entityId ? 'รหัสข้อมูลร้านค้า/Rider' : '',
-      !looksLikeEmail(email) ? 'อีเมลที่ถูกต้อง' : '',
       !loginIdIsValid(loginId) ? 'Login ID (ภาษาอังกฤษ/ตัวเลข/จุด/ขีด ความยาว 3–32 ตัว และขึ้นต้นด้วยตัวอักษรหรือตัวเลข)' : '',
       !displayName ? 'ชื่อร้านค้าหรือชื่อ Rider' : '',
       role === 'store_owner' && !/^\+?[0-9][0-9\-\s()]{7,18}$/.test(phone) ? 'เบอร์โทรติดต่อร้านค้า' : '',
@@ -742,7 +758,7 @@ Deno.serve(async (request) => {
       const { error: updateError } = await admin.auth.admin.updateUserById(userId, updates); if (updateError) return json({ error: updateError.message }, 400)
     } else {
       if (password.length < 8) return json({ error: 'กำหนดรหัสผ่านอย่างน้อย 8 ตัวอักษรสำหรับบัญชีใหม่' }, 400)
-      const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { login_id: loginId, app_role: role, display_name: displayName } })
+      const { data: created, error: createError } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { login_id: loginId, app_role: role, display_name: displayName, ...(looksLikeEmail(contactEmail) ? { contact_email: contactEmail } : {}) } })
       if (createError || !created.user) return json({ error: createError?.message || 'ไม่สามารถสร้างบัญชีได้' }, 400); userId = created.user.id
     }
     const profilePayload = reuseCallerAsStoreOwner ? { user_id: userId, email } : { user_id: userId, email, display_name: displayName, login_id: loginId, ...(phone ? { phone } : {}) }
@@ -753,8 +769,8 @@ Deno.serve(async (request) => {
       const { error: riderError } = await admin.from('riders').upsert({ id: entityId, user_id: userId, name: rider.name.trim(), emoji: rider.emoji || '🛵', phone: rider.phone || '', vehicle: rider.vehicle || 'มอเตอร์ไซค์', status: rider.status || 'พร้อมรับงาน', last_location: rider.lastLocation || null }, { onConflict: 'id' }); if (riderError) return json({ error: riderError.message }, 400)
     } else {
       const store = entity as StoreEntity; if (!store.name?.trim()) return json({ error: 'กรุณาระบุชื่อร้านค้า' }, 400)
-      const { error: storeError } = await admin.from('stores').upsert({ id: entityId, owner_id: userId, name: store.name.trim(), emoji: store.emoji || '🍽️', description: store.desc || '', rating: Number(store.rating || 0), eta: store.eta || '', phone: store.phone || phone, location: store.location || null, active: store.active !== false, legal_name: text(store.legal_name).slice(0, 160), registration_number: text(store.registration_number).slice(0, 120), contact_name: text(store.contact_name).slice(0, 160), contact_email: normalizedId(store.contact_email), registered_address: text(store.registered_address).slice(0, 800), pickup_address: text(store.pickup_address).slice(0, 800), delivery_address: text(store.delivery_address).slice(0, 800), registration_document_url: text(store.registration_document_url), category_id: text(store.category_id) || null }, { onConflict: 'id' }); if (storeError) return json({ error: storeError.message }, 400)
+      const { error: storeError } = await admin.from('stores').upsert({ id: entityId, owner_id: userId, name: store.name.trim(), emoji: store.emoji || '🍽️', description: store.desc || '', rating: Number(store.rating || 0), eta: store.eta || '', phone: store.phone || phone, location: store.location || null, active: store.active !== false, legal_name: text(store.legal_name).slice(0, 160), registration_number: text(store.registration_number).slice(0, 120), contact_name: text(store.contact_name).slice(0, 160), registered_address: text(store.registered_address).slice(0, 800), pickup_address: text(store.pickup_address).slice(0, 800), delivery_address: text(store.delivery_address).slice(0, 800), registration_document_url: text(store.registration_document_url), category_id: text(store.category_id) || null, contact_email: looksLikeEmail(text(store.contact_email || contactEmail)) ? normalizedId(store.contact_email || contactEmail) : null }, { onConflict: 'id' }); if (storeError) return json({ error: storeError.message }, 400)
     }
-    return json({ ok: true, user_id: userId, email, login_id: loginId, entity_id: entityId, role })
+    return json({ ok: true, user_id: userId, login_id: loginId, contact_email: looksLikeEmail(contactEmail) ? contactEmail : null, entity_id: entityId, role })
   } catch (error) { return json({ error: error instanceof Error ? error.message : 'Unexpected error' }, 500) }
 })
