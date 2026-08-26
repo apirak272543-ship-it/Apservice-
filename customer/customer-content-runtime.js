@@ -75,7 +75,7 @@
       const title = heroHost.querySelector('h1'); if (title) title.textContent = hero.title;
       const description = heroHost.querySelector('p'); if (description) description.textContent = hero.description;
       const actions = heroHost.querySelectorAll('.customer-hero-actions a'); setAction(actions[0], hero.primaryAction); setAction(actions[1], hero.secondaryAction);
-      const art = heroHost.querySelector('.customer-hero-art'); if (art && hero.artUrl) art.innerHTML = `<img src="${h(hero.artUrl)}" alt="ภาพประกอบหน้าแรก" loading="eager">`; else if (art && hero.backgroundUrl) art.setAttribute('data-configured-background', 'true');
+      const art = heroHost.querySelector('.customer-hero-art'); if (art && hero.artUrl) { art.innerHTML = `<img src="${h(hero.artUrl)}" alt="ภาพประกอบหน้าแรก" loading="eager">`; art.setAttribute('data-admin-art', 'true'); art.setAttribute('aria-hidden', 'false'); } else if (art) { art.removeAttribute('data-admin-art'); art.setAttribute('aria-hidden', 'true'); if (hero.backgroundUrl) art.setAttribute('data-configured-background', 'true'); else art.removeAttribute('data-configured-background'); }
     }
 
     const serviceHost = document.querySelector('.customer-services');

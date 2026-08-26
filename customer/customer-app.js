@@ -5,7 +5,7 @@
   const $ = selector => document.querySelector(selector);
   const q = new URLSearchParams(location.search);
   const h = M.ui.escapeHtml;
-  if (!document.getElementById('customer-legacy-parity-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-legacy-parity-style" rel="stylesheet" href="customer-legacy-parity.css?v=customer-parity-v1">');
+  if (!document.getElementById('customer-legacy-parity-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-legacy-parity-style" rel="stylesheet" href="customer-legacy-parity.css?v=customer-parity-v2-hero-art">');
   if (!document.getElementById('customer-legacy-media-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-legacy-media-style" rel="stylesheet" href="customer-legacy-media.css?v=legacy-media-v1">');
   if (!document.getElementById('customer-modern-theme-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-modern-theme-style" rel="stylesheet" href="customer-modern-theme.css?v=customer-soft-art-v3">');
   if (!document.getElementById('customer-unified-theme-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-unified-theme-style" rel="stylesheet" href="customer-unified-theme.css?v=customer-unified-v2-marketplace-card">');
