@@ -29,6 +29,7 @@
   };
   const reloadIntoApp = () => {
     const url = new URL(next, document.baseURI);
+    if (M.auth.device?.configured && !M.auth.device.configured()) url.searchParams.set('setup_pin', '1');
     if (url.href === location.href) window.location.reload();
     else window.location.replace(url.href);
   };
@@ -59,11 +60,10 @@
   }
 
   function completeState(user, message = 'ข้อมูลพร้อมแล้ว กำลังเตรียมพื้นที่ใช้งานของคุณ') {
-    shell(`${statusIcon('✓', 'success')}<span class="customer-auth-callback-eyebrow">AP SERVICE · ยืนยันสำเร็จ</span><h1>ยินดีต้อนรับสู่ AP Service</h1><p>${h(message)}</p><div class="customer-auth-callback-email">${h(user?.email || emailHint || 'อีเมลของคุณ')}</div><div class="customer-success-motion" role="status" aria-live="polite"><div class="customer-success-orbit" aria-hidden="true"><span></span><span></span><span></span><b>AS</b></div><strong>กำลังเตรียมพื้นที่ของคุณ</strong><small>กำลังโหลดร้านค้าใกล้คุณและสิทธิพิเศษสำหรับลูกค้า</small><div class="customer-success-progress" aria-hidden="true"><span></span></div><div class="customer-success-progress-meta"><span>เตรียมความพร้อม</span><b data-success-countdown>3</b></div><div class="customer-success-promo"><span>ร้านใกล้คุณ</span><span>ส่งไว</span><span>สิทธิพิเศษ</span></div></div><div class="customer-auth-callback-actions">${button('เข้าใช้งานแอป', next)}${button('ดูโปรไฟล์ของฉัน', appUrl('profile.html'), true)}</div><p id="authCallbackStatus" class="customer-auth-callback-status is-success" role="status" aria-live="polite">ระบบจะเปิดแอปให้อัตโนมัติในอีก 3 วินาที…</p>`);
-    const countdown = $('[data-success-countdown]');
-    const startedAt = Date.now();
-    const timer = setInterval(() => { const remaining = Math.max(0, 3 - Math.ceil((Date.now() - startedAt) / 1000)); if (countdown) countdown.textContent = String(remaining); if (!remaining) clearInterval(timer); }, 120);
-    setTimeout(() => { clearInterval(timer); if (document.visibilityState !== 'hidden') reloadIntoApp(); }, 3000);
+    shell(`${statusIcon('✓', 'success')}<span class="customer-auth-callback-eyebrow">AP SERVICE · ยืนยันสำเร็จ</span><h1>ยินดีต้อนรับสู่ AP Service</h1><p>${h(message)}</p><div class="customer-auth-callback-email">${h(user?.email || emailHint || 'อีเมลของคุณ')}</div><div class="customer-success-motion" role="status" aria-live="polite"><div class="customer-success-orbit" aria-hidden="true"><span></span><span></span><span></span><b>AS</b></div><strong>กำลังเตรียมพื้นที่ของคุณ</strong><small>กำลังโหลดร้านค้าใกล้คุณและสิทธิพิเศษสำหรับลูกค้า</small><div class="customer-success-progress" aria-hidden="true"><span></span></div><div class="customer-success-progress-meta"><span>กำลังเปิดแอป</span><b data-success-countdown>1</b></div><div class="customer-success-promo"><span>ร้านใกล้คุณ</span><span>ส่งไว</span><span>สิทธิพิเศษ</span></div></div><div class="customer-auth-callback-actions">${button('เข้าใช้งานแอป', next)}${button('ดูโปรไฟล์ของฉัน', appUrl('profile.html'), true)}</div><p id="authCallbackStatus" class="customer-auth-callback-status is-success" role="status" aria-live="polite">กำลังเปิดแอป…</p>`);
+    const countdown = $('[data-success-countdown]'); let remaining = 1; if (countdown) countdown.textContent = String(remaining);
+    const timer = setInterval(() => { remaining = Math.max(0, remaining - 1); if (countdown) countdown.textContent = String(remaining); if (!remaining) clearInterval(timer); }, 120);
+    setTimeout(() => { clearInterval(timer); if (document.visibilityState !== 'hidden') reloadIntoApp(); }, 650);
   }
 
   function onboardingState(user, profile) {
