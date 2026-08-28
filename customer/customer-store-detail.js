@@ -13,16 +13,22 @@
     const scope = pageScope('customer:store-detail');
 
     try {
-      const [storeResult, menuResult, topResult] = await Promise.allSettled([
+      const [storeResult, menuResult, topResult, optionGroupResult, optionValueResult] = await Promise.allSettled([
         scope.request(`catalog_stores?select=id,name,emoji,description,rating,eta,icon_url,background_url&id=eq.${encodeURIComponent(id)}&limit=1`, { cacheTtlMs: 30_000, cacheKey: `catalog-store:${id}` }),
         scope.request(`catalog_menu_items?select=id,store_id,name,emoji,description,price,available,promo,image_url,stock,category_id,category_name,category_icon&store_id=eq.${encodeURIComponent(id)}&order=category_id.asc,name.asc`, { cacheTtlMs: 30_000, cacheKey: `catalog-menu:${id}` }),
         scope.request('rpc/customer_store_top_menu_items', { method: 'POST', body: JSON.stringify({ p_store_id: id, p_limit: 10 }), cacheTtlMs: 30_000, cacheKey: `customer-store-top-menus:${id}` }),
+        scope.request(`menu_option_groups?select=id,menu_item_id,name,min_selections,max_selections,sort_order&active=eq.true&order=sort_order.asc&limit=500`, { cacheTtlMs: 30_000, cacheKey: `customer-menu-option-groups:${id}` }),
+        scope.request(`menu_option_values?select=id,option_group_id,name,price_delta,sort_order&active=eq.true&order=sort_order.asc&limit=1000`, { cacheTtlMs: 30_000, cacheKey: `customer-menu-option-values:${id}` }),
       ]);
       if (storeResult.status !== 'fulfilled') throw storeResult.reason;
       const store = storeResult.value?.[0];
       if (!store) throw new Error('ไม่พบร้านค้าที่เลือก');
 
       const items = menuResult.status === 'fulfilled' && Array.isArray(menuResult.value) ? menuResult.value : [];
+      const optionGroups = optionGroupResult.status === 'fulfilled' && Array.isArray(optionGroupResult.value) ? optionGroupResult.value : [];
+      const optionValues = optionValueResult.status === 'fulfilled' && Array.isArray(optionValueResult.value) ? optionValueResult.value : [];
+      const optionValuesByGroup = new Map(); optionValues.forEach(value => { const list = optionValuesByGroup.get(value.option_group_id) || []; list.push(value); optionValuesByGroup.set(value.option_group_id, list); });
+      const optionsByItem = new Map(); optionGroups.forEach(group => { const list = optionsByItem.get(group.menu_item_id) || []; list.push({ ...group, values: optionValuesByGroup.get(group.id) || [] }); optionsByItem.set(group.menu_item_id, list); });
       const menuReadFailed = menuResult.status !== 'fulfilled';
       const itemById = new Map(items.map(item => [String(item.id), item]));
       const topRows = topResult.status === 'fulfilled' && Array.isArray(topResult.value) ? topResult.value : [];
@@ -56,6 +62,16 @@
         const count = M.cart.read().reduce((sum, row) => sum + Number(row.qty || 0), 0);
         document.querySelectorAll('[data-store-cart-count]').forEach(node => { node.textContent = count; });
       };
+      const chooseOptions = item => new Promise(resolve => {
+        const groups = optionsByItem.get(item.id) || [];
+        if (!groups.length) return resolve({ options: [], optionKey: '', price: Number(item.price || 0) });
+        const dialog = document.createElement('dialog'); dialog.className = 'customer-menu-options-dialog'; dialog.style.cssText = 'width:min(520px,calc(100% - 28px));border:0;border-radius:20px;padding:0;box-shadow:0 24px 80px rgba(0,0,0,.28)';
+        dialog.innerHTML = `<form method="dialog" style="margin:0"><div style="padding:20px 22px;border-bottom:1px solid var(--ap-line,#dce9e6);display:flex;justify-content:space-between;gap:12px;align-items:start"><div><p class="store-section-kicker" style="margin:0">เลือกตัวเลือกเมนู</p><h2 style="margin:4px 0 0">${h(item.name || 'เมนู')}</h2><p class="mpa-muted" style="margin:4px 0 0">ราคาเริ่มต้น ${M.ui.baht(item.price)}</p></div><button value="cancel" aria-label="ปิด" style="border:0;background:transparent;font-size:24px;cursor:pointer">×</button></div><div style="padding:18px 22px">${groups.map((group, index) => `<fieldset style="border:0;padding:0;margin:0 0 18px"><legend style="font-weight:800;margin-bottom:8px">${h(group.name)} ${Number(group.min_selections) > 0 ? '<span style="color:#b45309;font-size:12px">จำเป็น</span>' : '<span class="mpa-muted" style="font-size:12px">เลือกได้</span>'}</legend>${group.values.map(value => `<label style="display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--ap-line,#dce9e6);border-radius:12px;margin:7px 0;cursor:pointer"><input type="${Number(group.max_selections) === 1 ? 'radio' : 'checkbox'}" name="option-group-${h(group.id)}" value="${h(value.id)}" data-option-name="${h(value.name)}" data-option-delta="${Number(value.price_delta || 0)}" ${Number(group.min_selections) > 0 && index === 0 && group.values.length === 1 ? 'required' : ''}><span style="flex:1">${h(value.name)}</span><strong>${Number(value.price_delta || 0) ? `+${M.ui.baht(value.price_delta)}` : 'ไม่เพิ่มราคา'}</strong></label>`).join('')}</fieldset>`).join('')}</div><div style="padding:16px 22px;border-top:1px solid var(--ap-line,#dce9e6);display:flex;justify-content:flex-end;gap:10px"><button value="cancel" class="mpa-button mpa-button-secondary">ยกเลิก</button><button value="default" class="mpa-button">เพิ่มลงตะกร้า</button></div></form>`;
+        document.body.append(dialog); dialog.showModal();
+        let settled = false; const close = result => { if (settled) return; settled = true; if (dialog.open) dialog.close(); dialog.remove(); resolve(result); };
+        dialog.addEventListener('close', () => close(null), { once: true });
+        dialog.querySelector('form').addEventListener('submit', event => { event.preventDefault(); const selected = [...dialog.querySelectorAll('input:checked')]; const selectedByGroup = groups.map(group => selected.filter(input => input.name === `option-group-${group.id}`)); const invalid = groups.some((group, index) => selectedByGroup[index].length < Number(group.min_selections || 0) || selectedByGroup[index].length > Number(group.max_selections || 1)); if (invalid) return M.ui.setNotice('กรุณาเลือกตัวเลือกให้ครบตามที่กำหนด', 'error'); const options = selected.map(input => ({ id: input.value, name: input.dataset.optionName, price_delta: Number(input.dataset.optionDelta || 0) })); const optionKey = options.map(option => option.id).sort().join('|'); const price = Number(item.price || 0) + options.reduce((sum, option) => sum + Number(option.price_delta || 0), 0); close({ options, optionKey, price }); });
+      });
       const add = async itemId => {
         const user = await M.auth.currentUser();
         if (!user) {
@@ -65,9 +81,10 @@
         }
         const item = itemById.get(String(itemId));
         if (!item || !isReady(item)) return;
-        M.cart.add({ id: item.id, name: item.name, emoji: item.emoji || '🍜', image_url: legacyImage(item.image_url), price: Number(item.price || 0), storeId: store.id, storeName: store.name });
+        const selected = await chooseOptions(item); if (!selected) return;
+        M.cart.add({ id: item.id, name: item.name, emoji: item.emoji || '🍜', image_url: legacyImage(item.image_url), price: selected.price, options: selected.options, optionKey: selected.optionKey, storeId: store.id, storeName: store.name });
         syncStoreCart();
-        M.ui.setNotice(`เพิ่ม ${item.name} ลงตะกร้าแล้ว`);
+        M.ui.setNotice(`เพิ่ม ${item.name}${selected.options.length ? ` (${selected.options.map(option => option.name).join(', ')})` : ''} ลงตะกร้าแล้ว`);
       };
       document.querySelectorAll('[data-store-add]').forEach(button => { button.addEventListener('click', () => void add(button.dataset.storeAdd)); });
       syncStoreCart();
