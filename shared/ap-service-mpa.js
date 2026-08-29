@@ -212,5 +212,27 @@
     const start = () => { scan(document); new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(scan))).observe(document.documentElement, { childList: true, subtree: true }); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start, { once: true }); else start();
   }
-  if (typeof document !== 'undefined') installImageSourceChoices();
+  function installCustomerVisuals() {
+    if (typeof document === 'undefined' || !document.body?.dataset?.page) return;
+    const safe = value => String(value || '').trim();
+    const validUrl = value => /^https:\/\//i.test(safe(value)) ? safe(value) : '';
+    const motions = new Set(['none','summer','rainy','spring','songkran','loy_krathong','christmas','new_year','valentines','halloween','lunar_new_year','ramadan_eid','diwali','winter']);
+    const clamp = (value, fallback = .86) => { const n = Number(value); return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback; };
+    const inWindow = item => { const now = Date.now(); const start = Date.parse(item?.startsAt || ''); const end = Date.parse(item?.endsAt || ''); return (!Number.isFinite(start) || start <= now) && (!Number.isFinite(end) || end > now); };
+    const addMotion = key => {
+      const motion = motions.has(key) ? key : 'none'; if (motion === 'none') return;
+      const layer = document.createElement('div'); layer.className = `ap-customer-motion ap-motion-${motion}`; layer.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < 18; i += 1) { const particle = document.createElement('i'); particle.style.setProperty('--i', i); particle.style.setProperty('--x', `${(i * 37) % 100}%`); particle.style.setProperty('--delay', `${(i % 9) * -1.2}s`); particle.style.setProperty('--size', `${6 + (i % 5) * 3}px`); layer.append(particle); }
+      document.body.append(layer); document.body.dataset.customerMotion = motion;
+    };
+    const apply = value => {
+      const source = value && typeof value === 'object' ? value : {}; const pageKey = document.body.dataset.page; const page = source.pages?.[pageKey] && typeof source.pages[pageKey] === 'object' ? source.pages[pageKey] : {}; const fallback = source.default && typeof source.default === 'object' ? source.default : {}; const selected = { ...fallback, ...page };
+      let motion = selected.motion === 'inherit' || !motions.has(selected.motion) ? fallback.motion : selected.motion; const festival = source.festival && typeof source.festival === 'object' ? source.festival : {};
+      if (festival.active && festival.motion && inWindow(festival)) motion = festival.motion; const background = validUrl(selected.backgroundUrl || fallback.backgroundUrl); const root = document.documentElement;
+      root.style.setProperty('--ap-customer-overlay', String(clamp(selected.overlay, .86))); if (background) { document.body.dataset.customerVisual = 'true'; document.body.style.setProperty('--ap-customer-background', `url("${background.replace(/"/g, '')}")`); document.body.style.setProperty('--ap-customer-background-position', safe(selected.position) || 'center'); document.body.style.setProperty('--ap-customer-background-size', safe(selected.size) || 'cover'); }
+      addMotion(motion);
+    };
+    lifecycle.request('platform_configs?select=value&key=eq.customer_visuals&limit=1', { cacheTtlMs: 60_000, cacheKey: 'customer-visuals-public' }).then(rows => apply(rows?.[0]?.value)).catch(() => {});
+  }
+  if (typeof document !== 'undefined') { installImageSourceChoices(); installCustomerVisuals(); }
 })();
