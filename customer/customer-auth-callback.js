@@ -52,11 +52,11 @@
     const raw = String(error?.message || error || '').toLowerCase();
     const expired = /expired|invalid|otp|token|confirmation|ลิงก์|หมดอายุ/.test(raw);
     const message = expired
-      ? 'ลิงก์นี้หมดอายุ ถูกใช้ไปแล้ว หรือไม่สมบูรณ์ กรุณาขอลิงก์ใหม่จากหน้าเข้าสู่ระบบ'
+      ? 'ลิงก์นี้หมดอายุ ถูกใช้ไปแล้ว หรือไม่สมบูรณ์ ลิงก์ Verify มีอายุอย่างน้อย 15 นาทีและใช้ได้ครั้งเดียว กรุณาขอลิงก์ใหม่จากหน้าเข้าสู่ระบบ'
       : /customer|role|สิทธิ์/.test(raw)
         ? 'บัญชีนี้ยังไม่ได้รับสิทธิ์สำหรับแอปลูกค้า กรุณาติดต่อผู้ดูแลระบบ'
         : 'ยังยืนยันอีเมลไม่สำเร็จ กรุณาลองขอลิงก์ใหม่อีกครั้ง';
-    shell(`${statusIcon('!', 'error')}<span class="customer-auth-callback-eyebrow">AP SERVICE · ยังไปต่อได้</span><h1>ยืนยันอีเมลไม่สำเร็จ</h1><p>${h(message)}</p><div class="customer-auth-callback-actions">${button('กลับไปขอลิงก์ใหม่', appUrl())}${button('กลับหน้าแรก AP Service', new URL('index.html', document.baseURI).href, true)}</div><p class="customer-auth-callback-note">หากกดลิงก์จากอีเมลแล้วพบหน้านี้ซ้ำ ให้ตรวจสอบว่าเปิดลิงก์ล่าสุดและไม่ได้เปิดผ่านตัวอย่างลิงก์ของระบบอีเมล</p>`);
+    shell(`${statusIcon('!', 'error')}<span class="customer-auth-callback-eyebrow">AP SERVICE · ยังไปต่อได้</span><h1>ยืนยันอีเมลไม่สำเร็จ</h1><p>${h(message)}</p><div class="customer-auth-callback-actions">${button('กลับไปขอลิงก์ใหม่', appUrl())}${button('กลับหน้าแรก AP Service', new URL('index.html', document.baseURI).href, true)}</div><p class="customer-auth-callback-note">หากกดลิงก์จากอีเมลแล้วพบหน้านี้ซ้ำ ให้ตรวจสอบว่าเปิดลิงก์ล่าสุดภายในเวลาที่กำหนด และไม่ได้เปิดผ่านตัวอย่างลิงก์ของระบบอีเมลซึ่งอาจทำให้ลิงก์ถูกใช้ไปก่อน</p>`);
   }
 
   function completeState(user, message = 'ข้อมูลพร้อมแล้ว กำลังเตรียมพื้นที่ใช้งานของคุณ') {
