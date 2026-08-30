@@ -57,7 +57,7 @@
   };
   async function uploadAvatar(file, user, target) {
     if (!file || !window.APServiceMedia?.uploadPublicImage) return;
-    try { const session = await M.auth.refreshSession(false); const uploaded = await window.APServiceMedia.uploadPublicImage(file, { ...M.config, accessToken: session?.access_token, actorId: user.id, bucket: 'catalog-media', scope: 'customer-avatar', pathPrefix: 'customer', mediaType: 'USER_AVATAR', ownerType: 'customer', variant: 'profile' }); if (target) target.innerHTML = `<img src="${h(uploaded.publicUrl)}" alt="รูปโปรไฟล์ที่อัปโหลด" loading="eager">`; M.ui.setNotice('เปลี่ยนรูปโปรไฟล์แล้ว'); } catch (error) { M.ui.setNotice(error.message || 'เปลี่ยนรูปโปรไฟล์ไม่สำเร็จ', 'error'); }
+    try { const session = await M.auth.refreshSession(false); const uploaded = await window.APServiceMedia.uploadPublicImage(file, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: session?.access_token, actorId: user.id, bucket: 'catalog-media', scope: 'customer-avatar', pathPrefix: 'customer', mediaType: 'USER_AVATAR', ownerType: 'customer', variant: 'profile' }); if (target) target.innerHTML = `<img src="${h(uploaded.publicUrl)}" alt="รูปโปรไฟล์ที่อัปโหลด" loading="eager">`; M.ui.setNotice(`เปลี่ยนรูปโปรไฟล์แล้ว · บีบอัดเหลือ ${Math.ceil(uploaded.bytes / 1024)} KB`); } catch (error) { M.ui.setNotice(error.message || 'เปลี่ยนรูปโปรไฟล์ไม่สำเร็จ', 'error'); }
   }
   async function mount() {
     const host = $('#profile'); if (!host || host.dataset.accountCenterMounted === 'true') return;
