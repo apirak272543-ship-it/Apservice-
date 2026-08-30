@@ -14,6 +14,7 @@ function boot(href) {
   const client = { auth: {
     signInWithOtp: async args => ({ data: { user: null, session: null, args }, error: null }),
     signInWithPassword: async () => ({ data: { user: state.user, session: state }, error: null }),
+    signInWithOAuth: async args => ({ data: { url: `https://accounts.google.com/o/oauth2/v2/auth?state=${args.provider}` }, error: null }),
     signUp: async () => ({ data: { user: state.user, session: state }, error: null }),
     resetPasswordForEmail: async () => ({ data: {}, error: null }),
     exchangeCodeForSession: async () => ({ data: { session: { ...state, access_token: 'code-access', refresh_token: 'code-refresh', user: { id: 'code-user' } } }, error: null }),
@@ -44,6 +45,8 @@ function boot(href) {
   assert.equal(magic.args.email, 'test@example.com');
   assert.equal(magic.args.options.emailRedirectTo, 'https://example.test/Apservice-/customer/auth-callback.html');
   assert.equal((await app.api.auth.currentUser()).id, 'user-1');
+  await app.api.auth.signInWithOAuth('google', 'https://example.test/Apservice-/customer/auth-callback.html');
+  assert.equal(app.replaced.at(-1), 'https://accounts.google.com/o/oauth2/v2/auth?state=google');
 
   const callback = boot('https://example.test/Apservice-/customer/auth-callback.html?code=auth-code&next=index.html');
   const codeSession = await callback.api.auth.processCallback();

@@ -1,0 +1,18 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.resolve(__dirname, '..');
+const app = fs.readFileSync(path.join(root, 'customer', 'customer-app.js'), 'utf8');
+const runtime = fs.readFileSync(path.join(root, 'shared', 'ap-service-mpa.js'), 'utf8');
+const css = fs.readFileSync(path.join(root, 'customer', 'customer-auth.css'), 'utf8');
+const profile = fs.readFileSync(path.join(root, 'customer', 'profile.html'), 'utf8');
+assert.match(runtime, /async function signInWithOAuth\(provider, redirectTo/);
+assert.match(runtime, /auth\.signInWithOAuth\(/);
+assert.match(runtime, /location\.assign\(result\.data\.url\)/);
+assert.match(app, /data-social-provider="google"/);
+assert.match(app, /M\.auth\.signInWithOAuth\('google', callback\.href/);
+assert.match(app, /กำลังเชื่อมต่อ Google/);
+assert.match(css, /customer-social-button--google/);
+assert.match(profile, /customer-auth-v3-social-login/);
+assert.match(profile, /customer-auth-v7-google-oauth/);
+console.log('customer Google OAuth contract: PASS');
