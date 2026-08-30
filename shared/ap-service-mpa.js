@@ -4,93 +4,39 @@
   const root = window;
   const SUPABASE_URL = 'https://abtsctwfkgzciseppach.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_TyJWnKkbS8vKcQKKAzoqSg_BOguwKRv';
-  const SESSION_KEY = 'apservice_mpa_session_v1';
-  const SESSION_BACKUP_KEY = 'apservice_mpa_session_backup_v1';
+  const AUTH = root.APServiceSupabaseAuth;
+  const authClient = AUTH?.client;
+  const authReady = AUTH?.ready || Promise.resolve(null);
   const STALE_RESPONSE = 'AP_SERVICE_STALE_RESPONSE';
   const DEFAULT_REQUEST_TIMEOUT_MS = 12_000;
   const withTimeoutSignal = (signal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS) => {
     const duration = Math.max(1_000, Number(timeoutMs) || DEFAULT_REQUEST_TIMEOUT_MS);
-    if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
-      const timeout = AbortSignal.timeout(duration);
-      if (!signal) return timeout;
-      if (typeof AbortSignal.any === 'function') return AbortSignal.any([signal, timeout]);
-    }
-    if (typeof AbortController === 'undefined') return signal || undefined;
     const controller = new AbortController();
-    const abort = () => controller.abort();
-    if (signal?.aborted) abort(); else signal?.addEventListener?.('abort', abort, { once: true });
-    setTimeout(abort, duration);
+    const forward = () => { try { controller.abort(signal?.reason); } catch (_) { controller.abort(); } };
+    if (signal) { if (signal.aborted) forward(); else signal.addEventListener('abort', forward, { once: true }); }
+    const timer = setTimeout(() => controller.abort(), duration);
+    controller.signal.addEventListener('abort', () => clearTimeout(timer), { once: true });
     return controller.signal;
   };
-
-  const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&gt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+  const escapeHtml = value => String(value ?? '').replace(/[&<>\'\"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '\"': '&quot;' }[char]));
   const baht = value => Number(value || 0).toLocaleString('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 });
   const nowIso = () => new Date().toISOString();
   const normalizePath = path => String(path || '').replace(/^\/+/, '');
-
-  function parseStoredSession(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }
-  function getSession() {
-    const primary = parseStoredSession(SESSION_KEY);
-    if (primary?.access_token) {
-      try { if (!localStorage.getItem(SESSION_BACKUP_KEY)) localStorage.setItem(SESSION_BACKUP_KEY, JSON.stringify(primary)); } catch (_) {}
-      return primary;
-    }
-    const backup = parseStoredSession(SESSION_BACKUP_KEY);
-    if (backup?.access_token) {
-      try { localStorage.setItem(SESSION_KEY, JSON.stringify(backup)); } catch (_) {}
-      return backup;
-    }
-    return null;
-  }
+  function getSession() { return AUTH?.status?.session || null; }
   function hasStoredSession() { return Boolean(getSession()?.access_token); }
-  function saveSession(session) {
-    if (session?.access_token) {
-      const serialized = JSON.stringify(session);
-      localStorage.setItem(SESSION_KEY, serialized);
-      try { localStorage.setItem(SESSION_BACKUP_KEY, serialized); } catch (_) {}
-    } else {
-      localStorage.removeItem(SESSION_KEY);
-      try { localStorage.removeItem(SESSION_BACKUP_KEY); } catch (_) {}
-    }
-  }
   function token() { return getSession()?.access_token || ''; }
   function actorCacheKey() { return getSession()?.user?.id || 'anon'; }
-
-  let refreshInFlight = null;
-  const sessionChanged = (before, after) => !after?.access_token || after.access_token !== before?.access_token || after.refresh_token !== before?.refresh_token;
   async function refreshSession(force = false) {
-    const current = getSession();
-    if (!current?.refresh_token) return current;
-    const expiresAt = Number(current.expires_at || 0);
-    const expiresSoon = !expiresAt || expiresAt <= Math.floor(Date.now() / 1000) + 90;
-    if (!force && !expiresSoon) return current;
-    if (refreshInFlight) return refreshInFlight;
-    refreshInFlight = (async () => {
-      try {
-        const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Authorization: `Bearer ${current.refresh_token}` }, body: JSON.stringify({ refresh_token: current.refresh_token }), signal: withTimeoutSignal() });
-        const next = await response.json().catch(() => null);
-        if (!response.ok || !next?.access_token) {
-          const latest = getSession();
-          if (sessionChanged(current, latest)) return latest;
-          const error = new Error(next?.error_description || (response.status >= 500 ? 'ระบบยืนยันตัวตนขัดข้องชั่วคราว กรุณาลองใหม่' : 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'));
-          error.status = response.status;
-          if ([400, 401, 403].includes(Number(response.status))) saveSession(null);
-          throw error;
-        }
-        const normalized = { ...current, ...next, user: next?.user || current.user || null, expires_at: Number(next?.expires_at || (Math.floor(Date.now() / 1000) + Number(next?.expires_in || 3600))) };
-        const latest = getSession();
-        if (sessionChanged(current, latest)) return latest;
-        saveSession(normalized);
-        return normalized;
-      } catch (error) {
-        const latest = getSession();
-        if (sessionChanged(current, latest)) return latest;
-        throw error;
-      } finally {
-        refreshInFlight = null;
-      }
-    })();
-    return refreshInFlight;
+    await authReady;
+    if (!authClient) return null;
+    if (force) {
+      const { data, error } = await authClient.auth.refreshSession();
+      if (error) throw error;
+      return data.session || null;
+    }
+    const { data, error } = await authClient.auth.getSession();
+    if (error) throw error;
+    return data.session || null;
   }
 
   const lifecycle = (() => {
@@ -190,70 +136,34 @@
     return Object.freeze({ request, requestCount, createScope, startBackgroundSync, snapshotMetrics, clearCache, STALE_RESPONSE });
   })();
 
-  async function authRequest(path, options = {}) {
-    const { timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS, signal, ...fetchOptions } = options;
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/${normalizePath(path)}`, { ...fetchOptions, headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', ...(options.headers || {}) }, signal: withTimeoutSignal(signal, timeoutMs) });
-    const body = await response.json().catch(() => null);
-    if (!response.ok) { const error = new Error(body?.msg || body?.message || 'ไม่สามารถยืนยันตัวตนได้'); error.status = response.status; error.authCode = body?.code || body?.error_code || ''; throw error; }
-    return body;
-  }
   const AUTH_CODE_VERIFIER_KEY = 'apservice_auth_code_verifier_v1';
-  const authSession = body => { const session = body?.session?.access_token ? body.session : body; return { ...session, user: session?.user || body?.user || null, expires_at: Number(session?.expires_at || (Math.floor(Date.now() / 1000) + Number(session?.expires_in || 3600))) }; };
-  const authRequestPath = (path, redirectTo) => { const value = String(redirectTo || '').trim(); return value ? `${path}${path.includes('?') ? '&' : '?'}redirect_to=${encodeURIComponent(value)}` : path; };
+  const requireAuthClient = async () => { await authReady; if (!authClient) throw new Error('ระบบยืนยันตัวตนยังไม่พร้อมใช้งาน'); return authClient; };
+  const throwAuthError = error => { if (error) throw error; };
   const readCodeVerifier = () => { try { return localStorage.getItem(AUTH_CODE_VERIFIER_KEY) || ''; } catch (_) { return ''; } };
   const clearCodeVerifier = () => { try { localStorage.removeItem(AUTH_CODE_VERIFIER_KEY); } catch (_) {} };
-  async function signIn(email, password) { const session = authSession(await authRequest('token?grant_type=password', { method: 'POST', body: JSON.stringify({ email, password }) })); saveSession(session); return session; }
-  async function sendMagicLink(email, redirectTo, { createUser = true, pkce = false } = {}) { const payload = { email: String(email || '').trim().toLowerCase(), create_user: createUser !== false }; if (pkce) { const verifierBytes = new Uint8Array(32); crypto.getRandomValues(verifierBytes); const verifier = btoa(String.fromCharCode(...verifierBytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)); const challenge = btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); localStorage.setItem(AUTH_CODE_VERIFIER_KEY, verifier); payload.code_challenge = challenge; payload.code_challenge_method = 's256'; } return authRequest(authRequestPath('otp', redirectTo), { method: 'POST', body: JSON.stringify(payload) }); }
-  async function signUp({ email, password, data = {} } = {}) { const result = await authRequest('signup', { method: 'POST', body: JSON.stringify({ email, password, data }) }); const normalized = { ...result, user: result?.user || (result?.id ? result : null), access_token: result?.access_token || result?.session?.access_token || '', refresh_token: result?.refresh_token || result?.session?.refresh_token || '' }; if (normalized.access_token) saveSession(normalized); return normalized; }
-  async function sendPasswordRecovery(email, redirectTo) { const value = String(email || '').trim().toLowerCase(); const target = String(redirectTo || '').trim(); const path = target ? `recover?redirect_to=${encodeURIComponent(target)}` : 'recover'; return authRequest(path, { method: 'POST', body: JSON.stringify({ email: value }) }); }
-  async function exchangeCodeForSession(code) { const value = String(code || '').trim(); const verifier = readCodeVerifier(); if (!value) throw new Error('ไม่พบรหัสยืนยันจากลิงก์'); if (!verifier) throw new Error('ไม่พบข้อมูลยืนยันความปลอดภัยของลิงก์ กรุณาขอลิงก์ใหม่จากเครื่องเดิม'); const session = authSession(await authRequest('token?grant_type=pkce', { method: 'POST', body: JSON.stringify({ auth_code: value, code_verifier: verifier }) })); if (!session.access_token) throw new Error('ไม่พบ session หลังแลกเปลี่ยนรหัสยืนยัน'); clearCodeVerifier(); saveSession(session); return session; }
-  async function verifyMagicLinkTokenHash(tokenHash) { const value = String(tokenHash || '').trim(); if (!value) throw new Error('ไม่พบ token ยืนยันอีเมล'); const session = authSession(await authRequest('verify', { method: 'POST', body: JSON.stringify({ token_hash: value, type: 'email' }) })); if (!session.access_token) throw new Error('ไม่พบ session หลังยืนยันอีเมล'); saveSession(session); return session; }
-  async function acceptRecoveryFromHash() { const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); const accessToken = hash.get('access_token'); const refreshToken = hash.get('refresh_token'); if (!accessToken) return null; const session = { access_token: accessToken, refresh_token: refreshToken || '', expires_in: Number(hash.get('expires_in') || 3600), expires_at: Math.floor(Date.now() / 1000) + Number(hash.get('expires_in') || 3600), token_type: hash.get('token_type') || 'bearer', user: {} }; saveSession(session); history.replaceState(null, '', `${location.pathname}${location.search}`); return session; }
+  async function signIn(email, password) { const client = await requireAuthClient(); const { data, error } = await client.auth.signInWithPassword({ email: String(email || '').trim().toLowerCase(), password }); throwAuthError(error); return data; }
+  async function sendMagicLink(email, redirectTo, { createUser = true } = {}) { const client = await requireAuthClient(); const { data, error } = await client.auth.signInWithOtp({ email: String(email || '').trim().toLowerCase(), options: { emailRedirectTo: redirectTo, shouldCreateUser: createUser !== false } }); throwAuthError(error); return data; }
+  async function signUp({ email, password, data = {} } = {}) { const client = await requireAuthClient(); const result = await client.auth.signUp({ email, password, options: { data } }); throwAuthError(result.error); return result.data; }
+  async function sendPasswordRecovery(email, redirectTo) { const client = await requireAuthClient(); const result = await client.auth.resetPasswordForEmail(String(email || '').trim().toLowerCase(), { redirectTo }); throwAuthError(result.error); return result.data; }
+  async function exchangeCodeForSession(code) { const client = await requireAuthClient(); if (!String(code || '').trim()) throw new Error('ไม่พบรหัสยืนยันจากลิงก์'); const result = await client.auth.exchangeCodeForSession(String(code).trim()); throwAuthError(result.error); clearCodeVerifier(); return result.data.session; }
+  async function verifyMagicLinkTokenHash(tokenHash) { const client = await requireAuthClient(); if (!String(tokenHash || '').trim()) throw new Error('ไม่พบ token ยืนยันอีเมล'); const result = await client.auth.verifyOtp({ token_hash: String(tokenHash).trim(), type: 'email' }); throwAuthError(result.error); return result.data.session; }
+  async function acceptRecoveryFromHash() { const client = await requireAuthClient(); const hash = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); const accessToken = hash.get('access_token'); const refreshToken = hash.get('refresh_token'); if (!accessToken || !refreshToken) return null; const result = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }); throwAuthError(result.error); history.replaceState(null, '', `${location.pathname}${location.search}`); return result.data.session; }
   const clearAuthUrl = url => { const clean = new URL(url.href); ['code', 'error', 'error_code', 'error_description', 'token_hash', 'type'].forEach(key => clean.searchParams.delete(key)); history.replaceState(null, '', `${clean.pathname}${clean.search}`); };
-  async function processCallback() { const url = new URL(location.href); const hash = new URLSearchParams(String(url.hash || '').replace(/^#/, '')); const errorCode = hash.get('error') || url.searchParams.get('error'); const errorDescription = hash.get('error_description') || url.searchParams.get('error_description'); if (errorCode) { clearAuthUrl(url); throw new Error(errorDescription || errorCode); } const code = url.searchParams.get('code'); if (code) { const session = await exchangeCodeForSession(code); clearAuthUrl(url); return session; } const tokenHash = url.searchParams.get('token_hash'); if (tokenHash) { const session = await verifyMagicLinkTokenHash(tokenHash); clearAuthUrl(url); return session; } const accessToken = hash.get('access_token'); if (!accessToken) return null; const expiresIn = Number(hash.get('expires_in') || 3600); const session = { access_token: accessToken, refresh_token: hash.get('refresh_token') || '', expires_in: expiresIn, expires_at: Math.floor(Date.now() / 1000) + expiresIn, token_type: hash.get('token_type') || 'bearer', user: {} }; saveSession(session); clearAuthUrl(url); return session; }
+  async function processCallback() { const client = await requireAuthClient(); const url = new URL(location.href); const hash = new URLSearchParams(String(url.hash || '').replace(/^#/, '')); const errorCode = hash.get('error') || url.searchParams.get('error'); const errorDescription = hash.get('error_description') || url.searchParams.get('error_description'); if (errorCode) { clearAuthUrl(url); throw new Error(errorDescription || errorCode); } const code = url.searchParams.get('code'); if (code) { const session = await exchangeCodeForSession(code); clearAuthUrl(url); return session; } const tokenHash = url.searchParams.get('token_hash'); if (tokenHash) { const session = await verifyMagicLinkTokenHash(tokenHash); clearAuthUrl(url); return session; } const accessToken = hash.get('access_token'); const refreshToken = hash.get('refresh_token'); if (accessToken && refreshToken) { const result = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }); throwAuthError(result.error); clearAuthUrl(url); return result.data.session; } const { data, error } = await client.auth.getSession(); throwAuthError(error); return data.session || null; }
   async function acceptMagicLinkFromHash() { return processCallback(); }
-  async function updatePassword(password) { if (String(password || '').length < 8) throw new Error('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); if (!token()) throw new Error('ลิงก์ตั้งรหัสผ่านหมดอายุหรือไม่สมบูรณ์'); return authRequest('user', { method: 'PUT', headers: { Authorization: `Bearer ${token()}` }, body: JSON.stringify({ password }) }); }
+  async function updatePassword(password) { if (String(password || '').length < 8) throw new Error('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); const client = await requireAuthClient(); const result = await client.auth.updateUser({ password }); throwAuthError(result.error); return result.data.user; }
   let currentUserInFlight = null;
   function currentUser() {
     if (currentUserInFlight) return currentUserInFlight;
-    const run = async () => {
-      let current = getSession();
-      if (!current?.access_token) return null;
-      let cachedUser = current.user?.id ? current.user : null;
-      const requestUser = session => authRequest('user', { headers: { Authorization: `Bearer ${session.access_token}` } });
-      try {
-        current = await refreshSession(false);
-        if (!current?.access_token) return null;
-        cachedUser = current.user?.id ? current.user : cachedUser;
-        let user;
-        try {
-          user = await requestUser(current);
-        } catch (error) {
-          if (Number(error?.status || 0) !== 401) {
-            if (cachedUser && ![400, 403].includes(Number(error?.status || 0))) return cachedUser;
-            throw error;
-          }
-          current = await refreshSession(true);
-          if (!current?.access_token) return null;
-          user = await requestUser(current);
-        }
-        if (user?.id) saveSession({ ...current, user });
-        return user;
-      } catch (error) {
-        const status = Number(error?.status || 0);
-        if (status === 401 || status === 403 || /invalid.*(token|grant)|refresh token|session/i.test(String(error?.message || ''))) saveSession(null);
-        return cachedUser && ![400, 401, 403].includes(status) ? cachedUser : null;
-      }
-    };
-    const pending = run();
+    const pending = (async () => { const client = await requireAuthClient(); const { data, error } = await client.auth.getUser(); if (error) { if (/invalid|expired|refresh|session/i.test(String(error.message || ''))) return null; throw error; } return data.user || null; })();
     currentUserInFlight = pending;
     pending.then(() => { if (currentUserInFlight === pending) currentUserInFlight = null; }, () => { if (currentUserInFlight === pending) currentUserInFlight = null; });
     return pending;
   }
   async function rolesFor(userId, { forceFresh = false } = {}) { if (!userId || !token()) return []; const rows = await lifecycle.request(`user_roles?select=role&user_id=eq.${encodeURIComponent(userId)}`, { private: true, forceFresh, cacheTtlMs: 10_000, cacheKey: `customer-roles:${userId}` }); return (rows || []).map(row => row.role).filter(Boolean); }
   async function customerRolesFor(userId) { let roles = []; for (let attempt = 0; attempt < 8; attempt += 1) { roles = await rolesFor(userId, { forceFresh: attempt > 0 }); if (roles.includes('customer') || attempt === 7) return roles; await new Promise(resolve => setTimeout(resolve, 250)); } return roles; }
-  async function requireRole(role, { loginUrl = 'index.html', container = document.querySelector('[data-page-content]'), renderLoading = true } = {}) { if (container && renderLoading) container.innerHTML = loading('กำลังตรวจสอบสิทธิ์การใช้งาน…'); const user = await currentUser(); if (!user) { location.replace(loginUrl); return null; } const roles = await rolesFor(user.id); if (!roles.includes(role)) { lifecycle.clearCache(); saveSession(null); location.replace(loginUrl); return null; } return { user, roles }; }
-  function signOut(next = 'index.html') { lifecycle.clearCache(); saveSession(null); location.assign(next); }
+  async function requireRole(role, { loginUrl = 'index.html', container = document.querySelector('[data-page-content]'), renderLoading = true } = {}) { if (container && renderLoading) container.innerHTML = loading('กำลังตรวจสอบสิทธิ์การใช้งาน…'); const user = await currentUser(); if (!user) { location.replace(loginUrl); return null; } let roles; try { roles = await rolesFor(user.id); } catch (_) { return { user, roles: null }; } if (!roles.includes(role)) { lifecycle.clearCache(); location.replace(loginUrl); return null; } return { user, roles }; }
+  async function signOut(next = 'index.html') { lifecycle.clearCache(); const client = await requireAuthClient(); await client.auth.signOut(); location.assign(next); }
   function defaultLoginUrl() { const path = String(location.pathname || '').toLowerCase(); return path.includes('/merchant/') || path.includes('/rider/') ? 'login.html' : 'index.html'; }
   function confirmSignOut(next = defaultLoginUrl()) { return new Promise(resolve => { document.getElementById('mpa-signout-confirm')?.remove(); const modal = document.createElement('div'); modal.id = 'mpa-signout-confirm'; modal.setAttribute('role', 'presentation'); modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;place-items:end center;padding:16px;background:rgba(11,46,37,.45)'; modal.innerHTML = '<section role="dialog" aria-modal="true" aria-labelledby="mpa-signout-title" style="width:min(100%,440px);background:#fff;border-radius:22px;padding:22px;box-shadow:0 20px 55px rgba(0,0,0,.24)"><h2 id="mpa-signout-title" style="margin:0;color:#143B31;font-size:20px">ยืนยันการออกจากระบบ</h2><p style="margin:10px 0 20px;color:#61766F;line-height:1.55">คุณต้องการออกจากระบบในอุปกรณ์นี้ใช่หรือไม่</p><div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap"><button type="button" class="mpa-button mpa-button-secondary" data-cancel>ยกเลิก</button><button type="button" class="mpa-button" data-confirm data-logout-bypass="true">ออกจากระบบ</button></div></section>'; document.body.append(modal); const close = value => { modal.remove(); resolve(value); }; modal.addEventListener('click', event => { if (event.target === modal) close(false); }); modal.querySelector('[data-cancel]').onclick = () => close(false); modal.querySelector('[data-confirm]').onclick = () => { close(true); signOut(next); }; }); }
   function installLogoutConfirmation() { document.addEventListener('click', event => { const control = event.target?.closest?.('button,a,[role="button"]'); const label = String(control?.textContent || '').replace(/\s+/g, ' ').trim(); if (!control || control.closest?.('#mpa-signout-confirm') || control.dataset.logoutBypass === 'true' || !/^ออกจากระบบ$/.test(label)) return; event.preventDefault(); event.stopImmediatePropagation(); void confirmSignOut(defaultLoginUrl()); }, true); }
@@ -280,9 +190,8 @@
   function setNotice(message, kind = 'success') { let host = document.getElementById('mpa-toast'); if (!host) { host = document.createElement('div'); host.id = 'mpa-toast'; host.className = 'mpa-toast'; host.setAttribute('role', 'alertdialog'); host.setAttribute('aria-live', 'polite'); document.body.append(host); } const title = kind === 'error' ? 'ยังดำเนินการต่อไม่ได้' : kind === 'warning' ? 'กรุณาตรวจสอบข้อมูล' : kind === 'welcome' ? 'ยินดีต้อนรับกลับมา' : 'ดำเนินการสำเร็จ'; const duration = kind === 'welcome' ? 2000 : 15000; clearTimeout(setNotice.timer); clearInterval(setNotice.countdown); host.className = `mpa-toast ${kind}`; host.hidden = false; host.innerHTML = `<div class="mpa-toast-icon" aria-hidden="true">${kind === 'error' ? '!' : kind === 'warning' ? '?' : kind === 'welcome' ? '✓' : '✓'}</div><div class="mpa-toast-body"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(message)}</p><button type="button" class="mpa-toast-ok">ตกลง</button></div><small class="mpa-toast-countdown" aria-label="เวลาที่เหลือ"></small>`; const close = () => { host.hidden = true; clearTimeout(setNotice.timer); clearInterval(setNotice.countdown); }; host.querySelector('.mpa-toast-ok').onclick = close; let remaining = Math.ceil(duration / 1000); const countdown = host.querySelector('.mpa-toast-countdown'); countdown.textContent = `${remaining}s`; setNotice.countdown = setInterval(() => { remaining -= 1; countdown.textContent = `${Math.max(0, remaining)}s`; if (remaining <= 0) clearInterval(setNotice.countdown); }, 1000); setNotice.timer = setTimeout(close, duration); }
   const cart = { key: 'apservice_mpa_cart_v1', read() { try { return JSON.parse(sessionStorage.getItem(this.key) || '[]'); } catch { return []; } }, write(items) { sessionStorage.setItem(this.key, JSON.stringify(items)); root.dispatchEvent(new CustomEvent('apservice:cart')); }, add(item) { const items = this.read(); const optionKey = String(item.optionKey || ''); const cartItem = { ...item, optionKey, cartKey: `${item.storeId || ''}:${item.id || ''}:${optionKey}`, qty: 1 }; const index = items.findIndex(row => row.id === cartItem.id && row.storeId === cartItem.storeId && String(row.optionKey || '') === optionKey); if (index >= 0) items[index].qty += 1; else items.push(cartItem); this.write(items); }, clear() { this.write([]); }, total() { return this.read().reduce((sum, row) => sum + Number(row.price || 0) * Number(row.qty || 0), 0); } };
 
-  const isOneTimeAuthRoute = /\/(?:auth-callback|recover|update-password)\.html$/i.test(String(location.pathname || ''));
-  const sessionRestoreReady = !isOneTimeAuthRoute && getSession()?.access_token ? currentUser() : Promise.resolve(null);
-  root.APServiceMPA = Object.freeze({ version: 'mpa-runtime-v5-auth-callback', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request: lifecycle.request, requestCount: lifecycle.requestCount, network: lifecycle, STALE_RESPONSE, auth: { getSession, refreshSession, signIn, signUp, sendMagicLink, sendPasswordRecovery, exchangeCodeForSession, verifyMagicLinkTokenHash, processCallback, acceptMagicLinkFromHash, acceptRecoveryFromHash, updatePassword, signOut, confirmSignOut, currentUser, hasStoredSession, sessionRestoreReady, rolesFor, customerRolesFor, requireRole, device: deviceAuth }, ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart });
+  const sessionRestoreReady = authReady;
+  root.APServiceMPA = Object.freeze({ version: 'mpa-runtime-v6-supabase-auth-client', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request: lifecycle.request, requestCount: lifecycle.requestCount, network: lifecycle, STALE_RESPONSE, auth: { getSession, refreshSession, signIn, signUp, sendMagicLink, sendPasswordRecovery, exchangeCodeForSession, verifyMagicLinkTokenHash, processCallback, acceptMagicLinkFromHash, acceptRecoveryFromHash, updatePassword, signOut, confirmSignOut, currentUser, hasStoredSession, sessionRestoreReady, rolesFor, customerRolesFor, requireRole, device: deviceAuth }, ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart });
   function installImageSourceChoices() {
     const isImageInput = input => input?.matches?.('input[type="file"]') && /image\//i.test(String(input.getAttribute('accept') || ''));
     const existingSourceControl = input => /^(เลือกจากคลัง|ถ่ายรูป|เปลี่ยนจากคลัง|ถ่ายรูปใหม่)/.test(String(input.closest('label')?.textContent || '').replace(/\s+/g, ' ').trim()) || Boolean(input.closest('[data-image-source-choices]'));

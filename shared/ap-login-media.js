@@ -4,10 +4,9 @@
   const APP = document.documentElement.dataset.loginApp || document.body?.dataset?.loginApp || 'all';
   const URL = 'https://abtsctwfkgzciseppach.supabase.co';
   const KEY = 'sb_publishable_TyJWnKkbS8vKcQKKAzoqSg_BOguwKRv';
-  const SESSION_KEY = 'apservice_mpa_session_v1';
   const cacheKey = `ap_login_media_${APP}`;
   const safe = (value) => String(value || '').replace(/[<>"']/g, '');
-  function sessionToken() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null')?.access_token || ''; } catch { return ''; } }
+  function sessionToken() { return window.APServiceSupabaseAuth?.status?.session?.access_token || ''; }
   function valid(row) {
     const now = Date.now();
     return row && row.is_active !== false && (!row.starts_at || Date.parse(row.starts_at) <= now) && (!row.ends_at || Date.parse(row.ends_at) > now) && /^https?:\/\//i.test(row.public_url || '');
