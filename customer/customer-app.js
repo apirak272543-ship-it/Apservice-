@@ -20,9 +20,12 @@
     return null;
   };
   const currentCustomerWithSessionRestore = async (loginUrl = 'profile.html') => {
-    const user = await Promise.race([currentUserWithSessionRestore(), new Promise(resolve => setTimeout(() => resolve(null), 4_500))]);
+    const user = await Promise.race([currentUserWithSessionRestore(), new Promise(resolve => setTimeout(() => resolve(null), 12_000))]);
     if (!user) return null;
-    const roles = await Promise.race([(M.auth.customerRolesFor ? M.auth.customerRolesFor(user.id) : M.auth.rolesFor(user.id)), new Promise(resolve => setTimeout(() => resolve([]), 4_500))]);
+    const roleCheck = M.auth.customerRolesFor ? M.auth.customerRolesFor(user.id) : M.auth.rolesFor(user.id);
+    const roles = await Promise.race([roleCheck, new Promise(resolve => setTimeout(() => resolve(null), 12_000))]);
+    // A slow/offline role request must not erase a valid session. RLS/API calls still enforce authorization.
+    if (roles === null) return user;
     if (roles.includes('customer') && !roles.includes('admin')) return user;
     M.auth.signOut(loginUrl);
     return null;
