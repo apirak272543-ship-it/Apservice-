@@ -12,6 +12,6 @@ assert.match(native, /function normalizeProfileLoginCopy\(\)/, 'Profile Login co
 assert.match(native, /role\.textContent = 'เข้าสู่ระบบลูกค้า'/, 'Profile Login role label must be Thai');
 assert.match(native, /ไม่ต้องจำรหัสผ่าน|จัดการข้อมูลจัดส่งของคุณ/, 'Profile Login intro must explain the passwordless flow in concise Thai');
 assert.match(profile, /auth-ui-v4-field-resolved/, 'Profile must request the field-inset stylesheet revision');
-assert.match(profile, /customer-native-v8-simple-login-copy/, 'Profile must request the localized simple-login runtime revision');
+assert.match(profile, /customer-native-v9-session-reconnect-guard/, 'Profile must request the localized simple-login runtime revision');
 
 console.log('customer profile login ui contract: PASS');

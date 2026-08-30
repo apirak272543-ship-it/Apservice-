@@ -330,7 +330,7 @@
   function normalizeProfileLoginCopy() {
     if (page !== 'profile') return;
     const panel = document.querySelector('[data-login-panel="customer"]');
-    if (!panel) return;
+    if (!panel || panel.querySelector('[data-session-retry]')) return;
     const role = panel.querySelector('.ap-login-role');
     const intro = panel.querySelector('.ap-login-intro');
     const initialStatus = panel.querySelector('#loginForm [data-login-status]');

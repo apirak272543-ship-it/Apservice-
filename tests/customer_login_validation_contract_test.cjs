@@ -8,9 +8,9 @@ const profile = fs.readFileSync(path.join(__dirname, '..', 'customer', 'profile.
 assert.match(source, /const message = error/, 'Customer Login must map auth errors before they reach the user');
 assert.match(source, /กรุณากรอกอีเมล/, 'Customer Login must explain missing email fields in Thai');
 assert.match(source, /if \(!email\).*return;/, 'Customer Login must return before calling Auth for an empty email');
-assert.match(source, /M\.auth\.sendMagicLink\(email, callback\.href\)/, 'Customer Login must request a magic-link only with a validated email');
+assert.match(source, /M\.auth\.sendMagicLink\(email, callback\.href, \{ createUser: false \}\)/, 'Customer Login must request a magic-link only with a validated email');
 assert.match(source, /ยังส่งลิงก์ยืนยันไม่ได้/, 'Customer Login must map magic-link errors to Thai');
 assert.doesNotMatch(source, /showError\(loginForm, err\.message/, 'Customer Login must not expose raw provider messages directly');
-assert.match(profile, /auth=customer-auth-v4-callback/, 'Customer Profile must request the canonical callback runtime revision');
+assert.match(profile, /auth=customer-auth-v6-session-aware/, 'Customer Profile must request the session-aware auth runtime revision');
 
 console.log('customer login validation contract: PASS');

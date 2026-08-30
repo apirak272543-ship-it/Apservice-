@@ -235,6 +235,11 @@
     app('profile', `<div class="mpa-page-head"><div><h1>โปรไฟล์ลูกค้า</h1><p>จัดการข้อมูลบัญชี ที่อยู่ และการตั้งค่าการจัดส่งของคุณได้ที่นี่</p></div></div><section id="profile" class="mpa-card">${M.ui.loading('กำลังตรวจสอบบัญชี…')}</section>`);
     const user = await currentCustomerWithSessionRestore();
     if (!user) {
+      if (M.auth.hasStoredSession?.()) {
+        $('#profile').innerHTML = `<div class="ap-login-panel" data-login-panel="customer"><div class="ap-login-brandline"><span class="ap-login-mark">AS</span><div><strong>AP Service</strong><small>บริการเดลิเวอรีและบริการในชีวิตประจำวัน</small></div></div><span class="ap-login-role">กำลังกลับเข้าสู่ระบบ</span><h2 class="ap-login-title">กำลังเชื่อมต่อบัญชีเดิม</h2><p class="ap-login-intro">ระบบพบข้อมูลการเข้าสู่ระบบของคุณบนเครื่องนี้ จึงยังไม่ต้อง Verify Email ใหม่ กำลังลองเชื่อมต่อ session เดิมให้อัตโนมัติ</p><button class="ap-login-submit" type="button" data-session-retry>ลองเข้าใช้งานต่อ</button><p class="ap-login-status" data-login-status>ถ้าอินเทอร์เน็ตไม่เสถียร ให้กดปุ่มเพื่อลองใหม่ โดยยังไม่ต้องขอลิงก์ Verify</p></div>`;
+        $('#profile [data-session-retry]')?.addEventListener('click', () => location.reload());
+        return;
+      }
       if (q.get('password_reset') === '1') M.ui.setNotice('ตั้งรหัสผ่านใหม่สำเร็จ กรุณาเข้าสู่ระบบด้วยอีเมลของคุณ');
       const next = safeNext(q.get('next'), 'index.html');
       const callback = new URL('auth-callback.html', document.baseURI);
