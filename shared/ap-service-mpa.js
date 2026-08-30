@@ -33,17 +33,41 @@
   function token() { return getSession()?.access_token || ''; }
   function actorCacheKey() { return getSession()?.user?.id || 'anon'; }
 
+  let refreshInFlight = null;
+  const sessionChanged = (before, after) => !after?.access_token || after.access_token !== before?.access_token || after.refresh_token !== before?.refresh_token;
   async function refreshSession(force = false) {
     const current = getSession();
     if (!current?.refresh_token) return current;
     const expiresAt = Number(current.expires_at || 0);
     const expiresSoon = !expiresAt || expiresAt <= Math.floor(Date.now() / 1000) + 90;
     if (!force && !expiresSoon) return current;
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Authorization: `Bearer ${current.refresh_token}` }, body: JSON.stringify({ refresh_token: current.refresh_token }), signal: withTimeoutSignal() });
-    const next = await response.json().catch(() => null);
-    if (!response.ok || !next?.access_token) { saveSession(null); throw new Error(next?.error_description || 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); }
-    const normalized = { ...current, ...next, user: next?.user || current.user || null, expires_at: Number(next?.expires_at || (Math.floor(Date.now() / 1000) + Number(next?.expires_in || 3600))) };
-    saveSession(normalized); return normalized;
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = (async () => {
+      try {
+        const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, { method: 'POST', headers: { apikey: SUPABASE_KEY, 'Content-Type': 'application/json', Authorization: `Bearer ${current.refresh_token}` }, body: JSON.stringify({ refresh_token: current.refresh_token }), signal: withTimeoutSignal() });
+        const next = await response.json().catch(() => null);
+        if (!response.ok || !next?.access_token) {
+          const latest = getSession();
+          if (sessionChanged(current, latest)) return latest;
+          const error = new Error(next?.error_description || (response.status >= 500 ? 'ระบบยืนยันตัวตนขัดข้องชั่วคราว กรุณาลองใหม่' : 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'));
+          error.status = response.status;
+          if ([400, 401, 403].includes(Number(response.status))) saveSession(null);
+          throw error;
+        }
+        const normalized = { ...current, ...next, user: next?.user || current.user || null, expires_at: Number(next?.expires_at || (Math.floor(Date.now() / 1000) + Number(next?.expires_in || 3600))) };
+        const latest = getSession();
+        if (sessionChanged(current, latest)) return latest;
+        saveSession(normalized);
+        return normalized;
+      } catch (error) {
+        const latest = getSession();
+        if (sessionChanged(current, latest)) return latest;
+        throw error;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+    return refreshInFlight;
   }
 
   const lifecycle = (() => {
@@ -166,7 +190,43 @@
   async function processCallback() { const url = new URL(location.href); const hash = new URLSearchParams(String(url.hash || '').replace(/^#/, '')); const errorCode = hash.get('error') || url.searchParams.get('error'); const errorDescription = hash.get('error_description') || url.searchParams.get('error_description'); if (errorCode) { clearAuthUrl(url); throw new Error(errorDescription || errorCode); } const code = url.searchParams.get('code'); if (code) { const session = await exchangeCodeForSession(code); clearAuthUrl(url); return session; } const tokenHash = url.searchParams.get('token_hash'); if (tokenHash) { const session = await verifyMagicLinkTokenHash(tokenHash); clearAuthUrl(url); return session; } const accessToken = hash.get('access_token'); if (!accessToken) return null; const expiresIn = Number(hash.get('expires_in') || 3600); const session = { access_token: accessToken, refresh_token: hash.get('refresh_token') || '', expires_in: expiresIn, expires_at: Math.floor(Date.now() / 1000) + expiresIn, token_type: hash.get('token_type') || 'bearer', user: {} }; saveSession(session); clearAuthUrl(url); return session; }
   async function acceptMagicLinkFromHash() { return processCallback(); }
   async function updatePassword(password) { if (String(password || '').length < 8) throw new Error('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); if (!token()) throw new Error('ลิงก์ตั้งรหัสผ่านหมดอายุหรือไม่สมบูรณ์'); return authRequest('user', { method: 'PUT', headers: { Authorization: `Bearer ${token()}` }, body: JSON.stringify({ password }) }); }
-  async function currentUser() { let current = getSession(); if (!current?.access_token) return null; try { current = await refreshSession(false); if (!current?.access_token) return null; return await authRequest('user', { headers: { Authorization: `Bearer ${current.access_token}` } }); } catch (error) { const status = Number(error?.status || 0); if (status === 401 || status === 403 || /invalid.*(token|grant)|refresh token|session/i.test(String(error?.message || ''))) saveSession(null); return null; } }
+  let currentUserInFlight = null;
+  function currentUser() {
+    if (currentUserInFlight) return currentUserInFlight;
+    const run = async () => {
+      let current = getSession();
+      if (!current?.access_token) return null;
+      let cachedUser = current.user?.id ? current.user : null;
+      const requestUser = session => authRequest('user', { headers: { Authorization: `Bearer ${session.access_token}` } });
+      try {
+        current = await refreshSession(false);
+        if (!current?.access_token) return null;
+        cachedUser = current.user?.id ? current.user : cachedUser;
+        let user;
+        try {
+          user = await requestUser(current);
+        } catch (error) {
+          if (Number(error?.status || 0) !== 401) {
+            if (cachedUser && ![400, 403].includes(Number(error?.status || 0))) return cachedUser;
+            throw error;
+          }
+          current = await refreshSession(true);
+          if (!current?.access_token) return null;
+          user = await requestUser(current);
+        }
+        if (user?.id) saveSession({ ...current, user });
+        return user;
+      } catch (error) {
+        const status = Number(error?.status || 0);
+        if (status === 401 || status === 403 || /invalid.*(token|grant)|refresh token|session/i.test(String(error?.message || ''))) saveSession(null);
+        return cachedUser && ![400, 401, 403].includes(status) ? cachedUser : null;
+      }
+    };
+    const pending = run();
+    currentUserInFlight = pending;
+    pending.then(() => { if (currentUserInFlight === pending) currentUserInFlight = null; }, () => { if (currentUserInFlight === pending) currentUserInFlight = null; });
+    return pending;
+  }
   async function rolesFor(userId, { forceFresh = false } = {}) { if (!userId || !token()) return []; const rows = await lifecycle.request(`user_roles?select=role&user_id=eq.${encodeURIComponent(userId)}`, { private: true, forceFresh, cacheTtlMs: 10_000, cacheKey: `customer-roles:${userId}` }); return (rows || []).map(row => row.role).filter(Boolean); }
   async function customerRolesFor(userId) { let roles = []; for (let attempt = 0; attempt < 8; attempt += 1) { roles = await rolesFor(userId, { forceFresh: attempt > 0 }); if (roles.includes('customer') || attempt === 7) return roles; await new Promise(resolve => setTimeout(resolve, 250)); } return roles; }
   async function requireRole(role, { loginUrl = 'index.html', container = document.querySelector('[data-page-content]'), renderLoading = true } = {}) { if (container && renderLoading) container.innerHTML = loading('กำลังตรวจสอบสิทธิ์การใช้งาน…'); const user = await currentUser(); if (!user) { location.replace(loginUrl); return null; } const roles = await rolesFor(user.id); if (!roles.includes(role)) { lifecycle.clearCache(); saveSession(null); location.replace(loginUrl); return null; } return { user, roles }; }
@@ -197,7 +257,9 @@
   function setNotice(message, kind = 'success') { let host = document.getElementById('mpa-toast'); if (!host) { host = document.createElement('div'); host.id = 'mpa-toast'; host.className = 'mpa-toast'; host.setAttribute('role', 'alertdialog'); host.setAttribute('aria-live', 'polite'); document.body.append(host); } const title = kind === 'error' ? 'ยังดำเนินการต่อไม่ได้' : kind === 'warning' ? 'กรุณาตรวจสอบข้อมูล' : kind === 'welcome' ? 'ยินดีต้อนรับกลับมา' : 'ดำเนินการสำเร็จ'; const duration = kind === 'welcome' ? 2000 : 15000; clearTimeout(setNotice.timer); clearInterval(setNotice.countdown); host.className = `mpa-toast ${kind}`; host.hidden = false; host.innerHTML = `<div class="mpa-toast-icon" aria-hidden="true">${kind === 'error' ? '!' : kind === 'warning' ? '?' : kind === 'welcome' ? '✓' : '✓'}</div><div class="mpa-toast-body"><strong>${escapeHtml(title)}</strong><p>${escapeHtml(message)}</p><button type="button" class="mpa-toast-ok">ตกลง</button></div><small class="mpa-toast-countdown" aria-label="เวลาที่เหลือ"></small>`; const close = () => { host.hidden = true; clearTimeout(setNotice.timer); clearInterval(setNotice.countdown); }; host.querySelector('.mpa-toast-ok').onclick = close; let remaining = Math.ceil(duration / 1000); const countdown = host.querySelector('.mpa-toast-countdown'); countdown.textContent = `${remaining}s`; setNotice.countdown = setInterval(() => { remaining -= 1; countdown.textContent = `${Math.max(0, remaining)}s`; if (remaining <= 0) clearInterval(setNotice.countdown); }, 1000); setNotice.timer = setTimeout(close, duration); }
   const cart = { key: 'apservice_mpa_cart_v1', read() { try { return JSON.parse(sessionStorage.getItem(this.key) || '[]'); } catch { return []; } }, write(items) { sessionStorage.setItem(this.key, JSON.stringify(items)); root.dispatchEvent(new CustomEvent('apservice:cart')); }, add(item) { const items = this.read(); const optionKey = String(item.optionKey || ''); const cartItem = { ...item, optionKey, cartKey: `${item.storeId || ''}:${item.id || ''}:${optionKey}`, qty: 1 }; const index = items.findIndex(row => row.id === cartItem.id && row.storeId === cartItem.storeId && String(row.optionKey || '') === optionKey); if (index >= 0) items[index].qty += 1; else items.push(cartItem); this.write(items); }, clear() { this.write([]); }, total() { return this.read().reduce((sum, row) => sum + Number(row.price || 0) * Number(row.qty || 0), 0); } };
 
-  root.APServiceMPA = Object.freeze({ version: 'mpa-runtime-v5-auth-callback', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request: lifecycle.request, requestCount: lifecycle.requestCount, network: lifecycle, STALE_RESPONSE, auth: { getSession, refreshSession, signIn, signUp, sendMagicLink, sendPasswordRecovery, exchangeCodeForSession, verifyMagicLinkTokenHash, processCallback, acceptMagicLinkFromHash, acceptRecoveryFromHash, updatePassword, signOut, confirmSignOut, currentUser, hasStoredSession, rolesFor, customerRolesFor, requireRole, device: deviceAuth }, ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart });
+  const isOneTimeAuthRoute = /\/(?:auth-callback|recover|update-password)\.html$/i.test(String(location.pathname || ''));
+  const sessionRestoreReady = !isOneTimeAuthRoute && getSession()?.access_token ? currentUser() : Promise.resolve(null);
+  root.APServiceMPA = Object.freeze({ version: 'mpa-runtime-v5-auth-callback', config: { url: SUPABASE_URL, publishableKey: SUPABASE_KEY }, request: lifecycle.request, requestCount: lifecycle.requestCount, network: lifecycle, STALE_RESPONSE, auth: { getSession, refreshSession, signIn, signUp, sendMagicLink, sendPasswordRecovery, exchangeCodeForSession, verifyMagicLinkTokenHash, processCallback, acceptMagicLinkFromHash, acceptRecoveryFromHash, updatePassword, signOut, confirmSignOut, currentUser, hasStoredSession, sessionRestoreReady, rolesFor, customerRolesFor, requireRole, device: deviceAuth }, ui: { escapeHtml, baht, nowIso, loading, error, empty, setNotice }, cart });
   function installImageSourceChoices() {
     const isImageInput = input => input?.matches?.('input[type="file"]') && /image\//i.test(String(input.getAttribute('accept') || ''));
     const existingSourceControl = input => /^(เลือกจากคลัง|ถ่ายรูป|เปลี่ยนจากคลัง|ถ่ายรูปใหม่)/.test(String(input.closest('label')?.textContent || '').replace(/\s+/g, ' ').trim()) || Boolean(input.closest('[data-image-source-choices]'));
