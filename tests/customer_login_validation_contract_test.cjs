@@ -11,6 +11,6 @@ assert.match(source, /if \(!email\).*return;/, 'Customer Login must return befor
 assert.match(source, /M\.auth\.sendMagicLink\(email, callback\.href, \{ createUser: false \}\)/, 'Customer Login must request a magic-link only with a validated email');
 assert.match(source, /ยังส่งลิงก์ยืนยันไม่ได้/, 'Customer Login must map magic-link errors to Thai');
 assert.doesNotMatch(source, /showError\(loginForm, err\.message/, 'Customer Login must not expose raw provider messages directly');
-assert.match(profile, /auth=customer-auth-v7-google-oauth/, 'Customer Profile must request the session-aware auth runtime revision');
+assert.match(profile, /auth=customer-auth-v8-social-providers/, 'Customer Profile must request the session-aware auth runtime revision');
 
 console.log('customer login validation contract: PASS');
