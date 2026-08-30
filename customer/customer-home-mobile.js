@@ -29,6 +29,19 @@
     nav.insertBefore(link, profile || null);
   }
 
+  async function syncRegisterVisibility() {
+    const registerLink = document.querySelector('.customer-home-register');
+    if (!registerLink) return;
+    registerLink.hidden = false;
+    try {
+      const user = await M.auth.currentUser();
+      if (!user) return;
+      const profiles = await M.request(`user_profiles?select=id&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, { private: true, cacheTtlMs: 20_000, cacheKey: `customer-home-profile-exists:${user.id}` });
+      registerLink.hidden = Boolean(profiles?.length);
+    } catch (_) {
+      registerLink.hidden = false;
+    }
+  }
   async function loadDelivery() {
     const label = $('#homeDeliveryLabel'); if (!label) return;
     try {
@@ -125,6 +138,7 @@
     $('#sponsoredList')?.closest('.customer-sponsored')?.remove();
     page.insertAdjacentHTML('afterbegin', `<section class="customer-home-tools" aria-label="ค้นหาและที่อยู่จัดส่ง"><a class="customer-delivery-picker" href="profile.html?next=index.html"><span class="customer-delivery-picker__icon" aria-hidden="true">⌖</span><span class="customer-delivery-picker__copy"><small>ส่งไปที่</small><strong id="homeDeliveryLabel">กำลังตรวจสอบที่อยู่จัดส่ง…</strong></span><span class="customer-delivery-picker__chevron" aria-hidden="true">›</span></a><form class="customer-home-search" id="homeStoreSearch"><span aria-hidden="true">⌕</span><input id="homeStoreSearchInput" type="search" maxlength="100" placeholder="ค้นหาร้านค้า หรือเมนูอาหาร" autocomplete="off"><button type="submit" aria-label="ค้นหา">→</button></form><a class="customer-home-register" href="profile.html?mode=register&next=index.html"><span aria-hidden="true">✦</span><span><strong>สมัครสมาชิก Customer</strong><small>สร้างบัญชีเพื่อสั่งซื้อและติดตามออร์เดอร์</small></span><span aria-hidden="true">›</span></a></section>`);
     document.querySelector('.customer-home-register')?.setAttribute('href', 'register.html?next=index.html');
+    void syncRegisterVisibility();
     const services = $('.customer-services'); const serviceSection = services?.closest('section');
     if (serviceSection) {
       const additions = [];
