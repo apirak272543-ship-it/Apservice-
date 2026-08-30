@@ -256,23 +256,11 @@
       const submit = loginForm.querySelector('[data-login-submit]');
       const message = error => { const raw = String(error?.message || error || '').toLowerCase(); if (raw.includes('redirect') || raw.includes('url')) return 'ลิงก์ยืนยันยังเปิดไม่ได้ กรุณาลองใหม่อีกครั้ง'; if (raw.includes('too many') || raw.includes('rate limit')) return 'ส่งลิงก์บ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่'; if (raw.includes('network') || raw.includes('fetch')) return 'เชื่อมต่อระบบไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่'; if (raw.includes('provider') || raw.includes('not enabled') || raw.includes('unsupported')) return 'ช่องทางนี้ยังไม่เปิดใช้งาน กรุณาเลือกอีเมลหรือลองใหม่ภายหลัง'; return 'ยังส่งลิงก์ยืนยันไม่ได้ กรุณาตรวจสอบอีเมลแล้วลองใหม่'; };
       const socialButtons = [...loginForm.parentElement.querySelectorAll('[data-social-provider]')];
-      socialButtons.forEach(button => button.addEventListener('click', async () => {
+      socialButtons.forEach(button => button.addEventListener('click', () => {
         const provider = button.dataset.socialProvider;
-        button.disabled = true;
-        button.classList.add('is-loading');
-        const label = button.querySelector('span:last-child');
-        const originalLabel = label?.textContent || `เข้าสู่ระบบด้วย ${provider}`;
-        if (label) label.textContent = `กำลังเชื่อมต่อ ${provider}…`;
-        try {
-          await M.auth.signInWithOAuth(provider, callback.href, { queryParams: { prompt: 'select_account' } });
-        } catch (error) {
-          button.disabled = false;
-          button.classList.remove('is-loading');
-          if (label) label.textContent = originalLabel;
-          const text = message(error);
-          window.APLoginUI?.showError(loginForm, text);
-          M.ui.setNotice(text, 'error');
-        }
+        const labels = { google: 'Google', facebook: 'Facebook', line: 'LINE' };
+        const label = labels[provider] || provider;
+        M.ui.setNotice(`ขออภัย การล็อกอินด้วย ${label} ยังไม่พร้อมให้บริการ`, 'warning');
       }));
       loginForm.onsubmit = async event => { event.preventDefault(); const email = $('#email').value.trim().toLowerCase(); if (!email) { const text = 'กรุณากรอกอีเมล'; window.APLoginUI?.showError(loginForm, text); M.ui.setNotice(text, 'error'); return; } submit.disabled = true; submit.textContent = 'กำลังส่งลิงก์ยืนยัน…'; status.textContent = 'กำลังส่งลิงก์ยืนยันไปที่อีเมลของคุณ…'; status.dataset.kind = 'loading'; try { try { localStorage.setItem('apservice_customer_email', email); } catch (_) {} await M.auth.sendMagicLink(email, callback.href, { createUser: false }); await window.APLoginUI?.showSuccess(loginForm, 'ส่งลิงก์ยืนยันแล้ว'); status.textContent = 'ส่งลิงก์แล้ว ลิงก์มีอายุอย่างน้อย 15 นาที กำลังเปิดแอปอีเมลเริ่มต้นของเครื่อง…'; status.dataset.kind = 'success'; submit.textContent = 'เปิดแอปอีเมลแล้ว'; submit.style.background = '#138a66'; let seconds = 3; const timer = setInterval(() => { seconds -= 1; submit.textContent = seconds > 0 ? `กำลังเปิดแอปอีเมลใน ${seconds}…` : 'กำลังเปิดแอปอีเมล…'; if (seconds <= 0) clearInterval(timer); }, 1000); setTimeout(() => { window.location.href = `mailto:${encodeURIComponent(email)}`; }, 3000); } catch (error) { const text = message(error); window.APLoginUI?.showError(loginForm, text); M.ui.setNotice(text, 'error'); status.textContent = text; status.dataset.kind = 'error'; submit.textContent = rememberedEmail ? 'Verify Email · เปิดแอปอีเมล' : 'Verify Email'; submit.style.background = ''; submit.disabled = false; } };
       return;
