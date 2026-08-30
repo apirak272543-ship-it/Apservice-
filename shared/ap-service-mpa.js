@@ -5,6 +5,7 @@
   const SUPABASE_URL = 'https://abtsctwfkgzciseppach.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_TyJWnKkbS8vKcQKKAzoqSg_BOguwKRv';
   const SESSION_KEY = 'apservice_mpa_session_v1';
+  const SESSION_BACKUP_KEY = 'apservice_mpa_session_backup_v1';
   const STALE_RESPONSE = 'AP_SERVICE_STALE_RESPONSE';
   const DEFAULT_REQUEST_TIMEOUT_MS = 12_000;
   const withTimeoutSignal = (signal, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS) => {
@@ -27,9 +28,31 @@
   const nowIso = () => new Date().toISOString();
   const normalizePath = path => String(path || '').replace(/^\/+/, '');
 
-  function getSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; } }
+  function parseStoredSession(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; } }
+  function getSession() {
+    const primary = parseStoredSession(SESSION_KEY);
+    if (primary?.access_token) {
+      try { if (!localStorage.getItem(SESSION_BACKUP_KEY)) localStorage.setItem(SESSION_BACKUP_KEY, JSON.stringify(primary)); } catch (_) {}
+      return primary;
+    }
+    const backup = parseStoredSession(SESSION_BACKUP_KEY);
+    if (backup?.access_token) {
+      try { localStorage.setItem(SESSION_KEY, JSON.stringify(backup)); } catch (_) {}
+      return backup;
+    }
+    return null;
+  }
   function hasStoredSession() { return Boolean(getSession()?.access_token); }
-  function saveSession(session) { if (session?.access_token) localStorage.setItem(SESSION_KEY, JSON.stringify(session)); else localStorage.removeItem(SESSION_KEY); }
+  function saveSession(session) {
+    if (session?.access_token) {
+      const serialized = JSON.stringify(session);
+      localStorage.setItem(SESSION_KEY, serialized);
+      try { localStorage.setItem(SESSION_BACKUP_KEY, serialized); } catch (_) {}
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+      try { localStorage.removeItem(SESSION_BACKUP_KEY); } catch (_) {}
+    }
+  }
   function token() { return getSession()?.access_token || ''; }
   function actorCacheKey() { return getSession()?.user?.id || 'anon'; }
 
