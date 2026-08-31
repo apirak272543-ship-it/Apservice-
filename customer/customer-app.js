@@ -12,10 +12,16 @@
   if (!document.getElementById('customer-location-consent-script')) document.head.insertAdjacentHTML('beforeend', '<script id="customer-location-consent-script" src="customer-location-consent.js?v=location-consent-v1"><\/script>');
   const pageScope = name => { const scope = M.network.createScope(name); addEventListener('pagehide', () => scope.dispose(), { once: true }); return scope; };
   const currentUserWithSessionRestore = async () => {
+    await M.auth.sessionRestoreReady;
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const user = await M.auth.currentUser();
       if (user) return user;
-      if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 120));
+      // A remembered email is only an identifier. Try the stored Supabase refresh
+      // token once before falling back to Verify Email; never authenticate by email alone.
+      if (attempt === 0 && M.auth.refreshSession) {
+        try { await M.auth.refreshSession(true); } catch (_) {}
+      }
+      if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 180));
     }
     return null;
   };
