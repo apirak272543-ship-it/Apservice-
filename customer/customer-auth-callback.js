@@ -105,7 +105,7 @@
       const user = await M.auth.currentUser();
       if (!user) throw new Error('ไม่พบ session ของผู้ใช้หลังยืนยันอีเมล');
       const roles = await (M.auth.customerRolesFor ? M.auth.customerRolesFor(user.id) : M.auth.rolesFor(user.id));
-      if (!roles.includes('customer') || roles.includes('admin')) throw new Error('บัญชีนี้ไม่มีสิทธิ์ Customer');
+      if (!roles.includes('customer')) throw new Error('บัญชีนี้ไม่มีสิทธิ์ Customer');
       setStatus('กำลังตรวจสอบข้อมูลโปรไฟล์…', 'loading');
       const rows = await M.request(`user_profiles?select=display_name,phone,address,email&user_id=eq.${encodeURIComponent(user.id)}&limit=1`, { private: true, forceFresh: true });
       const profile = rows?.[0] || {};

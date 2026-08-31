@@ -11,11 +11,16 @@
   if (!document.getElementById('customer-unified-theme-style')) document.head.insertAdjacentHTML('beforeend', '<link id="customer-unified-theme-style" rel="stylesheet" href="customer-unified-theme.css?v=customer-unified-v2-marketplace-card">');
   if (!document.getElementById('customer-location-consent-script')) document.head.insertAdjacentHTML('beforeend', '<script id="customer-location-consent-script" src="customer-location-consent.js?v=location-consent-v1"><\/script>');
   const pageScope = name => { const scope = M.network.createScope(name); addEventListener('pagehide', () => scope.dispose(), { once: true }); return scope; };
+  const CUSTOMER_ACTIVITY_KEY = 'apservice_customer_last_active_v1';
+  const CUSTOMER_REAUTH_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+  const rememberedSessionIsFresh = () => { try { const raw = localStorage.getItem(CUSTOMER_ACTIVITY_KEY); if (!raw) return true; const lastActive = Number(raw); return Number.isFinite(lastActive) && Date.now() - lastActive <= CUSTOMER_REAUTH_AFTER_MS; } catch (_) { return true; } };
+  const rememberCustomerActivity = () => { try { localStorage.setItem(CUSTOMER_ACTIVITY_KEY, String(Date.now())); } catch (_) {} };
   const currentUserWithSessionRestore = async () => {
+    if (!rememberedSessionIsFresh()) { M.auth.signOut('profile.html?reauth=1'); return null; }
     await M.auth.sessionRestoreReady;
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const user = await M.auth.currentUser();
-      if (user) return user;
+      if (user) { rememberCustomerActivity(); return user; }
       // A remembered email is only an identifier. Try the stored Supabase refresh
       // token once before falling back to Verify Email; never authenticate by email alone.
       if (attempt === 0 && M.auth.refreshSession) {
@@ -32,7 +37,7 @@
     const roles = await Promise.race([roleCheck, new Promise(resolve => setTimeout(() => resolve(null), 12_000))]);
     // A slow/offline role request must not erase a valid session. RLS/API calls still enforce authorization.
     if (roles === null) return user;
-    if (roles.includes('customer') && !roles.includes('admin')) return user;
+    if (roles.includes('customer')) return user;
     M.auth.signOut(loginUrl);
     return null;
   };
