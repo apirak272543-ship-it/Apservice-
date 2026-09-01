@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-for (const repo of [path.resolve(__dirname, '..'), '/home/ubuntu/Apservicebeta']) {
+for (const repo of [path.resolve(__dirname, '..'), path.resolve(__dirname, '../../apservice-admin-app')]) {
   const client = fs.readFileSync(path.join(repo, 'shared/ap-supabase-client.js'), 'utf8');
   assert.match(client, /persistSession: true/);
   assert.match(client, /autoRefreshToken: true/);

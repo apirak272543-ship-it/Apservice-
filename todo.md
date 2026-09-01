@@ -434,12 +434,12 @@
 - [x] ปรับ Admin Workspace/navigation/page isolation/mobile/responsive/background badges/quick actions ให้ครบตาม specification ล่าสุดโดยไม่ลด function เดิม
 - [x] ทดสอบ Admin desktop/mobile ผ่าน responsive contract, back navigation, page-level loading, badge non-blocking, 4-app regression และเผยแพร่พร้อมรายงาน acceptance criteria
 - [ ] ตรวจรับ authenticated Admin CRUD บน production: route → data → action → save → database → browser back โดยใช้บัญชี Admin จริงและไม่ bypass RLS
-- [x] Audit repositories ตามโครงสร้างเจ้าของงาน: Apservice- (Customer), Apservicebeta (Admin Beta), ap-store-mobile (Merchant), ap-rider-mobile (Rider)
-- [x] จัดทำและยืนยัน mapping/migration plan เพื่อย้ายโค้ดที่รวมใน Apservice- ไป repository ตาม role โดยใช้ Supabase/backend/business rules ร่วมกัน
+- [x] Audit repositories ตามโครงสร้างเจ้าของงาน: apservice-customer-app (Customer), apservice-admin-app (Admin Beta), ap-store-mobile (Merchant), apservice-rider-app (Rider)
+- [x] จัดทำและยืนยัน mapping/migration plan เพื่อย้ายโค้ดที่รวมใน apservice-customer-app ไป repository ตาม role โดยใช้ Supabase/backend/business rules ร่วมกัน
 - [x] ย้าย/จัดวาง/ทดสอบ/เผยแพร่ Customer, Admin Beta, Merchant และ Rider แยก repository พร้อมรายงานลิงก์และ commit ของแต่ละ application
-- [x] เปลี่ยน ap-store-mobile และ ap-rider-mobile เป็น public, เปิด GitHub Pages และยืนยัน URL console ที่แยกจาก Customer
+- [x] เปลี่ยน ap-store-mobile และ apservice-rider-app เป็น public, เปิด GitHub Pages และยืนยัน URL console ที่แยกจาก Customer
 - [x] เปลี่ยน Merchant/Rider mobile WebView ไปใช้ console ของ repository ตนเอง พร้อมตรวจ session bridge และ fallback
-- [x] ตัด Admin/Merchant/Rider application source ออกจาก Apservice- หลังปลายทางใหม่ทดสอบผ่าน โดยคง Customer และ shared backend contract ที่จำเป็น
+- [x] ตัด Admin/Merchant/Rider application source ออกจาก apservice-customer-app หลังปลายทางใหม่ทดสอบผ่าน โดยคง Customer และ shared backend contract ที่จำเป็น
 - [x] จัดทำ End-to-End testing plan สำหรับ Customer → Merchant → Rider order lifecycle พร้อม acceptance criteria และหลักฐานตรวจรับ
 - [ ] ทำ Cross-Application Functional Audit ครบ Customer/Admin/Merchant/Rider: data flow, routes, buttons, order/status, RLS, upload/compression และ media rendering พร้อมแก้ defects ที่ยืนยันได้
 - [x] แก้ Rider MPA ให้เห็นงานว่างและรับงานแบบ atomic โดยผูก rider_id, rider_name และสถานะตาม Shared Core contract
@@ -451,13 +451,13 @@
 - [x] แก้ secure checkout RPC ให้สร้าง delivery_orders.id ที่ฐานข้อมูลบังคับ และทดสอบ creation path ก่อนเปิดใช้จริง
 - [x] จัดทำ mobile E2E acceptance checklist สำหรับ Customer/Admin/Merchant/Rider เนื่องจาก browser takeover ใช้งานไม่ได้
 - [x] ทำ Admin functional audit ครบเมนู ปุ่ม route, event handler, Supabase request, RLS/Storage และแก้ defects ที่ยืนยันได้
-- [x] ตรวจและแก้ Admin Application Apservicebeta ตามเมนู Dashboard/ออร์เดอร์/ร้านค้า/การเงิน/แจ้งเตือน/โฆษณา/AI Workspace/ตั้งค่ากลาง และ legacy menu จาก UI จริง
+- [x] ตรวจและแก้ Admin Application apservice-admin-app ตามเมนู Dashboard/ออร์เดอร์/ร้านค้า/การเงิน/แจ้งเตือน/โฆษณา/AI Workspace/ตั้งค่ากลาง และ legacy menu จาก UI จริง
 - [ ] ตรวจรับ final click-through ด้วยบัญชี Admin จริงบนมือถือ ตาม checklist เนื่องจาก browser takeover ใช้งานไม่ได้
 - [ ] แก้ Notifications Admin ที่อ้าง mobile_notifications.read_at ซึ่งไม่มีใน schema และแสดง empty state ที่อ่านง่าย
 - [ ] เพิ่ม Admin media review/registry เพื่อดูไฟล์ที่อัปโหลดแล้ว พร้อม preview, owner, เวลา, status และตำแหน่งใช้งาน
 - [ ] ย้าย AI Workspace เข้า Admin MPA โดยตรง ไม่เปิด legacy-admin-console หรือหน้าเว็บอื่น
 - [ ] ย้าย GP จาก business_rules กลางไปกำหนดเป็นรายร้านใน Admin Stores และให้ settlement ใช้ค่าร้านนั้น
-- [ ] แทน legacy menu cross-page ด้วย Admin-native routes/features ใน Apservicebeta โดยไม่พึ่ง Customer repository หรือ legacy console
+- [ ] แทน legacy menu cross-page ด้วย Admin-native routes/features ใน apservice-admin-app โดยไม่พึ่ง Customer repository หรือ legacy console
 - [x] แก้ Admin legacy menu ให้เปิด legacy-admin-console พร้อม query ของแต่ละฟังก์ชัน แทน admin.html compatibility redirect ที่ทำให้เมนูกดแล้วไม่มีผล
 - [x] เชื่อม Admin MPA AI Workspace ไปยัง legacy workspace ที่ใช้งานจริง พร้อมรองรับ ai-workspace deeplink
 - [x] เพิ่ม Admin Finance MPA workflow อนุมัติ/ปฏิเสธ/บันทึกโอนคำขอถอนเงินผ่าน server RPC และอัปโหลดหลักฐานไม่เกิน 1 MB

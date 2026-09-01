@@ -8,14 +8,14 @@
 
 | รายการ | ค่า |
 |---|---|
-| Site URL | `https://apirak272543-ship-it.github.io/Apservice-` |
-| Customer Verify callback | `https://apirak272543-ship-it.github.io/Apservice-/customer/auth-callback.html` |
+| Site URL | `https://apirak272543-ship-it.github.io/apservice-customer-app` |
+| Customer Verify callback | `https://apirak272543-ship-it.github.io/apservice-customer-app/customer/auth-callback.html` |
 
 ต้องเพิ่ม callback URL ข้างต้นใน **Redirect URLs** ด้วย อย่าเพิ่มเฉพาะ `profile.html` เพราะคำขอส่งลิงก์ของแอปจะชี้ไปที่ `customer/auth-callback.html` และ shared runtime จะส่งค่า `redirect_to` ไปกับ Auth request ให้ Supabase สร้าง ConfirmationURL ที่มี project path ถูกต้อง
 
 ## Email template
 
-ใน Supabase Dashboard ให้เปิด **Authentication → Email Templates → Magic Link** แล้วนำเนื้อหาจาก `supabase/templates/customer_magic_link.html` ไปใช้ โดยคงตัวแปร `{{ .ConfirmationURL }}` ไว้ใน `href` ของปุ่ม Verify ห้าม hard-code โดเมนที่ไม่มี `/Apservice-/` และห้ามใช้ลิงก์ `{{ .SiteURL }}/auth/confirm` เว้นแต่จะตั้งใจเปลี่ยนไปใช้ token-hash verification flow ทั้งชุด
+ใน Supabase Dashboard ให้เปิด **Authentication → Email Templates → Magic Link** แล้วนำเนื้อหาจาก `supabase/templates/customer_magic_link.html` ไปใช้ โดยคงตัวแปร `{{ .ConfirmationURL }}` ไว้ใน `href` ของปุ่ม Verify ห้าม hard-code โดเมนที่ไม่มี `/apservice-customer-app/` และห้ามใช้ลิงก์ `{{ .SiteURL }}/auth/confirm` เว้นแต่จะตั้งใจเปลี่ยนไปใช้ token-hash verification flow ทั้งชุด
 
 ถ้า project เปิดใช้งานการยืนยันบัญชีใหม่แยกต่างหาก ให้ใช้ `supabase/templates/customer_confirmation.html` กับ template **Confirm signup** ด้วย ทั้งสองไฟล์ใน repository เป็นต้นฉบับสำหรับคัดลอกเท่านั้น การ commit ไฟล์ไม่ได้เปลี่ยน mailer ของ Supabase hosted project โดยอัตโนมัติ การแก้ repository อย่างเดียวจึงไม่สามารถแก้ Site URL, Redirect URLs หรือ template ที่บันทึกอยู่ใน Dashboard ได้
 
@@ -35,7 +35,7 @@
 
 หากกดอีเมลแล้วเห็น `There isn't a GitHub Pages site here` หรือ 404 ให้ตรวจตามลำดับนี้:
 
-1. ตรวจว่า URL ของอีเมลขึ้นต้นด้วย `https://apirak272543-ship-it.github.io/Apservice-/customer/auth-callback.html` ไม่ใช่โดเมนเดียวกันแต่ขาด path `/Apservice-` การเห็น `https://apirak272543-ship-it.github.io/customer/...` หรือโดเมน root โดยไม่มี `/Apservice-/` คือ configuration เก่าและจะเป็น GitHub Pages 404
+1. ตรวจว่า URL ของอีเมลขึ้นต้นด้วย `https://apirak272543-ship-it.github.io/apservice-customer-app/customer/auth-callback.html` ไม่ใช่โดเมนเดียวกันแต่ขาด path `/apservice-customer-app` การเห็น `https://apirak272543-ship-it.github.io/customer/...` หรือโดเมน root โดยไม่มี `/apservice-customer-app/` คือ configuration เก่าและจะเป็น GitHub Pages 404
 2. ตรวจว่า callback URL ถูกเพิ่มใน Supabase **Redirect URLs** ตรงทุกตัวอักษร
 3. ลบหรือหยุดใช้ลิงก์เก่า แล้วกลับมาหน้า Login เพื่อขอลิงก์ใหม่หลังบันทึก Dashboard configuration; ลิงก์เก่าที่ถูกสร้างด้วย redirect ผิดไม่สามารถซ่อมปลายทางย้อนหลังได้
 4. ตรวจว่า email template ใช้ `{{ .ConfirmationURL }}` อยู่ใน `href` ของปุ่ม Verify

@@ -2,8 +2,8 @@
 
 ## Findings
 
-1. `https://apirak272543-ship-it.github.io/Apservice-/customer/` โหลด Customer MPA ใหม่จริง: พบหัวข้อ `โปรโมชันและสิทธิพิเศษ`, คำอธิบาย Admin-updated, และ empty state `0 รายการ` ตาม database ที่ยังไม่มี `customer_promotions` หรือ active campaign
-2. `https://apirak272543-ship-it.github.io/Apservice-/` คือ legacy `index.html` fallback ที่ตั้งใจคงไว้ตามข้อกำหนด จึงมี UI/flow monolith รุ่นเดิมจำนวนมากและอาจทำให้ผู้ใช้เห็นว่าหน้าตา "เหมือนเดิม" เมื่อเปิดโดเมนหลัก
+1. `https://apirak272543-ship-it.github.io/apservice-customer-app/customer/` โหลด Customer MPA ใหม่จริง: พบหัวข้อ `โปรโมชันและสิทธิพิเศษ`, คำอธิบาย Admin-updated, และ empty state `0 รายการ` ตาม database ที่ยังไม่มี `customer_promotions` หรือ active campaign
+2. `https://apirak272543-ship-it.github.io/apservice-customer-app/` คือ legacy `index.html` fallback ที่ตั้งใจคงไว้ตามข้อกำหนด จึงมี UI/flow monolith รุ่นเดิมจำนวนมากและอาจทำให้ผู้ใช้เห็นว่าหน้าตา "เหมือนเดิม" เมื่อเปิดโดเมนหลัก
 3. GitHub Pages production มี asset `shared-media-v4` บน Customer Checkout/Marketplace New, Admin Finance/Promotions/Stores, Merchant Store และ Rider Delivery แล้ว การเปลี่ยน Central Media เป็น infrastructure upload pipeline จึงจะเห็นผลเมื่อเลือกอัปโหลดภาพใหม่ ไม่ได้เปลี่ยนรูปลักษณ์หน้า Home ทันที
 4. Browser inspection ของ Customer Home หลัง commit `bf88e70` ยืนยันว่า customer route โหลดและ database ส่ง Data URL legacy มาถึงหน้า แต่ browser console subsystem อยู่ใน crash-loop จึงใช้ contract/full regression plus production asset verification แทนในรอบตรวจนี้ ต้องตรวจ visual gesture บนอุปกรณ์ผู้ใช้ซ้ำหลัง deploy
 

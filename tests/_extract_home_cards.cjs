@@ -1,5 +1,5 @@
 const fs=require('fs');
-const s=fs.readFileSync('/home/ubuntu/Apservice-/customer/customer-app.js','utf8');
+const s=fs.readFileSync('/home/ubuntu/apservice-review/customer-app/customer/customer-app.js','utf8');
 for(const name of ['home']){
  const i=s.indexOf(`async function ${name}`); if(i>=0) console.log(`\n=== ${name} @ ${i} ===\n`+s.slice(i,Math.min(s.length,i+18000)));
 }

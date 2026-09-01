@@ -7,7 +7,7 @@ const consent = fs.readFileSync('customer/customer-location-consent.js', 'utf8')
 const modernTheme = fs.readFileSync('customer/customer-modern-theme.css', 'utf8');
 const homeTheme = fs.readFileSync('customer/customer-home-mobile.css', 'utf8');
 const promotions = app.slice(app.indexOf('async function promotions('), app.indexOf('function renderPromotions('));
-const adminCandidates = [path.resolve(__dirname, '..', '..', 'Apservicebeta', 'admin', 'admin-app.js'), path.resolve(__dirname, '..', 'apservice-admin-contract-parity', 'admin', 'admin-app.js')];
+const adminCandidates = [path.resolve(__dirname, '..', '..', 'apservice-admin-app', 'admin', 'admin-app.js'), path.resolve(__dirname, '..', 'apservice-admin-contract-parity', 'admin', 'admin-app.js'), path.resolve(__dirname, '..', '..', 'Apservicebeta', 'admin', 'admin-app.js')];
 const adminPath = adminCandidates.find(candidate => fs.existsSync(candidate));
 const admin = adminPath ? fs.readFileSync(adminPath, 'utf8') : '';
 

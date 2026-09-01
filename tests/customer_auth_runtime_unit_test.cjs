@@ -37,31 +37,31 @@ function boot(href) {
 }
 
 (async () => {
-  const app = boot('https://example.test/Apservice-/customer/profile.html');
+  const app = boot('https://example.test/apservice-customer-app/customer/profile.html');
   assert.equal(app.options.auth.persistSession, true);
   assert.equal(app.options.auth.autoRefreshToken, true);
   assert.equal(app.options.auth.detectSessionInUrl, false);
-  const magic = await app.api.auth.sendMagicLink(' Test@Example.com ', 'https://example.test/Apservice-/customer/auth-callback.html');
+  const magic = await app.api.auth.sendMagicLink(' Test@Example.com ', 'https://example.test/apservice-customer-app/customer/auth-callback.html');
   assert.equal(magic.args.email, 'test@example.com');
-  assert.equal(magic.args.options.emailRedirectTo, 'https://example.test/Apservice-/customer/auth-callback.html');
+  assert.equal(magic.args.options.emailRedirectTo, 'https://example.test/apservice-customer-app/customer/auth-callback.html');
   assert.equal((await app.api.auth.currentUser()).id, 'user-1');
-  await app.api.auth.signInWithOAuth('google', 'https://example.test/Apservice-/customer/auth-callback.html');
+  await app.api.auth.signInWithOAuth('google', 'https://example.test/apservice-customer-app/customer/auth-callback.html');
   assert.equal(app.replaced.at(-1), 'https://accounts.google.com/o/oauth2/v2/auth?state=google');
 
-  const callback = boot('https://example.test/Apservice-/customer/auth-callback.html?code=auth-code&next=index.html');
+  const callback = boot('https://example.test/apservice-customer-app/customer/auth-callback.html?code=auth-code&next=index.html');
   const codeSession = await callback.api.auth.processCallback();
   assert.equal(codeSession.access_token, 'code-access');
-  assert.deepEqual(callback.replaced, ['/Apservice-/customer/auth-callback.html?next=index.html']);
+  assert.deepEqual(callback.replaced, ['/apservice-customer-app/customer/auth-callback.html?next=index.html']);
 
-  const tokenHash = boot('https://example.test/Apservice-/customer/auth-callback.html?token_hash=one-time-hash&type=email');
+  const tokenHash = boot('https://example.test/apservice-customer-app/customer/auth-callback.html?token_hash=one-time-hash&type=email');
   const verifySession = await tokenHash.api.auth.processCallback();
   assert.equal(verifySession.access_token, 'verify-access');
-  assert.deepEqual(tokenHash.replaced, ['/Apservice-/customer/auth-callback.html']);
+  assert.deepEqual(tokenHash.replaced, ['/apservice-customer-app/customer/auth-callback.html']);
 
-  const direct = boot('https://example.test/Apservice-/customer/auth-callback.html#access_token=hash-access&refresh_token=hash-refresh&expires_in=3600');
+  const direct = boot('https://example.test/apservice-customer-app/customer/auth-callback.html#access_token=hash-access&refresh_token=hash-refresh&expires_in=3600');
   const directSession = await direct.api.auth.processCallback();
   assert.equal(directSession.access_token, 'hash-access');
-  assert.deepEqual(direct.replaced, ['/Apservice-/customer/auth-callback.html']);
+  assert.deepEqual(direct.replaced, ['/apservice-customer-app/customer/auth-callback.html']);
 
   await app.api.auth.signOut('profile.html');
   assert.equal(await app.api.auth.currentUser(), null);

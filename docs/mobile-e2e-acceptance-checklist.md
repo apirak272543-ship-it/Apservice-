@@ -4,10 +4,10 @@
 
 | บทบาท | URL | วัตถุประสงค์ |
 |---|---|---|
-| Customer | https://apirak272543-ship-it.github.io/Apservice-/customer/ | เลือกสินค้า, สร้างออร์เดอร์, ติดตามสถานะ |
-| Admin | https://apirak272543-ship-it.github.io/Apservicebeta/admin/ | ตั้งกติกากลาง, ตรวจสลิป, ตรวจภาพและออร์เดอร์ |
+| Customer | https://apirak272543-ship-it.github.io/apservice-customer-app/customer/ | เลือกสินค้า, สร้างออร์เดอร์, ติดตามสถานะ |
+| Admin | https://apirak272543-ship-it.github.io/apservice-admin-app/admin/ | ตั้งกติกากลาง, ตรวจสลิป, ตรวจภาพและออร์เดอร์ |
 | Merchant | https://apirak272543-ship-it.github.io/ap-store-mobile/merchant/ | เห็นและเตรียมออร์เดอร์ของร้าน |
-| Rider | https://apirak272543-ship-it.github.io/ap-rider-mobile/rider/ | รับงาน, ส่งหลักฐาน และปิดงาน |
+| Rider | https://apirak272543-ship-it.github.io/apservice-rider-app/rider/ | รับงาน, ส่งหลักฐาน และปิดงาน |
 
 ## เงื่อนไขก่อนเริ่ม
 

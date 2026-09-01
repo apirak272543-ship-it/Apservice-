@@ -1,7 +1,7 @@
 # รายงานผล Milestone: MPA Lifecycle, Media และ Payment Review
 
 **วันที่วัด:** 18 สิงหาคม 2026  
-**Production:** <https://apirak272543-ship-it.github.io/Apservice-/>  
+**Production:** <https://apirak272543-ship-it.github.io/apservice-customer-app/>  
 **Commit:** `4e40912c077d85f761dec6f6238d708a88b88caa`
 
 ## ขอบเขตการปรับปรุง
