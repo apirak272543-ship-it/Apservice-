@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '..');
 const migration = fs.readFileSync(path.join(root, 'supabase/migrations/20260822_master_owner_role_governance.sql'), 'utf8');
 const edge = fs.readFileSync(path.join(root, 'supabase/functions/role-access/index.ts'), 'utf8');
 const customerTrigger = fs.readFileSync(path.join(root, 'supabase/migrations/20260821_customer_registration_profile_metadata.sql'), 'utf8');
-const adminSource = fs.readFileSync(path.join(root, '..', 'apservice-audit', 'Apservicebeta/admin/admin-app.js'), 'utf8');
+const adminSource = fs.readFileSync(path.join(root, '..', 'apservice-admin-app', 'admin/admin-app.js'), 'utf8');
 
 assert.match(migration, /CREATE TABLE IF NOT EXISTS private\.admin_role_governors/, 'governance authority must live in a private table');
 assert.match(migration, /user_id uuid PRIMARY KEY REFERENCES auth\.users\(id\) ON DELETE RESTRICT/, 'governance must use stable auth UUID and protect the authority row');
