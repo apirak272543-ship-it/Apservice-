@@ -230,20 +230,23 @@
     const safe = value => String(value || '').trim();
     const validUrl = value => /^https:\/\//i.test(safe(value)) ? safe(value) : '';
     const motions = new Set(['none','summer','rainy','spring','songkran','loy_krathong','christmas','new_year','valentines','halloween','lunar_new_year','ramadan_eid','diwali','winter']);
+    const directions = new Set(['down','left','right','diagonal','up']);
     const clamp = (value, fallback = .86) => { const n = Number(value); return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback; };
     const inWindow = item => { const now = Date.now(); const start = Date.parse(item?.startsAt || ''); const end = Date.parse(item?.endsAt || ''); return (!Number.isFinite(start) || start <= now) && (!Number.isFinite(end) || end > now); };
-    const addMotion = key => {
+    const addMotion = (key, direction = 'down', effectUrl = '') => {
       const motion = motions.has(key) ? key : 'none'; if (motion === 'none') return;
-      const layer = document.createElement('div'); layer.className = `ap-customer-motion ap-motion-${motion}`; layer.setAttribute('aria-hidden', 'true');
+      const flow = directions.has(direction) ? direction : 'down';
+      const layer = document.createElement('div'); layer.className = `ap-customer-motion ap-motion-${motion} ap-motion-direction-${flow}`; layer.setAttribute('aria-hidden', 'true');
+      if (validUrl(effectUrl)) layer.style.setProperty('--ap-motion-effect-url', `url("${effectUrl.replace(/"/g, '')}")`);
       for (let i = 0; i < 18; i += 1) { const particle = document.createElement('i'); particle.style.setProperty('--i', i); particle.style.setProperty('--x', `${(i * 37) % 100}%`); particle.style.setProperty('--delay', `${(i % 9) * -1.2}s`); particle.style.setProperty('--size', `${6 + (i % 5) * 3}px`); layer.append(particle); }
-      document.body.append(layer); document.body.dataset.customerMotion = motion;
+      document.body.append(layer); document.body.dataset.customerMotion = motion; document.body.dataset.customerMotionDirection = flow;
     };
     const apply = value => {
       const source = value && typeof value === 'object' ? value : {}; const pageKey = document.body.dataset.page; const page = source.pages?.[pageKey] && typeof source.pages[pageKey] === 'object' ? source.pages[pageKey] : {}; const fallback = source.default && typeof source.default === 'object' ? source.default : {}; const selected = { ...fallback, ...page };
       let motion = selected.motion === 'inherit' || !motions.has(selected.motion) ? fallback.motion : selected.motion; const festival = source.festival && typeof source.festival === 'object' ? source.festival : {};
-      if (festival.active && festival.motion && inWindow(festival)) motion = festival.motion; const background = validUrl(selected.backgroundUrl || fallback.backgroundUrl); const root = document.documentElement;
+      let direction = selected.direction === 'inherit' || !directions.has(selected.direction) ? (fallback.direction || 'down') : selected.direction; const effectUrl = validUrl(selected.effectUrl || fallback.effectUrl); if (festival.active && festival.motion && inWindow(festival)) { motion = festival.motion; direction = festival.direction === 'inherit' || !directions.has(festival.direction) ? direction : festival.direction; } const background = validUrl(selected.backgroundUrl || fallback.backgroundUrl); const root = document.documentElement;
       root.style.setProperty('--ap-customer-overlay', String(clamp(selected.overlay, .86))); if (background) { document.body.dataset.customerVisual = 'true'; document.body.style.setProperty('--ap-customer-background', `url("${background.replace(/"/g, '')}")`); document.body.style.setProperty('--ap-customer-background-position', safe(selected.position) || 'center'); document.body.style.setProperty('--ap-customer-background-size', safe(selected.size) || 'cover'); }
-      addMotion(motion);
+      addMotion(motion, direction, effectUrl);
     };
     lifecycle.request('platform_configs?select=value&key=eq.customer_visuals&limit=1', { cacheTtlMs: 60_000, cacheKey: 'customer-visuals-public' }).then(rows => apply(rows?.[0]?.value)).catch(() => {});
   }
