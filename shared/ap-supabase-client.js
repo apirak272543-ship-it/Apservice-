@@ -25,8 +25,6 @@
     if (event === 'INITIAL_SESSION' && !error) resolveReady(status.session);
   };
   const parseLegacy = key => { try { const value = JSON.parse(localStorage.getItem(key) || 'null'); return value?.access_token && value?.refresh_token ? value : null; } catch (_) { return null; } };
-  const clearLegacy = () => LEGACY_KEYS.forEach(key => { try { localStorage.removeItem(key); } catch (_) {} });
-  const clearSharedLegacy = () => { try { localStorage.removeItem(SHARED_STORAGE_KEY); } catch (_) {} };
 
   if (!root.supabase?.createClient) {
     const error = new Error('ไม่พบ Supabase Auth Client');
@@ -48,7 +46,7 @@
       const legacy = customLegacy || sharedLegacy;
       if (legacy) {
         const { error } = await client.auth.setSession({ access_token: legacy.access_token, refresh_token: legacy.refresh_token });
-        if (!error) { clearLegacy(); if (sharedLegacy) clearSharedLegacy(); }
+        if (!error) { /* Keep legacy tokens during the cross-app migration window so another role cannot lose its session. */ }
       }
       client.auth.onAuthStateChange((event, session) => notify(event, session));
       const { data, error } = await client.auth.getSession();
