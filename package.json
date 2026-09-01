@@ -1,5 +1,5 @@
 {
-  "name": "ap-service-static-console",
+  "name": "apservice-customer-app",
   "private": true,
   "type": "module",
   "scripts": {

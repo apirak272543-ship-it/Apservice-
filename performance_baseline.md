@@ -1,6 +1,6 @@
 # AP Service Performance Baseline
 
-ตรวจจากเว็บไซต์สาธารณะ `https://apirak272543-ship-it.github.io/Apservice-/?admin-full-audit-verify=778a3a5` เมื่อวันที่ 2026-08-17
+ตรวจจากเว็บไซต์สาธารณะ `https://apirak272543-ship-it.github.io/apservice-customer-app/?admin-full-audit-verify=778a3a5` เมื่อวันที่ 2026-08-17
 
 ## ผลการวัดในเบราว์เซอร์
 
@@ -38,4 +38,4 @@ localStorage มีขนาดรวมประมาณ 3,364 KB โดย `a
 - localStorage เดิม `apcx_stores` มีประมาณ 3.44 MB และมี inline Base64 8 รูป; แก้ module storage ให้ตัด inline image จาก cache copy ของ `apcx_stores`/`apcx_config` ก่อน stringify โดยไม่แก้ live state และเพิ่ม cache bust ของ boot/legacy bridge
 - ต้องวัดซ้ำบน browser หลัง public build เพื่อยืนยันผล storage บนเครื่องใหม่ เนื่องจาก browser เดิมอาจถือ cache จาก module bridge เวอร์ชันเก่า
 - URL ทดสอบ local: `http://127.0.0.1:4173/?performance-test=v9`
-- URL เว็บไซต์สาธารณะเดิมสำหรับเทียบ: `https://apirak272543-ship-it.github.io/Apservice-/?admin-full-audit-verify=778a3a5`
+- URL เว็บไซต์สาธารณะเดิมสำหรับเทียบ: `https://apirak272543-ship-it.github.io/apservice-customer-app/?admin-full-audit-verify=778a3a5`
