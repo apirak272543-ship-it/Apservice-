@@ -19,11 +19,31 @@
 
 /* Shared canvas: the home page keeps its composition; secondary screens gain a calmer app shell. */
 body[data-page] {
+  position: relative;
+  isolation: isolate;
   background:
     radial-gradient(circle at 0% 0%, rgba(185, 239, 228, .42), transparent 26rem),
     radial-gradient(circle at 100% 28%, rgba(255, 224, 214, .24), transparent 24rem),
     var(--customer-ui-canvas);
   color: var(--customer-ui-ink);
+}
+
+body[data-page]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(var(--customer-admin-background-overlay, rgba(255,255,255,0)), var(--customer-admin-background-overlay, rgba(255,255,255,0))), var(--customer-admin-background-url, none);
+  background-position: var(--customer-admin-background-position, center);
+  background-size: var(--customer-admin-background-size, cover);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  opacity: var(--customer-admin-background-opacity, 1);
+}
+
+body[data-page][data-admin-background="true"]::before {
+  z-index: -1;
 }
 
 body[data-page] .customer-page {

@@ -5,10 +5,11 @@
   window.__APServiceCustomerVisualRuntime = true;
 
   const validImage = value => /^https:\/\//i.test(String(value || '').trim()) ? String(value).trim() : '';
+  const pickImage = input => validImage(input?.backgroundUrl || input?.background_url || input?.background || input?.imageUrl || input?.url);
   const normalize = value => {
     const source = value && typeof value === 'object' ? value : {};
     const base = { backgroundUrl: '', overlay: 0.86, position: 'center', size: 'cover', motion: 'none' };
-    const slot = input => ({ ...base, ...(input && typeof input === 'object' ? input : {}), backgroundUrl: validImage(input?.backgroundUrl), overlay: Math.max(0, Math.min(1, Number.isFinite(Number(input?.overlay)) ? Number(input.overlay) : base.overlay)), position: String(input?.position || base.position), size: String(input?.size || base.size), motion: String(input?.motion || base.motion) });
+    const slot = input => ({ ...base, ...(input && typeof input === 'object' ? input : {}), backgroundUrl: pickImage(input), overlay: Math.max(0, Math.min(1, Number.isFinite(Number(input?.overlay)) ? Number(input.overlay) : base.overlay)), position: String(input?.position || base.position), size: String(input?.size || base.size), motion: String(input?.motion || base.motion) });
     const pages = source.pages && typeof source.pages === 'object' ? Object.fromEntries(Object.entries(source.pages).map(([key, item]) => [key, slot(item)])) : {};
     return { default: slot(source.default), festival: { key: String(source.festival?.key || ''), motion: String(source.festival?.motion || 'none'), active: source.festival?.active === true, startsAt: source.festival?.startsAt || '', endsAt: source.festival?.endsAt || '' }, pages };
   };
@@ -17,13 +18,23 @@
     const page = String(document.body?.dataset?.page || 'home');
     const selected = visuals.pages[page]?.backgroundUrl ? { ...visuals.default, ...visuals.pages[page] } : visuals.default;
     const host = document.querySelector('.customer-page');
-    if (host && selected.backgroundUrl) {
+    const body = document.body;
+    if (body) {
+      delete body.dataset.adminBackground;
+      body.style.removeProperty('--customer-admin-background-url');
+      body.style.removeProperty('--customer-admin-background-overlay');
+      body.style.removeProperty('--customer-admin-background-size');
+      body.style.removeProperty('--customer-admin-background-position');
+    }
+    if (host && selected.backgroundUrl && body) {
+      const safeUrl = selected.backgroundUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\)/g, '\\)');
       const overlay = `rgba(255,255,255,${selected.overlay})`;
+      body.dataset.adminBackground = 'true';
+      body.style.setProperty('--customer-admin-background-url', `url("${safeUrl}")`);
+      body.style.setProperty('--customer-admin-background-overlay', overlay);
+      body.style.setProperty('--customer-admin-background-size', selected.size);
+      body.style.setProperty('--customer-admin-background-position', selected.position);
       host.dataset.adminBackground = 'true';
-      host.style.backgroundImage = `linear-gradient(${overlay},${overlay}),url("${selected.backgroundUrl}")`;
-      host.style.backgroundSize = selected.size;
-      host.style.backgroundPosition = selected.position;
-      host.style.backgroundAttachment = 'fixed';
     }
     const starts = visuals.festival.startsAt ? Date.parse(visuals.festival.startsAt) : NaN;
     const ends = visuals.festival.endsAt ? Date.parse(visuals.festival.endsAt) : NaN;
@@ -34,7 +45,7 @@
   };
   const hydrate = async () => {
     try {
-      const rows = await M.request('platform_configs?select=value&key=eq.customer_visuals&limit=1', { cacheTtlMs: 60_000, cacheKey: 'customer-visuals' });
+      const rows = await M.request('platform_configs?select=value&key=eq.customer_visuals&limit=1', { forceFresh: true, cacheKey: 'customer-visuals' });
       apply(rows?.[0]?.value);
     } catch (_) {
       // Visual configuration is optional; the existing Customer UI remains unchanged.
