@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const M = window.APServiceMPA;
-  if (!M || document.body.dataset.page !== 'order') return;
+  if (!M || document.body.dataset.page !== 'order' || window.__APServiceOrderDetailCore) return;
   const $ = selector => document.querySelector(selector);
   const orderId = new URLSearchParams(location.search).get('id') || '';
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));

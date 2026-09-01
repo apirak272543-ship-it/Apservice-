@@ -72,7 +72,7 @@
     const topbar = document.querySelector('.customer-topbar');
     if (!topbar || topbar.dataset.nativeHeader) return;
     topbar.dataset.nativeHeader = 'true';
-    if (page !== 'home') {
+    if (page !== 'home' && page !== 'order') {
       const back = document.createElement('a');
       back.className = 'customer-native-back';
       back.href = backHref;
