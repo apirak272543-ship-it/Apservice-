@@ -16,7 +16,7 @@ assert.match(css, /var\(--customer-admin-background-url, none\)/);
 assert.equal(pages.length, 22, 'Customer must keep the 22-page MPA surface');
 for (const page of pages) {
   const html = fs.readFileSync(path.join(root, 'customer', page), 'utf8');
-  assert.match(html, /customer-visual-runtime\.js\?v=customer-visual-runtime-v2-db-background/, `${page} must load the current background runtime`);
-  if (html.includes('customer-ui-polish.css')) assert.match(html, /customer-ui-polish\.css\?v=customer-ui-polish-v2(?:-[^"']+)?/, `${page} must load the current background CSS`);
+  assert.match(html, /customer-visual-runtime\.js\?v=customer-visual-runtime-v3-background-layer/, `${page} must load the current background runtime`);
+  if (html.includes('customer-ui-polish.css')) assert.match(html, /customer-ui-polish\.css\?v=customer-ui-polish-v3-background-layer/, `${page} must load the current background CSS`);
 }
 console.log('customer_background_runtime_contract_test: PASS');
