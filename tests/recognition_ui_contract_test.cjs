@@ -5,7 +5,7 @@ const path = require('path');
 const auditRoot = path.resolve(__dirname, '..', '..');
 const read = (...parts) => fs.readFileSync(path.join(auditRoot, ...parts), 'utf8');
 const merchantRoot = ['ap-store-mobile', 'merchant'];
-const riderRoot = ['ap-rider-mobile', 'rider'];
+const riderRoot = ['apservice-rider-app', 'rider'];
 const merchantRecognition = read(...merchantRoot, 'merchant-recognition.js');
 const riderRecognition = read(...riderRoot, 'rider-recognition.js');
 const merchantRuntime = read(...merchantRoot, 'merchant-app.js');

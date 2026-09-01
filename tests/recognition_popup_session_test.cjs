@@ -56,6 +56,6 @@ function runNotificationScenario(sourcePath, exportName) {
 
 Promise.resolve()
   .then(() => runNotificationScenario('../ap-store-mobile/merchant/merchant-recognition.js', 'APServiceMerchantRecognition'))
-  .then(() => runNotificationScenario('../ap-rider-mobile/rider/rider-recognition.js', 'APServiceRiderRecognition'))
+  .then(() => runNotificationScenario('../apservice-rider-app/rider/rider-recognition.js', 'APServiceRiderRecognition'))
   .then(() => console.log('recognition popup session: PASS'))
   .catch(error => { console.error(error); process.exitCode = 1; });

@@ -15,7 +15,7 @@
     const current = new URL(location.href);
     const customerPath = current.pathname.match(/^(.*\/customer\/)(?:recover\.html)?$/i)?.[1];
     if (/github\.io$/i.test(current.hostname)) {
-      const basePath = customerPath?.includes('/Apservice-/') ? customerPath : '/Apservice-/customer/';
+      const basePath = customerPath?.includes('/apservice-customer-app/') ? customerPath : '/apservice-customer-app/customer/';
       return new URL('update-password.html', `${current.origin}${basePath}`).href;
     }
     if (customerPath) return new URL('update-password.html', `${current.origin}${customerPath}`).href;

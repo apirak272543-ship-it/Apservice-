@@ -10,7 +10,7 @@ const recoverRuntime = fs.readFileSync('customer/customer-recover.js', 'utf8');
 const updatePasswordRuntime = fs.readFileSync('customer/customer-update-password.js', 'utf8');
 const recoverPage = fs.readFileSync('customer/recover.html', 'utf8');
 const updatePasswordPage = fs.readFileSync('customer/update-password.html', 'utf8');
-const adminCandidates = [path.resolve(__dirname, '../../apservice-audit/Apservicebeta/admin/admin-app.js'), path.resolve(__dirname, '../../Apservicebeta/admin/admin-app.js')];
+const adminCandidates = [path.resolve(__dirname, '../../apservice-admin-app/admin/admin-app.js'), path.resolve(__dirname, '../../apservice-audit/Apservicebeta/admin/admin-app.js'), path.resolve(__dirname, '../../Apservicebeta/admin/admin-app.js')];
 const adminPath = adminCandidates.find(candidate => fs.existsSync(candidate));
 assert.ok(adminPath, 'Admin source must be available for cross-system ownership checks');
 const admin = fs.readFileSync(adminPath, 'utf8');

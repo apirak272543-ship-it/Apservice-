@@ -13,7 +13,7 @@ assert.match(sharedRuntime, /payload\.redirect_to = redirectTo/, 'Recovery reque
 assert.match(sharedRuntime, /async function acceptRecoveryFromHash\(\)/, 'Password page must accept the one-time session returned by the email link');
 assert.match(sharedRuntime, /async function updatePassword\(password\)/, 'Password page must submit the replacement password only with a recovery session');
 assert.match(recoverRuntime, /function recoveryRedirectUrl\(\)/, 'Recovery flow must centralize its redirect URL');
-assert.match(fs.readFileSync('customer/recover.html', 'utf8'), /https:\/\/apirak272543-ship-it\.github\.io\/Apservice-\/customer\/update-password\.html/, 'GitHub Pages recovery email must include the repository base path');
+assert.match(fs.readFileSync('customer/recover.html', 'utf8'), /https:\\/\\/apirak272543-ship-it\\.github\\.io\\/apservice-customer-app\\/customer\\/update-password\\.html/, 'GitHub Pages recovery email must include the repository base path');
 assert.match(updateRuntime, /submit\.disabled = true/, 'Password submission must remain blocked until the email-link session is verified');
 assert.match(updateRuntime, /acceptRecoveryFromHash\(\)/, 'Password page must validate the email-link handoff before enabling the form');
 assert.match(updateRuntime, /M\.auth\.signOut\('profile\.html\?password_reset=1'\)/, 'After saving, the Customer must return to the Login page rather than stay signed in');
