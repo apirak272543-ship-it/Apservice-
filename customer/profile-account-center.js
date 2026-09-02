@@ -63,11 +63,11 @@
     try { const session = await M.auth.refreshSession(false); const uploaded = await window.APServiceMedia.uploadPublicImage(file, { url: M.config.url, publishableKey: M.config.publishableKey, accessToken: session?.access_token, actorId: user.id, bucket: 'catalog-media', scope: 'customer-avatar', pathPrefix: 'customer', mediaType: 'USER_AVATAR', ownerType: 'customer', variant: 'profile' }); if (target) target.innerHTML = `<img src="${h(uploaded.publicUrl)}" alt="รูปโปรไฟล์ที่อัปโหลด" loading="eager">`; M.ui.setNotice(`เปลี่ยนรูปโปรไฟล์แล้ว · บีบอัดเหลือ ${Math.ceil(uploaded.bytes / 1024)} KB`); } catch (error) { M.ui.setNotice(error.message || 'เปลี่ยนรูปโปรไฟล์ไม่สำเร็จ', 'error'); }
   }
   async function mount() {
-    const host = $('#profile'); if (!host || host.dataset.accountCenterMounted === 'true') return;
+    const host = $('#profile'); if (!host || host.dataset.accountCenterMounted === 'true' || host.dataset.accountCenterPending === 'true') return;
     const editor = $('#profileForm'); if (!editor) return;
-    host.dataset.accountCenterMounted = 'true'; host.insertAdjacentHTML('afterbegin', skeleton());
-    try { const user = await M.auth.currentUser(); if (!user) throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); render(await load(user)); } catch (error) { host.innerHTML = renderError(error.message); host.querySelector('[data-account-retry]')?.addEventListener('click', () => location.reload()); }
+    host.dataset.accountCenterPending = 'true'; host.dataset.accountCenterMounted = 'true'; host.classList.add('account-center-pending'); host.insertAdjacentHTML('afterbegin', skeleton());
+    try { const user = window.__APCustomerProfileUser || await M.auth.currentUser(); if (!user) throw new Error('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); render(await load(user)); } catch (error) { host.innerHTML = renderError(error.message); host.querySelector('[data-account-retry]')?.addEventListener('click', () => location.reload()); } finally { host.dataset.accountCenterPending = 'false'; host.classList.remove('account-center-pending'); }
   }
-  const start = () => { const observer = new MutationObserver(() => { if ($('#profileForm') && !$('#profile')?.dataset.accountCenterMounted) { window.setTimeout(mount, 850); observer.disconnect(); } }); observer.observe(document.body, { childList: true, subtree: true }); window.setTimeout(() => { if ($('#profileForm')) mount(); }, 1400); };
+  const start = () => { const observer = new MutationObserver(() => { if ($('#profileForm') && !$('#profile')?.dataset.accountCenterMounted) { observer.disconnect(); void mount(); } }); observer.observe(document.body, { childList: true, subtree: true }); void mount(); };
   start();
 })();
