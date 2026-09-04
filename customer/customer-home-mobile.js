@@ -118,6 +118,7 @@
 
   async function loadSponsored() {
     const section = $('.customer-sponsored'); const host = $('#sponsoredList'); if (!section || !host) return;
+    const hero = $('.customer-hero'); if (hero && section.parentElement === hero.parentElement) hero.insertAdjacentElement('afterend', section);
     try {
       const rows = await M.request('platform_configs?select=value&key=eq.customer_promotions&limit=1', { cacheTtlMs: 30_000, cacheKey: 'customer-home-sponsored' });
       const value = rows?.[0]?.value; const list = Array.isArray(value) ? value : Array.isArray(value?.items) ? value.items : []; const now = Date.now();
