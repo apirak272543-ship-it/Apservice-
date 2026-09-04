@@ -48,12 +48,13 @@
   function normalizePromotions(value) {
     const list = Array.isArray(value) ? value : Array.isArray(value?.items) ? value.items : [];
     return list.map((item, index) => {
-      const starts = item?.starts_at ? Date.parse(item.starts_at) : NaN;
-      const ends = item?.ends_at ? Date.parse(item.ends_at) : NaN;
-      const active = item?.placement === 'customer_home_sponsored' && item?.approval_status === 'approved' && item?.active !== false && Number.isFinite(starts) && Number.isFinite(ends) && starts <= now && now <= ends;
+      const hasStart = Boolean(item?.starts_at); const hasEnd = Boolean(item?.ends_at);
+      const starts = hasStart ? Date.parse(item.starts_at) : NaN;
+      const ends = hasEnd ? Date.parse(item.ends_at) : NaN;
+      const active = item?.placement === 'customer_home_sponsored' && (!item?.approval_status || item.approval_status === 'approved') && item?.active !== false && (!hasStart || Number.isFinite(starts) && starts <= now) && (!hasEnd || Number.isFinite(ends) && now <= ends);
       const imageUrl = validImage(item?.image_url || item?.imageUrl || item?.banner_url || item?.bannerUrl);
       const href = validHref(item?.link_url || item?.linkUrl || item?.destination_url || item?.destinationUrl || item?.href);
-      if (!active || !imageUrl || !href) return null;
+      if (!active || !imageUrl) return null;
       return { id: String(item?.id || `promotion-${index + 1}`), imageUrl, href, openInNewTab: item?.open_in_new_tab === true, badge: String(item?.badge || 'AD'), eyebrow: String(item?.eyebrow || ''), title: String(item?.title || item?.name || 'บริการพิเศษจาก AP Service'), description: String(item?.description || ''), altText: String(item?.alt_text || item?.title || 'ภาพโฆษณา'), icon: String(item?.icon || ''), overlay: validOverlay(item?.overlay), backgroundColor: validColor(item?.background_color, '#0b8c7c'), textColor: validColor(item?.text_color, '#ffffff'), borderColor: validColor(item?.border_color, ''), fit: ['cover', 'contain', 'fill', 'none', 'scale-down'].includes(item?.fit) ? item.fit : 'cover', position: String(item?.position || 'center'), buttonEnabled: item?.button_enabled !== false, buttonLabel: String(item?.button_label || 'ดูรายละเอียด'), priority: Number(item?.priority || index + 1), maxWidth: Math.max(280, Math.min(1200, Number(item?.max_width || 720))), minHeight: Math.max(160, Math.min(720, Number(item?.min_height || 300))) };
     }).filter(Boolean).sort((a, b) => a.priority - b.priority);
   }
