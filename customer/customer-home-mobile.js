@@ -125,7 +125,28 @@
       if (!items.length) { section.hidden = true; return; }
       section.hidden = false; $('#sponsoredCount').textContent = `${items.length} รายการ`;
       host.innerHTML = items.map((item, index) => `<a class="customer-promotion" href="${h(item.href)}"><img src="${h(item.image)}" alt="${h(item.title)}" loading="${index ? 'lazy' : 'eager'}"><div class="customer-promotion__copy"><small>${h(item.badge)}</small><h2>${h(item.title)}</h2>${item.description ? `<p>${h(item.description)}</p>` : ''}<span class="mpa-button mpa-button-secondary">ดูรายละเอียด</span></div></a>`).join('');
+      startSponsoredAutoSlide(host);
     } catch (_) { section.hidden = true; }
+  }
+
+  function startSponsoredAutoSlide(host) {
+    if (host.__sponsoredAutoSlide) window.clearInterval(host.__sponsoredAutoSlide);
+    host.__sponsoredAutoSlide = null;
+    if (host.children.length < 2 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    let paused = false;
+    const pause = () => { paused = true; };
+    const resume = () => { paused = false; };
+    host.addEventListener('mouseenter', pause, { once: false });
+    host.addEventListener('mouseleave', resume, { once: false });
+    host.addEventListener('focusin', pause, { once: false });
+    host.addEventListener('focusout', resume, { once: false });
+    host.addEventListener('touchstart', pause, { passive: true, once: false });
+    host.addEventListener('touchend', resume, { passive: true, once: false });
+    host.__sponsoredAutoSlide = window.setInterval(() => {
+      if (paused || document.hidden) return;
+      const next = host.scrollLeft + host.clientWidth;
+      host.scrollTo({ left: next >= host.scrollWidth - 2 ? 0 : next, behavior: 'smooth' });
+    }, 5_000);
   }
 
   function enhance() {
@@ -148,7 +169,7 @@
       if (additions.length) serviceSection.insertAdjacentHTML('afterend', additions.join(''));
     }
     $('#homeStoreSearch')?.addEventListener('submit', event => { event.preventDefault(); const needle = $('#homeStoreSearchInput')?.value.trim(); location.assign(`stores.html${needle ? `?search=${encodeURIComponent(needle)}` : ''}`); });
-    const enhancementFallback = window.setTimeout(() => { $('#homeDeliveryLabel')?.replaceChildren(document.createTextNode('ตั้งค่าที่อยู่จัดส่ง')); $('#homeDiscoveryMount')?.setAttribute('aria-busy', 'false'); }, 3_500); addEventListener('pagehide', () => window.clearTimeout(enhancementFallback), { once: true }); loadDelivery(); loadActiveOrder(); loadDiscovery(); renderCart(); addEventListener('apservice:cart', renderCart);
+    const enhancementFallback = window.setTimeout(() => { $('#homeDeliveryLabel')?.replaceChildren(document.createTextNode('ตั้งค่าที่อยู่จัดส่ง')); $('#homeDiscoveryMount')?.setAttribute('aria-busy', 'false'); }, 3_500); addEventListener('pagehide', () => window.clearTimeout(enhancementFallback), { once: true }); loadDelivery(); loadActiveOrder(); loadDiscovery(); loadSponsored(); renderCart(); addEventListener('apservice:cart', renderCart);
     return true;
   }
   let attempts = 0;
