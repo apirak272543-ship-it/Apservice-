@@ -3,7 +3,6 @@
 
   const PAGE_NAME = 'stores';
   const MAX_TIER = 5;
-  const TIER_REMINDER_MS = 30_000;
   const storeFields = '*';
   const escapeHtml = value => window.APServiceMPA?.ui?.escapeHtml(String(value ?? '')) ?? String(value ?? '');
   const numeric = value => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -77,54 +76,20 @@
     host.innerHTML = `<section class="store-category-rows" aria-labelledby="storeCategoryRowsTitle"><div class="store-category-rows__intro"><p class="store-category-rows__eyebrow">EXPLORE BY CATEGORY</p><h2 id="storeCategoryRowsTitle">เลือกร้านตามหมวดหมู่</h2><p>เลือกร้านที่เปิดให้บริการและดูเมนูที่เหมาะกับคุณได้ง่ายขึ้น</p></div>${populated.length ? ordered.map(item => section(item.category, item.stores)).join('') : '<div class="store-category-rows__empty">ยังไม่มีร้านค้าที่พร้อมแสดงตามหมวดหมู่ในขณะนี้</div>'}</section>`;
   };
 
-  const isInViewport = element => {
-    const rect = element.getBoundingClientRect();
-    return rect.top < window.innerHeight && rect.bottom > 0 && rect.left < window.innerWidth && rect.right > 0;
-  };
-
-  const playTierMoment = card => {
-    if (noMotion()) return;
-    card.classList.remove('is-tier-sparkling');
-    void card.offsetWidth;
-    card.classList.add('is-tier-sparkling');
-    window.setTimeout(() => card.classList.remove('is-tier-sparkling'), 1150);
-  };
-
-  const scheduleTierReminder = card => {
-    window.setTimeout(() => {
-      if (!document.hidden && isInViewport(card)) playTierMoment(card);
-      scheduleTierReminder(card);
-    }, TIER_REMINDER_MS);
-  };
-
   const activateTierMoments = host => {
     const cards = [...host.querySelectorAll('.store-category-row-card[data-tier]')].filter(card => card.dataset.tier);
     if (!cards.length) return;
-    const seen = new WeakSet();
-    const onCardPress = event => {
-      const card = event.currentTarget;
-      if (noMotion()) return;
-      card.classList.remove('is-tier-pressed');
-      void card.offsetWidth;
-      card.classList.add('is-tier-pressed');
-      window.setTimeout(() => card.classList.remove('is-tier-pressed'), 460);
-    };
-    cards.forEach(card => card.addEventListener('pointerdown', onCardPress, { passive: true }));
-
-    if (!('IntersectionObserver' in window)) {
-      cards.filter(isInViewport).forEach(card => { playTierMoment(card); scheduleTierReminder(card); });
-      return;
-    }
-
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting || seen.has(entry.target)) return;
-        seen.add(entry.target);
-        playTierMoment(entry.target);
-        scheduleTierReminder(entry.target);
-      });
-    }, { threshold: 0.55 });
-    cards.forEach(card => observer.observe(card));
+    cards.forEach(card => {
+      card.classList.add('has-tier-sparkle');
+      card.addEventListener('pointerdown', event => {
+        if (noMotion()) return;
+        const pressed = event.currentTarget;
+        pressed.classList.remove('is-tier-pressed');
+        void pressed.offsetWidth;
+        pressed.classList.add('is-tier-pressed');
+        window.setTimeout(() => pressed.classList.remove('is-tier-pressed'), 460);
+      }, { passive: true });
+    });
   };
 
   async function initialise() {
