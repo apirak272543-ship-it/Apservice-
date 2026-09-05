@@ -19,5 +19,7 @@ assert.match(customer, /#sponsoredList/);
 assert.match(content, /document\.querySelector\('#sponsoredList'\)/);
 assert.match(content, /item\?\.placement === 'customer_home_sponsored'/);
 assert.match(content, /item\?\.active !== false/);
+assert.match(content, /clarity/);
+assert.match(content, /filter:contrast/);
 
 console.log('customer_home_sponsored_placement_contract_test: PASS');
