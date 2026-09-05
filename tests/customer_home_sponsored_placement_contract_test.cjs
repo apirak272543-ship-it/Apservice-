@@ -12,11 +12,12 @@ assert.doesNotMatch(home, /ร้านค้ายอดนิยม/);
 assert.doesNotMatch(home, /id="storeList"/);
 assert.doesNotMatch(customer, /legacyDefaultPromotions/);
 assert.match(customer, /item\?\.placement === 'customer_home_sponsored'/);
-assert.match(customer, /item\?\.approval_status === 'approved'/);
-assert.match(customer, /Number\.isFinite\(starts\) && Number\.isFinite\(ends\)/);
+assert.match(customer, /item\?\.active !== false/);
+assert.match(customer, /Number\.isFinite\(starts\) && starts <= now/);
+assert.match(customer, /Number\.isFinite\(ends\) && now <= ends/);
 assert.match(customer, /#sponsoredList/);
 assert.match(content, /document\.querySelector\('#sponsoredList'\)/);
 assert.match(content, /item\?\.placement === 'customer_home_sponsored'/);
-assert.match(content, /item\?\.approval_status === 'approved'/);
+assert.match(content, /item\?\.active !== false/);
 
 console.log('customer_home_sponsored_placement_contract_test: PASS');

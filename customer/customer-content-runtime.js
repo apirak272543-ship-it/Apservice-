@@ -51,7 +51,7 @@
       const hasStart = Boolean(item?.starts_at); const hasEnd = Boolean(item?.ends_at);
       const starts = hasStart ? Date.parse(item.starts_at) : NaN;
       const ends = hasEnd ? Date.parse(item.ends_at) : NaN;
-      const active = item?.placement === 'customer_home_sponsored' && (!item?.approval_status || item.approval_status === 'approved') && item?.active !== false && (!hasStart || Number.isFinite(starts) && starts <= now) && (!hasEnd || Number.isFinite(ends) && now <= ends);
+      const active = item?.placement === 'customer_home_sponsored' && item?.active !== false && (!hasStart || Number.isFinite(starts) && starts <= now) && (!hasEnd || Number.isFinite(ends) && now <= ends);
       const imageUrl = validImage(item?.image_url || item?.imageUrl || item?.banner_url || item?.bannerUrl);
       const href = validHref(item?.link_url || item?.linkUrl || item?.destination_url || item?.destinationUrl || item?.href);
       if (!active || !imageUrl) return null;
